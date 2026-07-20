@@ -69,7 +69,7 @@ class RapportController extends Controller
         $rapport = $this->rapportService->createRapport($request->validated());
 
         return redirect()
-            ->route('rapports.show', $rapport)
+            ->route('interventions.show', $rapport->intervention_id)
             ->with('success', "Le rapport a été soumis. L'intervention est en attente de validation par l'administration.");
     }
 
@@ -86,7 +86,7 @@ class RapportController extends Controller
                 ->with('error', "Ce rapport est en cours de validation par l'administration et n'est pas encore consultable.");
         }
 
-        $rapport->load(['intervention.technicien', 'intervention.chantier.client', 'photos', 'videos', 'documents', 'reponses.question']);
+        $rapport->load(['intervention.technicien', 'intervention.chantier.client', 'intervention.materiaux.materiau', 'photos', 'videos', 'documents', 'reponses.question']);
 
         return view('rapports.show', compact('rapport'));
     }
@@ -109,7 +109,7 @@ class RapportController extends Controller
         $this->rapportService->updateRapport($rapport, $request->validated());
 
         return redirect()
-            ->route('rapports.show', $rapport)
+            ->route('interventions.show', $rapport->intervention_id)
             ->with('success', "Le rapport a été mis à jour avec succès.");
     }
 

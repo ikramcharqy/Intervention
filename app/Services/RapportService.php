@@ -8,20 +8,13 @@ use Illuminate\Support\Facades\DB;
 class RapportService
 {
     /**
-     * Enregistre un rapport et met l'intervention en statut "Suspendue" (en attente de validation).
+     * Enregistre un rapport d'intervention.
+     * Le statut de l'intervention n'est pas modifié ici — il est géré
+     * exclusivement par InterventionService (workflow centralisé).
      */
     public function createRapport(array $data): Rapport
     {
-        return DB::transaction(function () use ($data) {
-            $rapport = Rapport::create($data);
-
-            // Le technicien soumet son rapport -> l'intervention passe en attente de validation (Suspendue)
-            $rapport->intervention->update([
-                'statut' => 'Suspendue',
-            ]);
-
-            return $rapport;
-        });
+        return Rapport::create($data);
     }
 
     /**

@@ -53,6 +53,7 @@ class UpdateClientRequest extends FormRequest
             'pays'                => ['nullable', 'string', 'max:100'],
             'observations'        => ['nullable', 'string', 'max:1000'],
             'is_active'           => ['boolean'],
+            'commercial_id'       => ['nullable', 'exists:users,id'],
 
             // Données entreprise (colonnes conformes aux migrations)
             'ice'     => ['nullable', 'string', 'max:15'],

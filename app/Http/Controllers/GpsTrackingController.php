@@ -69,7 +69,7 @@ class GpsTrackingController extends Controller
 
     private function assertSessionBelongsToIntervention(Intervention $intervention, GpsTrackingSession $gpsTrackingSession): void
     {
-        if ($gpsTrackingSession->intervention_id !== $intervention->id) {
+        if ((int) $gpsTrackingSession->intervention_id !== (int) $intervention->id) {
             abort(403, 'Cette session de suivi GPS n\'appartient pas à cette intervention.');
         }
     }

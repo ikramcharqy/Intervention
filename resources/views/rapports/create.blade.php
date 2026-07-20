@@ -10,16 +10,23 @@
                     @csrf
 
                     <div>
-                        <label for="intervention_id" class="block font-medium">Intervention <span class="text-red-500">*</span></label>
-                        <select name="intervention_id" id="intervention_id" required
-                            class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                            <option value="">-- Sélectionner --</option>
-                            @foreach ($interventions as $intervention)
-                                <option value="{{ $intervention->id }}" @selected(old('intervention_id', $interventionId) == $intervention->id)>
-                                    {{ $intervention->code_intervention }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <label class="block font-medium">Intervention <span class="text-red-500">*</span></label>
+                        @if ($interventionId && $interventions->count() === 1)
+                            <input type="hidden" name="intervention_id" value="{{ $interventionId }}">
+                            <p class="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 dark:text-gray-300 px-3 py-2">
+                                {{ $interventions->first()->code_intervention }}
+                            </p>
+                        @else
+                            <select name="intervention_id" id="intervention_id" required
+                                class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                <option value="">-- Sélectionner --</option>
+                                @foreach ($interventions as $intervention)
+                                    <option value="{{ $intervention->id }}" @selected(old('intervention_id', $interventionId) == $intervention->id)>
+                                        {{ $intervention->code_intervention }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        @endif
                         @error('intervention_id')<p class="text-red-500 text-sm">{{ $message }}</p>@enderror
                     </div>
 

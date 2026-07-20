@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\DB;
 
 class InterventionService
 {
+    public function __construct(protected GpsTrackingService $gpsTrackingService)
+    {
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Création & Mise à jour
@@ -169,6 +173,8 @@ class InterventionService
                 statut_apres: Intervention::STATUT_EN_COURS,
                 commentaire:  "Démarrage en mode {$mode}"
             );
+
+            $this->demarrerSuiviGps($intervention);
         });
     }
 
@@ -191,6 +197,8 @@ class InterventionService
             TrackingSession::where('intervention_id', $intervention->id)
                 ->whereNull('ended_at')
                 ->update(['ended_at' => now()]);
+
+            $this->arreterSuiviGps($intervention);
 
             $intervention->update([
                 'statut' => Intervention::STATUT_SUSPENDUE,
@@ -237,6 +245,8 @@ class InterventionService
                 statut_apres: Intervention::STATUT_EN_COURS,
                 commentaire:  'Reprise de l\'intervention'
             );
+
+            $this->demarrerSuiviGps($intervention);
         });
     }
 
@@ -274,6 +284,8 @@ class InterventionService
             TrackingSession::where('intervention_id', $intervention->id)
                 ->whereNull('ended_at')
                 ->update(['ended_at' => $now]);
+
+            $this->arreterSuiviGps($intervention);
 
             $intervention->update([
                 'statut'                      => Intervention::STATUT_FORM_REMPLI,
@@ -355,6 +367,8 @@ class InterventionService
                 statut_apres: Intervention::STATUT_EN_COURS,
                 commentaire:  "Rejet admin : {$motif}"
             );
+
+            $this->demarrerSuiviGps($intervention);
         });
     }
 
@@ -383,6 +397,8 @@ class InterventionService
             TrackingSession::where('intervention_id', $intervention->id)
                 ->whereNull('ended_at')
                 ->update(['ended_at' => now()]);
+
+            $this->arreterSuiviGps($intervention);
 
             $intervention->update([
                 'statut'            => Intervention::STATUT_ANNULEE,
@@ -536,5 +552,40 @@ class InterventionService
         $dist  = rad2deg($dist);
 
         return $dist * 60 * 1.1515 * 1.609344;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Suivi GPS automatique (module GpsTrackingSession — indépendant de TrackingSession)
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Démarre automatiquement une session de suivi GPS si le technicien est assigné.
+     * Silencieux si une session est déjà active (ne bloque jamais le workflow principal).
+     */
+    private function demarrerSuiviGps(Intervention $intervention): void
+    {
+        if (!$intervention->technicien_id || !$intervention->technicien) {
+            return;
+        }
+
+        try {
+            $this->gpsTrackingService->startSession($intervention, $intervention->technicien);
+        } catch (\RuntimeException $e) {
+            // Une session GPS est déjà en cours : rien à faire.
+        }
+    }
+
+    /**
+     * Arrête automatiquement la session de suivi GPS active, s'il y en a une.
+     */
+    private function arreterSuiviGps(Intervention $intervention): void
+    {
+        $sessionActive = $intervention->gpsTrackingSessions()->whereNull('ended_at')->first();
+
+        if ($sessionActive) {
+            $this->gpsTrackingService->stopSession($sessionActive);
+        }
     }
 }

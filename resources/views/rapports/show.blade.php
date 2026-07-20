@@ -154,6 +154,31 @@
                     </div>
                 @endif
 
+                {{-- 3bis. Matériaux utilisés --}}
+                @if($rapport->intervention->materiaux->isNotEmpty())
+                    <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+                        <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-4">Matériaux utilisés</h4>
+                        <table class="min-w-full text-sm">
+                            <thead>
+                                <tr class="text-left text-gray-500 dark:text-gray-400">
+                                    <th class="px-2 py-1">Matériau</th>
+                                    <th class="px-2 py-1">Quantité</th>
+                                    <th class="px-2 py-1">Commentaire</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                                @foreach($rapport->intervention->materiaux as $item)
+                                    <tr>
+                                        <td class="px-2 py-1">{{ $item->materiau->nom ?? '-' }}</td>
+                                        <td class="px-2 py-1">{{ $item->quantite }} {{ $item->unite }}</td>
+                                        <td class="px-2 py-1">{{ $item->commentaire ?? '-' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+
                 {{-- 4. Observations / Description --}}
                 @if($rapport->commentaire || $rapport->intervention->description || $rapport->intervention->observations)
                     <div class="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-4">

@@ -63,6 +63,12 @@ class RemplissageFormulaireRequest extends FormRequest
                     $ruleList[] = 'file';
                     $ruleList[] = 'max:10240'; // 10MB max
                     break;
+                case 'Materiaux':
+                    $ruleList[] = 'array';
+                    $rules[$field . '.*.materiau_id'] = ['required', 'exists:materiaus,id'];
+                    $rules[$field . '.*.quantite']    = ['required', 'numeric', 'min:0.01'];
+                    $rules[$field . '.*.commentaire']  = ['nullable', 'string', 'max:500'];
+                    break;
                 default:
                     // Texte, TexteLong, Liste, Radio, GPS, QRCode
                     if ($question->type_reponse !== 'Checkbox') {

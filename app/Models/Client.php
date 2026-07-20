@@ -9,7 +9,7 @@ class Client extends Model
 {
     use HasFactory;//pour utiliser les factories 
     //pour générer des données de test
-     protected $fillable = [
+         protected $fillable = [
         'code_client',
         'type_client',
         'nom',
@@ -22,6 +22,7 @@ class Client extends Model
         'pays',
         'observations',
         'is_active',
+        'commercial_id',
     ];
 
     public function clientEntreprise()
@@ -32,5 +33,17 @@ class Client extends Model
     public function chantiers()
     {
         return $this->hasMany(Chantier::class);
+    }
+
+    // Commercial qui a enregistré ce client
+    public function commercial()
+    {
+        return $this->belongsTo(User::class, 'commercial_id');
+    }
+
+    // Contacts du client (CRM)
+    public function contacts()
+    {
+        return $this->hasMany(ClientContact::class);
     }
 }

@@ -13,15 +13,11 @@
                     @method('PUT')
 
                     <div>
-                        <label for="intervention_id" class="block font-medium">Intervention <span class="text-red-500">*</span></label>
-                        <select name="intervention_id" id="intervention_id" required
-                            class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                            @foreach ($interventions as $intervention)
-                                <option value="{{ $intervention->id }}" @selected(old('intervention_id', $rapport->intervention_id) == $intervention->id)>
-                                    {{ $intervention->code_intervention }}
-                                </option>
-                            @endforeach
-                        </select>
+                        <label class="block font-medium">Intervention <span class="text-red-500">*</span></label>
+                        <input type="hidden" name="intervention_id" value="{{ $rapport->intervention_id }}">
+                        <p class="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-900 dark:text-gray-300 px-3 py-2">
+                            {{ $rapport->intervention->code_intervention ?? $interventions->first()?->code_intervention }}
+                        </p>
                         @error('intervention_id')<p class="text-red-500 text-sm">{{ $message }}</p>@enderror
                     </div>
 

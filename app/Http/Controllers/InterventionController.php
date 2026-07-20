@@ -8,7 +8,6 @@ use App\Models\Intervention;
 use App\Models\Chantier;
 use App\Models\Client;
 use App\Models\Emplacement;
-use App\Models\Materiau;
 use App\Models\TypeIntervention;
 use App\Models\User;
 use App\Services\InterventionService;
@@ -112,15 +111,13 @@ class InterventionController extends Controller
             'materiaux.materiau',
             'rapport',
             'trackingSessions',
+            'gpsTrackingSessions.points',
             'historiques.user',
             'createur',
             'validateur',
         ]);
 
-        // Catalogue de matériaux actifs pour le formulaire d'ajout
-        $materiaux = Materiau::where('is_active', true)->orderBy('nom')->get();
-
-        return view('interventions.show', compact('intervention', 'materiaux'));
+        return view('interventions.show', compact('intervention'));
     }
 
     /**

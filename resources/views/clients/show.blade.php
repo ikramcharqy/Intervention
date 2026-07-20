@@ -30,6 +30,15 @@
                             <div><strong>Ville :</strong> {{ $client->ville }}</div>
                             <div><strong>Pays :</strong> {{ $client->pays ?? '-' }}</div>
                             <div><strong>Adresse de facturation :</strong> {{ $client->adresse_facturation ?? '-' }}</div>
+                            <div><strong>Commercial Responsable :</strong> 
+                                @if($client->commercial)
+                                    <span class="font-semibold text-emerald-600 dark:text-emerald-400">
+                                        {{ $client->commercial->prenom }} {{ $client->commercial->name }}
+                                    </span>
+                                @else
+                                    <span class="text-gray-400 italic">Non assigné</span>
+                                @endif
+                            </div>
                         </div>
                     </div>
 
@@ -143,6 +152,96 @@
                     </div>
                 @else
                     <p class="text-sm text-gray-500 dark:text-gray-400">Aucun chantier enregistré pour ce client.</p>
+                @endif
+            </div>
+
+            {{-- Contacts du client --}}
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 text-gray-900 dark:text-gray-100" x-data="{ showContactForm: false }">
+                <div class="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
+                    <h3 class="text-lg font-semibold">Contacts ({{ $client->contacts->count() }})</h3>
+                    <button @click="showContactForm = !showContactForm" class="text-sm bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-md transition duration-150">
+                        + Ajouter un contact
+                    </button>
+                </div>
+
+                {{-- Formulaire d'ajout de contact --}}
+                <div x-show="showContactForm" x-collapse class="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                    <form action="{{ route('contacts.store', $client) }}" method="POST">
+                        @csrf
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Nom *</label>
+                                <input type="text" name="nom" required class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-sm shadow-sm" placeholder="Nom">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Prénom</label>
+                                <input type="text" name="prenom" class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-sm shadow-sm" placeholder="Prénom">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Fonction</label>
+                                <input type="text" name="fonction" class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-sm shadow-sm" placeholder="Ex: Directeur technique">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                <input type="email" name="email" class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-sm shadow-sm" placeholder="email@example.com">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Téléphone</label>
+                                <input type="text" name="telephone" class="block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-800 text-sm shadow-sm" placeholder="+212...">
+                            </div>
+                            <div class="flex items-center gap-2 mt-5">
+                                <input type="checkbox" name="is_principal" value="1" id="is_principal" class="rounded">
+                                <label for="is_principal" class="text-xs font-medium text-gray-700 dark:text-gray-300">Contact principal</label>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end gap-2">
+                            <button type="button" @click="showContactForm = false" class="px-3 py-1.5 text-sm bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300">Annuler</button>
+                            <button type="submit" class="px-3 py-1.5 text-sm bg-emerald-600 text-white rounded-md hover:bg-emerald-700 font-semibold">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+
+                @if($client->contacts->isNotEmpty())
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700 text-sm">
+                            <thead>
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fonction</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Principal</th>
+                                    <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach($client->contacts as $contact)
+                                    <tr>
+                                        <td class="px-4 py-2 font-medium">{{ $contact->prenom }} {{ $contact->nom }}</td>
+                                        <td class="px-4 py-2 text-gray-500">{{ $contact->fonction ?? '-' }}</td>
+                                        <td class="px-4 py-2">{{ $contact->email ?? '-' }}</td>
+                                        <td class="px-4 py-2">{{ $contact->telephone ?? '-' }}</td>
+                                        <td class="px-4 py-2">
+                                            @if($contact->is_principal)
+                                                <span class="px-2 py-0.5 text-xs bg-emerald-100 text-emerald-700 rounded-full font-semibold">Principal</span>
+                                            @else
+                                                <span class="text-gray-400 text-xs">—</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-2 text-right">
+                                            <form action="{{ route('contacts.destroy', $contact) }}" method="POST" class="inline" onsubmit="return confirm('Supprimer ce contact ?')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-500 hover:underline text-xs">Supprimer</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Aucun contact enregistré pour ce client.</p>
                 @endif
             </div>
         </div>

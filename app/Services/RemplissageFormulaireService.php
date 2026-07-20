@@ -50,7 +50,7 @@ class RemplissageFormulaireService
                 }
 
                 // Si pas de réponse dans les données, on skip
-                if (!isset($data[$question->id]) && $question->type_reponse !== 'Checkbox') {
+                if (!isset($data[$question->id]) && !in_array($question->type_reponse, ['Checkbox', 'Materiaux'])) {
                     continue;
                 }
 
@@ -67,6 +67,27 @@ class RemplissageFormulaireService
                             ]);
                         }
                     }
+                    continue;
+                }
+
+                // Matériaux utilisés (saisis via le formulaire, stockés dans intervention_materiaus)
+                if ($question->type_reponse === 'Materiaux') {
+                    $intervention->materiaux()->delete();
+
+                    if (is_array($reponseValue)) {
+                        foreach ($reponseValue as $ligne) {
+                            if (empty($ligne['materiau_id']) || !isset($ligne['quantite'])) {
+                                continue;
+                            }
+
+                            $intervention->materiaux()->create([
+                                'materiau_id' => $ligne['materiau_id'],
+                                'quantite'    => $ligne['quantite'],
+                                'commentaire' => $ligne['commentaire'] ?? null,
+                            ]);
+                        }
+                    }
+
                     continue;
                 }
 

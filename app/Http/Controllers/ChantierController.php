@@ -41,7 +41,7 @@ class ChantierController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('chantiers.index', compact('chantiers', 'search'));
+        return $this->roleView('chantiers.index', compact('chantiers', 'search'));
     }
 
     /**
@@ -53,7 +53,7 @@ class ChantierController extends Controller
             ->orderBy('nom')
             ->get(['id', 'nom', 'code_client']);
 
-        return view('chantiers.create', compact('clients'));
+        return $this->roleView('chantiers.create', compact('clients'));
     }
 
     /**
@@ -81,7 +81,7 @@ class ChantierController extends Controller
             'interventions.technicien',
         ]);
 
-        return view('chantiers.show', compact('chantier'));
+        return $this->roleView('chantiers.show', compact('chantier'));
     }
 
     /**
@@ -93,7 +93,7 @@ class ChantierController extends Controller
             ->orderBy('nom')
             ->get(['id', 'nom', 'code_client']);
 
-        return view('chantiers.edit', compact('chantier', 'clients'));
+        return $this->roleView('chantiers.edit', compact('chantier', 'clients'));
     }
 
     /**

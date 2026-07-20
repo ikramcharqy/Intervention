@@ -78,4 +78,10 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Client::class);
     }
+
+    // Clients gérés par ce commercial
+    public function clientsGeres()
+    {
+        return $this->hasMany(Client::class, 'commercial_id');
+    }
 }

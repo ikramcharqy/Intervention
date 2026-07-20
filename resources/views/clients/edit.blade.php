@@ -33,6 +33,23 @@
                             @error('type_client') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                         </div>
 
+                        {{-- Commercial --}}
+                        @if(!auth()->user()->hasRole('Commercial'))
+                        <div>
+                            <label for="commercial_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Commercial Responsable</label>
+                            <select name="commercial_id" id="commercial_id"
+                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                <option value="">Aucun</option>
+                                @foreach($commerciaux as $com)
+                                    <option value="{{ $com->id }}" @selected(old('commercial_id', $client->commercial_id) == $com->id)>
+                                        {{ $com->prenom }} {{ $com->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('commercial_id') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                        </div>
+                        @endif
+
                         {{-- Nom / Raison sociale --}}
                         <div class="col-span-1 md:col-span-2">
                             <label for="nom" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom ou Raison Sociale <span class="text-red-500">*</span></label>

@@ -74,6 +74,45 @@
                     </table>
                 </div>
             @endif
+
+            @if ($user->hasRole('Commercial'))
+                @php
+                    $user->load('clientsGeres');
+                @endphp
+                <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 text-gray-900 dark:text-gray-100">
+                    <h3 class="text-lg font-semibold mb-4">Clients enregistrés / gérés par ce commercial ({{ $user->clientsGeres->count() }})</h3>
+                    @if($user->clientsGeres->isNotEmpty())
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead>
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Code Client</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Nom / Raison Sociale</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Téléphone</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Ville</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach ($user->clientsGeres as $clt)
+                                    <tr>
+                                        <td class="px-4 py-2 font-mono text-sm">{{ $clt->code_client }}</td>
+                                        <td class="px-4 py-2">{{ $clt->nom }}</td>
+                                        <td class="px-4 py-2">{{ $clt->telephone }}</td>
+                                        <td class="px-4 py-2">{{ $clt->ville }}</td>
+                                        <td class="px-4 py-2">
+                                            <a href="{{ route('clients.show', $clt) }}" class="text-blue-500 hover:text-blue-700">
+                                                Voir Fiche
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @else
+                        <p class="text-sm text-gray-500">Aucun client lié pour le moment.</p>
+                    @endif
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>

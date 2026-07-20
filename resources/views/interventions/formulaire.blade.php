@@ -125,6 +125,47 @@
                                     <input type="file" name="reponses[{{ $question->id }}]" {{ $question->obligatoire && !$valeur ? 'required' : '' }}
                                            class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                                 @endif
+                            @elseif($question->type_reponse === 'Materiaux')
+                                @php
+                                    $lignesMateriaux = is_array($valeur) ? $valeur : [];
+                                @endphp
+                                <div class="materiaux-repeater" data-question-id="{{ $question->id }}">
+                                    <table class="min-w-full text-sm mb-3">
+                                        <thead>
+                                            <tr class="text-left text-gray-500 dark:text-gray-400">
+                                                <th class="px-2 py-1">Matériau</th>
+                                                <th class="px-2 py-1">Quantité</th>
+                                                <th class="px-2 py-1">Commentaire</th>
+                                                @if(!$isReadOnly)<th></th>@endif
+                                            </tr>
+                                        </thead>
+                                        <tbody class="materiaux-rows">
+                                            @foreach($lignesMateriaux as $i => $ligne)
+                                                <tr class="materiaux-row">
+                                                    <td class="px-2 py-1">
+                                                        <select name="reponses[{{ $question->id }}][{{ $i }}][materiau_id]" {{ $isReadOnly ? 'disabled' : '' }} class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                                            <option value="">Sélectionnez...</option>
+                                                            @foreach($materiauxDisponibles as $materiau)
+                                                                <option value="{{ $materiau->id }}" {{ ($ligne['materiau_id'] ?? null) == $materiau->id ? 'selected' : '' }}>{{ $materiau->nom }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </td>
+                                                    <td class="px-2 py-1">
+                                                        <input type="number" step="any" min="0.01" name="reponses[{{ $question->id }}][{{ $i }}][quantite]" value="{{ $ligne['quantite'] ?? '' }}" {{ $isReadOnly ? 'disabled' : '' }} class="w-24 rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                                    </td>
+                                                    <td class="px-2 py-1">
+                                                        <input type="text" name="reponses[{{ $question->id }}][{{ $i }}][commentaire]" value="{{ $ligne['commentaire'] ?? '' }}" {{ $isReadOnly ? 'disabled' : '' }} class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                                    </td>
+                                                    @if(!$isReadOnly)<td class="px-2 py-1"><button type="button" class="text-red-500 text-xs materiaux-remove-row">Retirer</button></td>@endif
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                    @if(!$isReadOnly)
+                                        <button type="button" class="text-sm text-blue-600 hover:text-blue-800 materiaux-add-row">+ Ajouter un matériau</button>
+                                    @endif
+                                </div>
+
                             @endif
 
                         </div>
@@ -140,4 +181,45 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const optionsMateriaux = @json($materiauxDisponibles->map(fn($m) => ['id' => $m->id, 'nom' => $m->nom]));
+
+            function buildOptions(selectedId) {
+                let html = '<option value="">Sélectionnez...</option>';
+                optionsMateriaux.forEach(function (m) {
+                    html += '<option value="' + m.id + '"' + (String(m.id) === String(selectedId) ? ' selected' : '') + '>' + m.nom + '</option>';
+                });
+                return html;
+            }
+
+            document.querySelectorAll('.materiaux-repeater').forEach(function (repeater) {
+                const questionId = repeater.dataset.questionId;
+                const tbody = repeater.querySelector('.materiaux-rows');
+                const addBtn = repeater.querySelector('.materiaux-add-row');
+                let index = tbody.querySelectorAll('.materiaux-row').length;
+
+                if (addBtn) {
+                    addBtn.addEventListener('click', function () {
+                        const tr = document.createElement('tr');
+                        tr.className = 'materiaux-row';
+                        tr.innerHTML =
+                            '<td class="px-2 py-1"><select name="reponses[' + questionId + '][' + index + '][materiau_id]" class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">' + buildOptions(null) + '</select></td>' +
+                            '<td class="px-2 py-1"><input type="number" step="any" min="0.01" name="reponses[' + questionId + '][' + index + '][quantite]" class="w-24 rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"></td>' +
+                            '<td class="px-2 py-1"><input type="text" name="reponses[' + questionId + '][' + index + '][commentaire]" class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"></td>' +
+                            '<td class="px-2 py-1"><button type="button" class="text-red-500 text-xs materiaux-remove-row">Retirer</button></td>';
+                        tbody.appendChild(tr);
+                        index++;
+                    });
+                }
+
+                tbody.addEventListener('click', function (e) {
+                    if (e.target.classList.contains('materiaux-remove-row')) {
+                        e.target.closest('tr').remove();
+                    }
+                });
+            });
+        });
+    </script>
 </x-app-layout>

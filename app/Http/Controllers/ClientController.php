@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreClientRequest;
 use App\Http\Requests\UpdateClientRequest;
 use App\Models\Client;
+use App\Models\User;
 use App\Services\ClientService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -28,19 +29,26 @@ class ClientController extends Controller
     public function index(Request $request): View
     {
         $search = $request->input('search');
+        $commercialFilter = $request->input('commercial_id');
 
-        $clients = Client::query()
+        $clients = Client::with('commercial')
             ->when($search, function ($query, $search) {
                 $query->where('nom', 'like', "%{$search}%")
                       ->orWhere('code_client', 'like', "%{$search}%")
                       ->orWhere('email', 'like', "%{$search}%")
                       ->orWhere('telephone', 'like', "%{$search}%");
             })
+            ->when($commercialFilter, function ($query, $commercialFilter) {
+                $query->where('commercial_id', $commercialFilter);
+            })
             ->orderBy('created_at', 'desc')
             ->paginate(10)
             ->withQueryString();
 
-        return view('clients.index', compact('clients', 'search'));
+        // Liste des commerciaux pour le filtre
+        $commerciaux = User::role('Commercial')->orderBy('name')->get();
+
+        return $this->roleView('clients.index', compact('clients', 'search', 'commerciaux', 'commercialFilter'));
     }
 
     /**
@@ -48,7 +56,8 @@ class ClientController extends Controller
      */
     public function create(): View
     {
-        return view('clients.create');
+        $commerciaux = User::role('Commercial')->where('is_active', true)->orderBy('name')->get();
+        return $this->roleView('clients.create', compact('commerciaux'));
     }
 
     /**
@@ -56,7 +65,14 @@ class ClientController extends Controller
      */
     public function store(StoreClientRequest $request): RedirectResponse
     {
-        $client = $this->clientService->createClient($request->validated());
+        $data = $request->validated();
+
+        // Auto-assigner le commercial si l'utilisateur connecté est un Commercial
+        if (auth()->user()->hasRole('Commercial') && empty($data['commercial_id'])) {
+            $data['commercial_id'] = auth()->id();
+        }
+
+        $client = $this->clientService->createClient($data);
 
         return redirect()
             ->route('clients.show', $client)
@@ -68,11 +84,16 @@ class ClientController extends Controller
      */
     public function show(Client $client): View
     {
-        $client->load(['clientEntreprise', 'chantiers' => function ($query) {
-            $query->orderBy('created_at', 'desc');
-        }]);
+        $client->load([
+            'clientEntreprise',
+            'commercial',
+            'contacts',
+            'chantiers' => function ($query) {
+                $query->orderBy('created_at', 'desc');
+            },
+        ]);
 
-        return view('clients.show', compact('client'));
+        return $this->roleView('clients.show', compact('client'));
     }
 
     /**
@@ -81,8 +102,9 @@ class ClientController extends Controller
     public function edit(Client $client): View
     {
         $client->load('clientEntreprise');
+        $commerciaux = User::role('Commercial')->where('is_active', true)->orderBy('name')->get();
 
-        return view('clients.edit', compact('client'));
+        return $this->roleView('clients.edit', compact('client', 'commerciaux'));
     }
 
     /**

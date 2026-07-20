@@ -30,6 +30,7 @@ class Formulaire extends Model
         'Document'  => 'Document',
         'GPS'       => 'Coordonnées GPS',
         'QRCode'    => 'QR Code',
+        'Materiaux' => 'Matériaux utilisés',
     ];
 
     // Types nécessitant des choix prédéfinis

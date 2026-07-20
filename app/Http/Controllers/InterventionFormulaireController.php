@@ -69,7 +69,23 @@ class InterventionFormulaireController extends Controller
             }
         }
 
-        return view('interventions.formulaire', compact('intervention', 'formulaire', 'isReadOnly', 'reponsesExistantes'));
+        // Pré-charger les matériaux déjà saisis pour la question de type Materiaux
+        $questionMateriaux = $formulaire->questions->firstWhere('type_reponse', 'Materiaux');
+        if ($questionMateriaux) {
+            $reponsesExistantes[$questionMateriaux->id] = $intervention->materiaux()
+                ->with('materiau')
+                ->get()
+                ->map(fn ($m) => [
+                    'materiau_id' => $m->materiau_id,
+                    'nom'         => $m->materiau->nom ?? '',
+                    'quantite'    => $m->quantite,
+                    'commentaire' => $m->commentaire,
+                ])->toArray();
+        }
+
+        $materiauxDisponibles = \App\Models\Materiau::where('is_active', true)->orderBy('nom')->get();
+
+        return view('interventions.formulaire', compact('intervention', 'formulaire', 'isReadOnly', 'reponsesExistantes', 'materiauxDisponibles'));
     }
 
     /**
