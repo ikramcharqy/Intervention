@@ -54,6 +54,7 @@
                         <label for="email_responsable" class="block font-medium">E-mail responsable</label>
                         <input type="email" name="email_responsable" id="email_responsable" required class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                     </div>
+
                     <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">Enregistrer</button>
                 </form>
             </div>

@@ -271,16 +271,24 @@
                 </div>
                 <div class="p-6 border-t border-gray-100 dark:border-gray-800 flex gap-3 bg-gray-50/50 dark:bg-gray-900/10">
                     @if ($intervention->rapport)
-                        <a href="{{ route('rapports.show', $intervention->rapport) }}" class="flex-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 font-semibold py-2 px-4 rounded-xl text-center hover:bg-gray-50 dark:hover:bg-gray-750 transition text-sm">
+                        <a href="{{ route('rapports.show', $intervention->rapport) }}" class="flex-1 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-xl text-center hover:bg-indigo-700 transition text-sm">
                             Consulter le rapport
                         </a>
-                        <a href="{{ route('rapports.edit', $intervention->rapport) }}" class="flex-1 bg-indigo-600 text-white font-semibold py-2 px-4 rounded-xl text-center hover:bg-indigo-700 transition text-sm">
-                            Modifier le rapport
-                        </a>
+                        @if(auth()->user()->hasRole('Technicien'))
+                            <a href="{{ route('rapports.edit', $intervention->rapport) }}" class="flex-1 bg-gray-600 text-white font-semibold py-2 px-4 rounded-xl text-center hover:bg-gray-700 transition text-sm">
+                                Modifier le rapport
+                            </a>
+                        @endif
                     @else
-                        <a href="{{ route('rapports.create', ['intervention_id' => $intervention->id]) }}" class="w-full bg-indigo-600 text-white font-semibold py-2.5 px-4 rounded-xl text-center hover:bg-indigo-700 transition text-sm shadow-sm">
-                            Créer le rapport
-                        </a>
+                        @if(auth()->user()->hasRole('Technicien'))
+                            <a href="{{ route('rapports.create', ['intervention_id' => $intervention->id]) }}" class="w-full bg-indigo-600 text-white font-semibold py-2.5 px-4 rounded-xl text-center hover:bg-indigo-700 transition text-sm shadow-sm">
+                                Rédiger le rapport (Technicien)
+                            </a>
+                        @else
+                            <div class="w-full text-center py-2 bg-gray-100 dark:bg-gray-800 text-gray-500 rounded-xl text-xs font-semibold">
+                                En attente de rédaction par le technicien
+                            </div>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -297,13 +305,13 @@
                 </h3>
                 @if(isset($coutTotal) && $coutTotal > 0)
                     <span class="text-sm font-bold text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/20 px-3 py-1 rounded-full">
-                        Coût total : {{ number_format($coutTotal, 2, ',', ' ') }} €
+                        Coût total : {{ number_format($coutTotal, 2, ',', ' ') }} MAD
                     </span>
                 @endif
             </div>
             <div class="p-6 space-y-6">
-                <!-- Formulaire d'ajout rapide de matériaux -->
-                @if(!in_array($intervention->statut, ['Terminee', 'Annulee']))
+                <!-- Formulaire d'ajout rapide de matériaux (Reservé aux Techniciens) -->
+                @if(!in_array($intervention->statut, ['Terminee', 'Annulee']) && auth()->user()->hasRole('Technicien'))
                     <form method="POST" action="{{ route('interventions.materiaux.store', $intervention) }}" class="p-4 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-150 dark:border-gray-800">
                         @csrf
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -313,7 +321,7 @@
                                     <option value="">-- Sélectionner --</option>
                                     @foreach($materiaux as $mat)
                                         <option value="{{ $mat->id }}" {{ old('materiau_id') == $mat->id ? 'selected' : '' }}>
-                                            {{ $mat->nom }} ({{ $mat->unite }}){{ $mat->prix_unitaire > 0 ? ' — ' . number_format($mat->prix_unitaire, 2, ',', ' ') . '€/' . $mat->unite : '' }}
+                                            {{ $mat->nom }} ({{ $mat->unite }}){{ $mat->prix_unitaire > 0 ? ' — ' . number_format($mat->prix_unitaire, 2, ',', ' ') . ' MAD/' . $mat->unite : '' }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -331,7 +339,7 @@
                         </div>
                         <div class="mt-4">
                             <button type="submit" class="bg-indigo-600 text-white font-medium py-2 px-4 rounded-xl hover:bg-indigo-700 transition text-sm shadow-sm">
-                                + Ajouter le matériau
+                                + Saisir Matériau Utilisé
                             </button>
                         </div>
                     </form>
@@ -519,8 +527,10 @@
         </div>
     </div>
 
-    <!-- Scripts pour la carte Google Maps -->
+    <!-- Scripts & CSS pour la carte Leaflet OpenStreetMap -->
     @if ($tousPointsGps->isNotEmpty())
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         @php
             $gpsPointsTrajet = $tousPointsGps->map(function ($point) {
                 return [
@@ -531,64 +541,47 @@
             });
         @endphp
         <script>
-            const gpsPointsTrajet = @json($gpsPointsTrajet);
+            document.addEventListener("DOMContentLoaded", function() {
+                const gpsPointsTrajet = @json($gpsPointsTrajet);
+                if (!gpsPointsTrajet || gpsPointsTrajet.length === 0) return;
 
-            function initCarteTrajetGps() {
-                const chemin = gpsPointsTrajet.map(function (p) { return { lat: p.lat, lng: p.lng }; });
+                const chemin = gpsPointsTrajet.map(function (p) { return [p.lat, p.lng]; });
+                const map = L.map('carte-trajet-gps').setView(chemin[0], 15);
 
-                const carte = new google.maps.Map(document.getElementById('carte-trajet-gps'), {
-                    zoom: 15,
-                    center: chemin[0],
-                });
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '© OpenStreetMap contributors'
+                }).addTo(map);
 
-                const limites = new google.maps.LatLngBounds();
-                chemin.forEach(function (p) { limites.extend(p); });
-                carte.fitBounds(limites);
+                const bounds = L.latLngBounds();
+                chemin.forEach(function (p) { bounds.extend(p); });
 
-                // Trajet complet
-                new google.maps.Polyline({
-                    path: chemin,
-                    geodesic: true,
-                    strokeColor: '#4F46E5',
-                    strokeOpacity: 0.9,
-                    strokeWeight: 4,
-                    map: carte,
-                });
+                L.polyline(chemin, {
+                    color: '#4F46E5',
+                    weight: 5,
+                    opacity: 0.9,
+                    lineCap: 'round'
+                }).addTo(map);
 
-                // Tous les points enregistrés
-                chemin.forEach(function (p, index) {
-                    new google.maps.Marker({
-                        position: p,
-                        map: carte,
-                        icon: {
-                            path: google.maps.SymbolPath.CIRCLE,
-                            scale: 3,
-                            fillColor: '#6366F1',
-                            fillOpacity: 0.8,
-                            strokeWeight: 0,
-                        },
-                        title: gpsPointsTrajet[index].capturedAt,
-                    });
-                });
+                L.circleMarker(chemin[0], {
+                    radius: 9,
+                    fillColor: '#10B981',
+                    color: '#FFFFFF',
+                    weight: 2,
+                    fillOpacity: 1
+                }).addTo(map).bindPopup("<b>Départ</b><br>" + gpsPointsTrajet[0].capturedAt);
 
-                // Point de départ
-                new google.maps.Marker({
-                    position: chemin[0],
-                    map: carte,
-                    label: 'D',
-                    title: 'Départ — ' + gpsPointsTrajet[0].capturedAt,
-                });
+                L.circleMarker(chemin[chemin.length - 1], {
+                    radius: 10,
+                    fillColor: '#EF4444',
+                    color: '#FFFFFF',
+                    weight: 3,
+                    fillOpacity: 1
+                }).addTo(map).bindPopup("<b>Dernière Position</b><br>" + gpsPointsTrajet[gpsPointsTrajet.length - 1].capturedAt);
 
-                // Point d'arrivée
-                new google.maps.Marker({
-                    position: chemin[chemin.length - 1],
-                    map: carte,
-                    label: 'A',
-                    title: 'Arrivée — ' + gpsPointsTrajet[gpsPointsTrajet.length - 1].capturedAt,
-                });
-            }
+                map.fitBounds(bounds, { padding: [30, 30] });
+            });
         </script>
-        <script src="https://maps.googleapis.com/maps/api/js?key={{ config('services.google_maps.key') }}&callback=initCarteTrajetGps" async defer></script>
     @endif
 
     <!-- Suivi GPS automatique périodique en tâche de fond -->

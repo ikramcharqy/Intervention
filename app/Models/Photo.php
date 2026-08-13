@@ -11,9 +11,30 @@ class Photo extends Model
 
     protected $fillable = [
         'rapport_id',
+
+        'nom_original',
+
         'chemin',
+
         'description',
+
+        // Nouveau
+        'latitude',
+        'longitude',
+        'date_prise',
     ];
+
+    protected $casts = [
+        'latitude' => 'decimal:7',
+        'longitude' => 'decimal:7',
+        'date_prise' => 'datetime',
+    ];
+
+    /*
+    |--------------------------------------------------------------------------
+    | Relations
+    |--------------------------------------------------------------------------
+    */
 
     public function rapport()
     {

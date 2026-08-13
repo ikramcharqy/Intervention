@@ -18,6 +18,13 @@ class Prospect extends Model
         'statut',
         'observations',
         'commercial_id',
+        'notes',
+        'historique',
+    ];
+
+    protected $casts = [
+        'notes' => 'array',
+        'historique' => 'array',
     ];
 
     public function commercial()

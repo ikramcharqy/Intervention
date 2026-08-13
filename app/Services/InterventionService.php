@@ -43,6 +43,10 @@ class InterventionService
                 commentaire:  'Intervention créée'
             );
 
+            if ($intervention->technicien) {
+                $intervention->technicien->notify(new \App\Notifications\InterventionPlanifieeNotification($intervention));
+            }
+
             return $intervention;
         });
     }
@@ -101,6 +105,10 @@ class InterventionService
                 statut_apres: Intervention::STATUT_ACCEPTEE,
                 commentaire:  'Intervention acceptée par le technicien'
             );
+
+            if ($intervention->technicien) {
+                $intervention->technicien->notify(new \App\Notifications\InterventionAccepteeNotification($intervention));
+            }
         });
     }
 
@@ -175,6 +183,10 @@ class InterventionService
             );
 
             $this->demarrerSuiviGps($intervention);
+
+            if ($intervention->technicien) {
+                $intervention->technicien->notify(new \App\Notifications\InterventionDemarreeNotification($intervention));
+            }
         });
     }
 
@@ -210,6 +222,10 @@ class InterventionService
                 statut_apres: Intervention::STATUT_SUSPENDUE,
                 commentaire:  $motif ?: 'Intervention suspendue'
             );
+
+            if ($intervention->technicien) {
+                $intervention->technicien->notify(new \App\Notifications\InterventionSuspenduNotification($intervention, $motif));
+            }
         });
     }
 
@@ -299,6 +315,10 @@ class InterventionService
                 statut_apres: Intervention::STATUT_FORM_REMPLI,
                 commentaire:  'Formulaire rempli et soumis à validation'
             );
+
+            if ($intervention->technicien) {
+                $intervention->technicien->notify(new \App\Notifications\InterventionFormulaireSubmisNotification($intervention));
+            }
         });
     }
 
@@ -338,6 +358,20 @@ class InterventionService
                 statut_apres: Intervention::STATUT_TERMINEE,
                 commentaire:  'Validée et clôturée par l\'administrateur'
             );
+
+            if ($intervention->technicien) {
+                $intervention->technicien->notify(new \App\Notifications\InterventionValideeNotification($intervention));
+            }
+
+            \App\Models\AuditLog::create([
+                'user_id'    => Auth::id(),
+                'user_name'  => Auth::user()?->name ?? 'Admin',
+                'action'     => 'Validation Intervention',
+                'module'     => 'Interventions',
+                'severity'   => 'success',
+                'ip_address' => request()->ip(),
+                'details'    => "Intervention {$intervention->code_intervention} validée et clôturée avec succès.",
+            ]);
         });
     }
 
@@ -369,6 +403,10 @@ class InterventionService
             );
 
             $this->demarrerSuiviGps($intervention);
+
+            if ($intervention->technicien) {
+                $intervention->technicien->notify(new \App\Notifications\InterventionRejeteeNotification($intervention, $motif));
+            }
         });
     }
 

@@ -7,6 +7,7 @@ use App\Models\InterventionMateriau;
 use App\Models\Materiau;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Gestion des matériaux associés à une intervention.
@@ -32,7 +33,7 @@ class InterventionMateriauController extends Controller
 
         $materiau = Materiau::findOrFail($validated['materiau_id']);
 
-        InterventionMateriau::create([
+        \InterventionMateriau::create([
             'intervention_id' => $intervention->id,
             'materiau_id'     => $materiau->id,
             'quantite'        => $validated['quantite'],

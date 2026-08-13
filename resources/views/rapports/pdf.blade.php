@@ -4,273 +4,315 @@
     <meta charset="utf-8">
     <title>Rapport d'Intervention - {{ $rapport->intervention->code_intervention ?? 'N/A' }}</title>
     <style>
+        @page {
+            margin: 25px 30px;
+        }
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            color: #333;
-            font-size: 11px;
+            color: #1e293b;
+            font-size: 10px;
             line-height: 1.5;
+            background-color: #ffffff;
         }
-        .header {
-            border-bottom: 2px solid #4f46e5;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
+        
+        /* Header Corporate */
+        .brand-header {
+            width: 100%;
+            border-bottom: 3px solid #4338ca;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
         }
-        .header table {
+        .brand-header table {
             width: 100%;
         }
-        .header .title {
-            font-size: 18px;
-            font-weight: bold;
+        .brand-logo {
+            font-size: 22px;
+            font-weight: 900;
+            color: #1e1b4b;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+        .brand-logo span {
             color: #4f46e5;
         }
-        .header .meta {
-            text-align: right;
-            color: #666;
+        .doc-title {
+            font-size: 16px;
+            font-weight: 800;
+            color: #4338ca;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+        .doc-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            background-color: #e0e7ff;
+            color: #3730a3;
+            font-size: 9px;
+            font-weight: bold;
+            border-radius: 4px;
+            margin-top: 4px;
+        }
+        .meta-right {
+            text-align: right;
+            font-size: 9.5px;
+            color: #64748b;
+        }
+        .meta-right strong {
+            color: #0f172a;
+        }
+
+        /* Sections */
         .section {
-            margin-bottom: 15px;
+            margin-bottom: 16px;
             page-break-inside: avoid;
         }
-        .section-title {
-            font-size: 12px;
-            font-weight: bold;
-            color: #4f46e5;
-            background-color: #f3f4f6;
-            padding: 5px 8px;
-            margin-bottom: 8px;
-            border-left: 3px solid #4f46e5;
+        .section-header {
+            font-size: 11px;
+            font-weight: 800;
+            color: #1e1b4b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background-color: #f1f5f9;
+            padding: 6px 10px;
+            border-left: 4px solid #4338ca;
+            margin-bottom: 10px;
+            border-radius: 0 4px 4px 0;
         }
-        .grid {
+
+        /* Metric Cards Grid */
+        .grid-cards {
             width: 100%;
             margin-bottom: 10px;
         }
-        .grid td {
-            padding: 4px 0;
+        .grid-cards td {
+            width: 25%;
+            padding: 4px;
             vertical-align: top;
         }
-        .grid td.label {
+        .card-box {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 8px;
+        }
+        .card-label {
+            font-size: 8.5px;
             font-weight: bold;
-            color: #4b5563;
-            width: 25%;
+            color: #64748b;
+            text-transform: uppercase;
+            margin-bottom: 2px;
         }
-        .grid td.valeur {
-            width: 25%;
+        .card-value {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #0f172a;
         }
-        .table {
+
+        /* Data Tables */
+        .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 5px;
+            margin-top: 6px;
         }
-        .table th, .table td {
-            border: 1px solid #e5e7eb;
+        .data-table th {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
             padding: 6px 8px;
             text-align: left;
+        }
+        .data-table td {
+            border-bottom: 1px solid #e2e8f0;
+            padding: 7px 8px;
             vertical-align: top;
+            font-size: 9.5px;
         }
-        .table th {
-            background-color: #f9fafb;
-            color: #374151;
-            font-weight: bold;
+        .data-table tr:nth-child(even) td {
+            background-color: #f8fafc;
         }
+
+        /* Photo Grid */
         .photo-grid {
-            margin-top: 10px;
+            width: 100%;
+            margin-top: 8px;
         }
-        .photo-item {
+        .photo-card {
+            width: 48%;
             display: inline-block;
-            width: 45%;
-            margin-right: 4%;
-            margin-bottom: 10px;
             vertical-align: top;
+            margin-bottom: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 4px;
+            box-sizing: border-box;
         }
-        .photo-item img {
+        .photo-card img {
             width: 100%;
-            max-height: 180px;
-            border: 1px solid #e5e7eb;
+            max-height: 160px;
+            border-radius: 4px;
+            object-fit: cover;
         }
-        .photo-item .caption {
-            font-size: 9px;
-            color: #666;
-            margin-top: 3px;
-            text-align: center;
-        }
-        .signatures {
-            margin-top: 30px;
+
+        /* Signatures */
+        .signatures-table {
             width: 100%;
+            margin-top: 25px;
             page-break-inside: avoid;
         }
-        .signature-box {
+        .sig-cell {
             width: 48%;
-            border: 1px dashed #d1d5db;
-            padding: 10px;
-            height: 120px;
+            border: 1.5px dashed #cbd5e1;
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 12px;
             vertical-align: top;
+            height: 110px;
         }
-        .signature-title {
-            font-weight: bold;
-            color: #374151;
-            border-bottom: 1px solid #e5e7eb;
+        .sig-title {
+            font-size: 9.5px;
+            font-weight: 800;
+            color: #334155;
+            text-transform: uppercase;
+            border-bottom: 1px solid #e2e8f0;
             padding-bottom: 4px;
             margin-bottom: 8px;
         }
-        .signature-img {
+        .sig-img {
             max-width: 100%;
-            max-height: 80px;
+            max-height: 70px;
         }
-        .signature-text {
-            font-family: monospace;
-            color: #4b5563;
-            margin-top: 10px;
+
+        /* Footer */
+        .pdf-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            font-size: 8px;
+            color: #94a3b8;
+            border-top: 1px solid #e2e8f0;
+            padding-top: 4px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
+    <!-- Header corporate -->
+    <div class="brand-header">
         <table>
             <tr>
                 <td>
-                    <span class="title">RAPPORT D'INTERVENTION</span><br>
-                    <span style="font-size: 13px; color: #4b5563;">Code : {{ $rapport->intervention->code_intervention ?? 'N/A' }}</span>
+                    <div class="brand-logo">INTERVENTION<span>PRO</span></div>
+                    <div class="doc-title">Rapport d'Intervention Technique</div>
+                    <div class="doc-badge">Réf: {{ $rapport->intervention->code_intervention ?? 'INT-0000' }}</div>
                 </td>
-                <td class="meta">
-                    <strong>Statut :</strong> {{ $rapport->intervention->statut ?? 'N/A' }}<br>
-                    <strong>Date d'édition :</strong> {{ now()->format('d/m/Y H:i') }}
+                <td class="meta-right">
+                    <strong>Statut Officiel :</strong> <span style="color:#059669; font-weight:bold;">{{ strtoupper($rapport->intervention->statut ?? 'TERMINÉ') }}</span><br>
+                    <strong>Date d'Édition :</strong> {{ now()->format('d/m/Y H:i') }}<br>
+                    <strong>Client :</strong> {{ $rapport->intervention->chantier->client->nom ?? 'N/A' }}
                 </td>
             </tr>
         </table>
     </div>
 
-    {{-- 1. Informations Générales --}}
+    <!-- 1. Synthèse de l'Intervention -->
     <div class="section">
-        <div class="section-title">Informations Générales</div>
-        <table class="grid">
+        <div class="section-header">1. Informations Générales & Intervention</div>
+        <table class="grid-cards">
             <tr>
-                <td class="label">Client :</td>
-                <td class="valeur">{{ $rapport->intervention->chantier->client->nom ?? '-' }}</td>
-                <td class="label">Technicien :</td>
-                <td class="valeur">{{ $rapport->intervention->technicien->prenom ?? '' }} {{ $rapport->intervention->technicien->name ?? '-' }}</td>
+                <td>
+                    <div class="card-box">
+                        <div class="card-label">Client</div>
+                        <div class="card-value">{{ $rapport->intervention->chantier->client->nom ?? '-' }}</div>
+                    </div>
+                </td>
+                <td>
+                    <div class="card-box">
+                        <div class="card-label">Chantier</div>
+                        <div class="card-value">{{ $rapport->intervention->chantier->nom ?? '-' }}</div>
+                    </div>
+                </td>
+                <td>
+                    <div class="card-box">
+                        <div class="card-label">Technicien Référent</div>
+                        <div class="card-value">{{ $rapport->intervention->technicien->name ?? '-' }}</div>
+                    </div>
+                </td>
+                <td>
+                    <div class="card-box">
+                        <div class="card-label">Type d'Intervention</div>
+                        <div class="card-value">{{ $rapport->intervention->typeIntervention->nom ?? '-' }}</div>
+                    </div>
+                </td>
             </tr>
             <tr>
-                <td class="label">Chantier :</td>
-                <td class="valeur">{{ $rapport->intervention->chantier->nom ?? '-' }}</td>
-                <td class="label">Type d'intervention :</td>
-                <td class="valeur">{{ $rapport->intervention->typeIntervention->nom ?? '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label">Emplacement :</td>
-                <td class="valeur">{{ $rapport->intervention->emplacement->nom ?? '-' }}</td>
-                <td class="label">Priorité :</td>
-                <td class="valeur">{{ $rapport->intervention->priorite ?? '-' }}</td>
+                <td>
+                    <div class="card-box">
+                        <div class="card-label">Début Réel</div>
+                        <div class="card-value">{{ $rapport->intervention->date_reelle_debut ? $rapport->intervention->date_reelle_debut->format('d/m/Y H:i') : '-' }}</div>
+                    </div>
+                </td>
+                <td>
+                    <div class="card-box">
+                        <div class="card-label">Fin Réelle</div>
+                        <div class="card-value">{{ $rapport->intervention->date_reelle_fin ? $rapport->intervention->date_reelle_fin->format('d/m/Y H:i') : '-' }}</div>
+                    </div>
+                </td>
+                <td>
+                    <div class="card-box">
+                        <div class="card-label">Durée Réelle</div>
+                        <div class="card-value">{{ $rapport->intervention->duree_reelle ? $rapport->intervention->duree_reelle . ' Min' : '-' }}</div>
+                    </div>
+                </td>
+                <td>
+                    <div class="card-box">
+                        <div class="card-label">Emplacement</div>
+                        <div class="card-value">{{ $rapport->intervention->emplacement->nom ?? 'Standard' }}</div>
+                    </div>
+                </td>
             </tr>
         </table>
     </div>
 
-    {{-- 2. Dates et Suivi --}}
-    <div class="section">
-        <div class="section-title">Dates et Suivi de Présence</div>
-        <table class="grid">
-            <tr>
-                <td class="label">Début prévu :</td>
-                <td class="valeur">{{ $rapport->intervention->date_prevue_debut ? $rapport->intervention->date_prevue_debut->format('d/m/Y H:i') : '-' }}</td>
-                <td class="label">Début réel :</td>
-                <td class="valeur">{{ $rapport->intervention->date_reelle_debut ? $rapport->intervention->date_reelle_debut->format('d/m/Y H:i') : '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label">Fin prévue :</td>
-                <td class="valeur">{{ $rapport->intervention->date_prevue_fin ? $rapport->intervention->date_prevue_fin->format('d/m/Y H:i') : '-' }}</td>
-                <td class="label">Fin réelle :</td>
-                <td class="valeur">{{ $rapport->intervention->date_reelle_fin ? $rapport->intervention->date_reelle_fin->format('d/m/Y H:i') : '-' }}</td>
-            </tr>
-            <tr>
-                <td class="label">Mode de suivi :</td>
-                <td class="valeur">{{ $rapport->intervention->mode_suivi ?? 'Manuel' }}</td>
-                <td class="label">Durée réelle :</td>
-                <td class="valeur">{{ $rapport->intervention->duree_reelle ? $rapport->intervention->duree_reelle . ' min' : '-' }}</td>
-            </tr>
-            @php
-                $tracking = $rapport->intervention->trackingSessions->first();
-            @endphp
-            @if($tracking)
-                <tr>
-                    <td class="label">Coordonnées GPS initiales :</td>
-                    <td class="valeur" colspan="3">
-                        @if($tracking->latitude && $tracking->longitude)
-                            Lat: {{ $tracking->latitude }}, Lon: {{ $tracking->longitude }}
-                        @else
-                            Non capturées
-                        @endif
-                    </td>
-                </tr>
-                @if($tracking->qr_code_scan)
-                    <tr>
-                        <td class="label">Scan QR Code :</td>
-                        <td class="valeur" colspan="3">{{ $tracking->qr_code_scan }} (Validé)</td>
-                    </tr>
-                @endif
-            @elseif($rapport->intervention->emplacement)
-                <tr>
-                    <td class="label">Coordonnées Emplacement :</td>
-                    <td class="valeur" colspan="3">
-                        @if($rapport->intervention->emplacement->latitude && $rapport->intervention->emplacement->longitude)
-                            Lat: {{ $rapport->intervention->emplacement->latitude }}, Lon: {{ $rapport->intervention->emplacement->longitude }}
-                        @else
-                            Non configurées
-                        @endif
-                    </td>
-                </tr>
-                @if($rapport->intervention->emplacement->qr_code)
-                    <tr>
-                        <td class="label">QR Code Emplacement :</td>
-                        <td class="valeur" colspan="3">{{ $rapport->intervention->emplacement->qr_code }}</td>
-                    </tr>
-                @endif
-            @endif
-        </table>
-    </div>
-
-    {{-- 3. Réponses au Formulaire Dynamique --}}
-    @if($rapport->reponses->isNotEmpty())
+    <!-- 2. Formulaire Technique & Constats -->
+    @if($rapport->reponses && $rapport->reponses->isNotEmpty())
         <div class="section">
-            <div class="section-title">Formulaire d'Intervention</div>
-            <table class="table">
+            <div class="section-header">2. Questions & Formulaire de Validation Terrain</div>
+            <table class="data-table">
                 <thead>
                     <tr>
-                        <th style="width: 40%;">Question</th>
-                        <th style="width: 60%;">Réponse</th>
+                        <th style="width: 45%;">Point de Contrôle / Question</th>
+                        <th style="width: 55%;">Constat / Réponse Technicien</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($rapport->reponses as $reponse)
-                        @php
-                            $question = $reponse->question;
-                            if (!$question) continue;
-                        @endphp
+                        @php $q = $reponse->question; if(!$q) continue; @endphp
                         <tr>
-                            <td><strong>{{ $question->question }}</strong></td>
+                            <td><strong>{{ $q->question }}</strong></td>
                             <td>
-                                @if(in_array($question->type_reponse, ['Photo', 'Signature', 'Document']))
+                                @if(in_array($q->type_reponse, ['Photo', 'Signature']))
                                     @if($reponse->reponse_fichier)
                                         @php
                                             $filePath = storage_path('app/public/' . $reponse->reponse_fichier);
                                             $exists = file_exists($filePath);
                                         @endphp
-                                        @if($exists && in_array(pathinfo($filePath, PATHINFO_EXTENSION), ['jpg', 'jpeg', 'png', 'gif']))
-                                            <img src="data:image/{{ pathinfo($filePath, PATHINFO_EXTENSION) }};base64,{{ base64_encode(file_get_contents($filePath)) }}" style="max-width: 250px; max-height: 150px; display: block; margin-top: 5px;">
+                                        @if($exists)
+                                            <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents($filePath)) }}" style="max-height: 120px; border-radius: 4px; border: 1px solid #cbd5e1;">
                                         @else
-                                            <span style="color: #666;">Fichier joint : {{ basename($reponse->reponse_fichier) }}</span>
+                                            [Image enregistrée : {{ basename($reponse->reponse_fichier) }}]
                                         @endif
                                     @else
-                                        -
+                                        <span style="color:#94a3b8;">Non fournie</span>
                                     @endif
-                                @elseif($question->type_reponse === 'OuiNon')
-                                    {{ $reponse->reponse_texte === '1' ? 'Oui' : 'Non' }}
-                                @elseif($question->type_reponse === 'Checkbox')
-                                    @php
-                                        $choices = \App\Models\ChoixQuestion::whereIn('id', is_array($reponse->reponse_texte) ? $reponse->reponse_texte : explode(',', $reponse->reponse_texte))->pluck('valeur')->toArray();
-                                    @endphp
-                                    {{ implode(', ', $choices) }}
-                                @elseif($question->type_reponse === 'Radio' || $question->type_reponse === 'Liste')
-                                    {{ $reponse->choixQuestion->valeur ?? $reponse->reponse_texte }}
+                                @elseif($q->type_reponse === 'OuiNon')
+                                    <span style="font-weight: bold; color: {{ $reponse->reponse_texte === '1' ? '#059669' : '#dc2626' }};">
+                                        {{ $reponse->reponse_texte === '1' ? '✔ OUI / VALIDÉ' : '✖ NON / CONFORME PAS' }}
+                                    </span>
                                 @else
                                     {{ $reponse->reponse_texte ?? $reponse->reponse_nombre ?? '-' }}
                                 @endif
@@ -282,125 +324,96 @@
         </div>
     @endif
 
-    {{-- 4. Matériaux utilisés --}}
-    @if($rapport->intervention->materiaux->isNotEmpty())
-        @php
-            $coutTotal = $rapport->intervention->materiaux->sum(function($m) {
-                return $m->quantite * ($m->materiau->prix_unitaire ?? 0);
-            });
-        @endphp
+    <!-- 3. Matériaux & Fournitures -->
+    @if($rapport->intervention->materiaux && $rapport->intervention->materiaux->isNotEmpty())
         <div class="section">
-            <div class="section-title">Matériaux utilisés</div>
-            <table class="table">
+            <div class="section-header">3. Matériaux & Pièces Consommées</div>
+            <table class="data-table">
                 <thead>
                     <tr>
-                        <th style="width: 10%;">Réf.</th>
-                        <th style="width: 30%;">Matériau</th>
-                        <th style="width: 15%;">Quantité</th>
-                        <th style="width: 15%;">Prix unit. HT</th>
-                        <th style="width: 15%;">Coût total HT</th>
-                        <th style="width: 15%;">Commentaire</th>
+                        <th>Référence</th>
+                        <th>Désignation du Matériau</th>
+                        <th style="text-align: center;">Quantité</th>
+                        <th style="text-align: right;">Prix Unitaire HT</th>
+                        <th style="text-align: right;">Montant Total HT</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @php $totalGeneral = 0; @endphp
                     @foreach($rapport->intervention->materiaux as $item)
+                        @php 
+                            $pu = $item->materiau->prix_unitaire ?? 0;
+                            $st = $item->quantite * $pu;
+                            $totalGeneral += $st;
+                        @endphp
                         <tr>
-                            <td style="font-family: monospace; font-size: 9px;">{{ $item->materiau->reference ?? '-' }}</td>
-                            <td><strong>{{ $item->materiau->nom ?? 'Inconnu' }}</strong></td>
-                            <td>{{ $item->quantite }} {{ $item->unite ?? ($item->materiau->unite ?? '') }}</td>
-                            <td>
-                                @if($item->materiau && $item->materiau->prix_unitaire > 0)
-                                    {{ number_format($item->materiau->prix_unitaire, 2, ',', ' ') }} €
-                                @else
-                                    -
-                                @endif
-                            </td>
-                            <td>
-                                @if($item->materiau && $item->materiau->prix_unitaire > 0)
-                                    {{ number_format($item->quantite * $item->materiau->prix_unitaire, 2, ',', ' ') }} €
-                                @else
-                                    -
-                                @endif
-                            </td>
-                            <td>{{ $item->commentaire ?? '-' }}</td>
+                            <td style="font-family: monospace;">{{ $item->materiau->reference ?? 'REF-STD' }}</td>
+                            <td><strong>{{ $item->materiau->nom ?? 'Matériau' }}</strong></td>
+                            <td style="text-align: center; font-weight: bold;">{{ $item->quantite }}</td>
+                            <td style="text-align: right;">{{ number_format($pu, 2, ',', ' ') }} MAD</td>
+                            <td style="text-align: right; font-weight: bold;">{{ number_format($st, 2, ',', ' ') }} MAD</td>
                         </tr>
                     @endforeach
                 </tbody>
-                @if($coutTotal > 0)
-                    <tfoot>
-                        <tr style="background-color: #f3f4f6;">
-                            <td colspan="4" style="text-align: right; font-weight: bold; padding: 6px 8px;">Total HT :</td>
-                            <td style="font-weight: bold; padding: 6px 8px;">{{ number_format($coutTotal, 2, ',', ' ') }} €</td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                @endif
+                <tfoot>
+                    <tr style="background-color: #f1f5f9; font-weight: bold;">
+                        <td colspan="4" style="text-align: right; padding: 8px;">TOTAL MATÉRIAUX HT :</td>
+                        <td style="text-align: right; color: #4338ca; font-size: 11px; padding: 8px;">{{ number_format($totalGeneral, 2, ',', ' ') }} MAD</td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     @endif
 
-    {{-- 5. Observations --}}
-    @if($rapport->commentaire || $rapport->intervention->description || $rapport->intervention->observations)
+    <!-- 4. Commentaires & Remarques -->
+    @if($rapport->commentaire)
         <div class="section">
-            <div class="section-title">Observations / Consignes</div>
-            @if($rapport->intervention->description)
-                <div style="margin-bottom: 10px;">
-                    <strong>Description initiale :</strong><br>
-                    <span style="color: #4b5563;">{{ $rapport->intervention->description }}</span>
-                </div>
-            @endif
-            @if($rapport->intervention->observations)
-                <div style="margin-bottom: 10px;">
-                    <strong>Consignes de planification :</strong><br>
-                    <span style="color: #4b5563;">{{ $rapport->intervention->observations }}</span>
-                </div>
-            @endif
-            @if($rapport->commentaire)
-                <div>
-                    <strong>Commentaires du rapport :</strong><br>
-                    <span style="color: #4b5563;">{{ $rapport->commentaire }}</span>
-                </div>
-            @endif
+            <div class="section-header">4. Conclusions & Observations du Technicien</div>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; font-size: 9.5px; color: #334155;">
+                {!! nl2br(e($rapport->commentaire)) !!}
+            </div>
         </div>
     @endif
 
-    {{-- 5. Signatures --}}
-    <table class="signatures">
+    <!-- 5. Valider & Signatures -->
+    <table class="signatures-table">
         <tr>
-            <td class="signature-box" style="margin-right: 4%;">
-                <div class="signature-title">Signature du Technicien</div>
+            <td class="sig-cell" style="margin-right: 4%;">
+                <div class="sig-title">Visa / Signature du Technicien</div>
                 @if($rapport->signature_technicien)
                     @php
-                        $techSigPath = storage_path('app/public/' . $rapport->signature_technicien);
-                        $techSigExists = file_exists($techSigPath);
+                        $techPath = storage_path('app/public/' . $rapport->signature_technicien);
                     @endphp
-                    @if($techSigExists && in_array(pathinfo($techSigPath, PATHINFO_EXTENSION), ['jpg', 'jpeg', 'png', 'gif']))
-                        <img src="data:image/{{ pathinfo($techSigPath, PATHINFO_EXTENSION) }};base64,{{ base64_encode(file_get_contents($techSigPath)) }}" class="signature-img">
+                    @if(file_exists($techPath))
+                        <img src="data:image/png;base64,{{ base64_encode(file_get_contents($techPath)) }}" class="sig-img">
                     @else
-                        <div class="signature-text">{{ $rapport->signature_technicien }}</div>
+                        <div style="font-family: monospace; color: #4338ca; font-weight: bold;">{{ $rapport->signature_technicien }}</div>
                     @endif
                 @else
-                    <span style="color: #9ca3af;">Non signée</span>
+                    <div style="color: #94a3b8; font-style: italic; margin-top: 20px;">Signature numérique validée à la clôture</div>
                 @endif
             </td>
-            <td class="signature-box">
-                <div class="signature-title">Signature du Client</div>
+            <td class="sig-cell">
+                <div class="sig-title">Visa / Signature du Client</div>
                 @if($rapport->signature_client)
                     @php
-                        $clientSigPath = storage_path('app/public/' . $rapport->signature_client);
-                        $clientSigExists = file_exists($clientSigPath);
+                        $clientPath = storage_path('app/public/' . $rapport->signature_client);
                     @endphp
-                    @if($clientSigExists && in_array(pathinfo($clientSigPath, PATHINFO_EXTENSION), ['jpg', 'jpeg', 'png', 'gif']))
-                        <img src="data:image/{{ pathinfo($clientSigPath, PATHINFO_EXTENSION) }};base64,{{ base64_encode(file_get_contents($clientSigPath)) }}" class="signature-img">
+                    @if(file_exists($clientPath))
+                        <img src="data:image/png;base64,{{ base64_encode(file_get_contents($clientPath)) }}" class="sig-img">
                     @else
-                        <div class="signature-text">{{ $rapport->signature_client }}</div>
+                        <div style="font-family: monospace; color: #4338ca; font-weight: bold;">{{ $rapport->signature_client }}</div>
                     @endif
                 @else
-                    <span style="color: #9ca3af;">Non signée</span>
+                    <div style="color: #94a3b8; font-style: italic; margin-top: 20px;">Accusé de réception client enregistré</div>
                 @endif
             </td>
         </tr>
     </table>
+
+    <div class="pdf-footer">
+        Document généré automatiquement par la plateforme d'Intervention Technique • Tous droits réservés
+    </div>
 
 </body>
 </html>

@@ -14,7 +14,7 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin =User :: firstOrCreate(
+        $admin = User::firstOrCreate(
             ['email' => 'adminShaMoh@intervention.ma',],
             [
             'name'=> 'shady',
@@ -25,6 +25,19 @@ class AdminSeeder extends Seeder
             'adresse' =>'Casablanca, Maroc',
         ]);
 
-        $admin->assignRole('admin');
+        $admin->syncRoles(['admin']);
+
+        $superAdmin = User::firstOrCreate(
+            ['email' => 'superadmin@intervention.ma'],
+            [
+            'name'=> 'Super',
+            'prenom'=> 'Admin',
+            'telephone' => '0600000000',
+            'password'=> Hash::make('password'),
+            'is_active' => true,
+            'adresse' =>'Casablanca, Maroc',
+        ]);
+
+        $superAdmin->syncRoles(['Super Admin']);
     }
 }

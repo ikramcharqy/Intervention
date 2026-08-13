@@ -10,7 +10,7 @@ class ProspectController extends Controller
 {
     public function index()
     {
-        $query = Prospect::with('commercial');
+        $query = Prospect::with('commercial')->where('statut', '!=', 'Converti');
         // Si c'est un commercial, il ne voit que ses propres prospects
         if (auth()->user()->hasRole('Commercial')) {
             $query->where('commercial_id', auth()->id());
@@ -42,6 +42,16 @@ class ProspectController extends Controller
             $validated['commercial_id'] = $request->input('commercial_id', auth()->id());
         }
 
+        $validated['statut'] = $validated['statut'] ?? 'Nouveau';
+        $validated['notes'] = [];
+        $validated['historique'] = [
+            [
+                'date' => now()->toDateTimeString(),
+                'user' => auth()->user()->name,
+                'action' => 'Création du prospect'
+            ]
+        ];
+
         Prospect::create($validated);
 
         return redirect()->route('prospects.index')->with('success', 'Prospect créé avec succès.');
@@ -49,7 +59,7 @@ class ProspectController extends Controller
 
     public function show(Prospect $prospect)
     {
-        return view('prospects.show', compact('prospect'));
+        return $this->roleView('prospects.show', compact('prospect'));
     }
 
     public function edit(Prospect $prospect)
@@ -69,6 +79,19 @@ class ProspectController extends Controller
             'observations' => 'nullable|string',
         ]);
 
+        $oldStatut = $prospect->statut;
+        $history = $prospect->historique ?? [];
+
+        if ($oldStatut !== $validated['statut']) {
+            $history[] = [
+                'date' => now()->toDateTimeString(),
+                'user' => auth()->user()->name,
+                'action' => "Changement de statut de '$oldStatut' à '{$validated['statut']}'"
+            ];
+        }
+
+        $validated['historique'] = $history;
+
         $prospect->update($validated);
 
         return redirect()->route('prospects.index')->with('success', 'Prospect mis à jour avec succès.');
@@ -84,8 +107,17 @@ class ProspectController extends Controller
     {
         $prospect->update(['statut' => 'Converti']);
 
+        // log conversion to history
+        $history = $prospect->historique ?? [];
+        $history[] = [
+            'date' => now()->toDateTimeString(),
+            'user' => auth()->user()->name,
+            'action' => "Prospect converti en Client"
+        ];
+        $prospect->update(['historique' => $history]);
+
         $client = Client::create([
-            'code_client' => 'CL-' . strtoupper(uniqid()), // ou une logique de code existante
+            'code_client' => 'CL-' . strtoupper(uniqid()),
             'type_client' => 'B2B',
             'nom' => $prospect->nom_entreprise,
             'nom_contact' => $prospect->nom_contact,
@@ -96,6 +128,44 @@ class ProspectController extends Controller
             'is_active' => true,
         ]);
 
+        \App\Models\AuditLog::create([
+            'user_id'    => auth()->id(),
+            'user_name'  => auth()->user()->name,
+            'action'     => 'Conversion Prospect → Client',
+            'module'     => 'Commercial',
+            'severity'   => 'info',
+            'ip_address' => request()->ip(),
+            'details'    => "Prospect '{$prospect->nom_entreprise}' converti avec succès en Client #{$client->id} ({$client->code_client}).",
+        ]);
+
         return redirect()->route('clients.show', $client)->with('success', 'Prospect converti en client avec succès.');
+    }
+
+    public function addNote(Request $request, Prospect $prospect)
+    {
+        $request->validate([
+            'content' => 'required|string'
+        ]);
+
+        $notes = $prospect->notes ?? [];
+        $notes[] = [
+            'date' => now()->toDateTimeString(),
+            'user' => auth()->user()->name,
+            'content' => $request->input('content')
+        ];
+
+        $history = $prospect->historique ?? [];
+        $history[] = [
+            'date' => now()->toDateTimeString(),
+            'user' => auth()->user()->name,
+            'action' => "Ajout d'une note"
+        ];
+
+        $prospect->update([
+            'notes' => $notes,
+            'historique' => $history
+        ]);
+
+        return redirect()->back()->with('success', 'Note ajoutée avec succès.');
     }
 }

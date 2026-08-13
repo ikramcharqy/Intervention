@@ -1,1 +1,277 @@
 @import "tailwindcss";
+
+/* ===== METRONIC 8 GLOBAL DESIGN SYSTEM & SVG SAFETY ===== */
+svg {
+    display: inline-block;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+
+/* Global fallback for unconstrained SVGs */
+svg:not([class*="w-"]):not([width]) {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+}
+
+:root {
+    --kt-body-bg: #F9F9FB;
+    --kt-sidebar-bg: #1E1E2D;
+    --kt-sidebar-border: #2B2B40;
+    --kt-sidebar-hover: #1B1B28;
+    --kt-card-bg: #FFFFFF;
+    --kt-card-border: #EFF2F5;
+    --kt-text-dark: #181C32;
+    --kt-text-muted: #A1A5B7;
+    --kt-primary: #3E97FF;
+    --kt-primary-hover: #2884EF;
+    --kt-success: #50CD89;
+    --kt-warning: #FFC700;
+    --kt-danger: #F1416C;
+    --kt-info: #7239EA;
+}
+
+body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: var(--kt-body-bg);
+    color: var(--kt-text-dark);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, .font-heading {
+    font-family: 'Outfit', 'Inter', sans-serif;
+}
+
+/* Metronic Cards */
+.kt-card, .metronic-card {
+    background-color: #FFFFFF;
+    border: 1px solid var(--kt-card-border);
+    box-shadow: 0px 0px 20px 0px rgba(76, 87, 125, 0.03);
+    border-radius: 0.85rem;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+
+.kt-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid var(--kt-card-border);
+    background-color: #FFFFFF;
+}
+
+.kt-card-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--kt-text-dark);
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Metronic Tables Reset & Design */
+.kt-table, table.kt-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    text-align: left;
+    margin: 0;
+}
+
+.kt-table thead, table.kt-table thead {
+    background-color: #F9F9FB;
+    border-bottom: 1px solid var(--kt-card-border);
+}
+
+.kt-table th, table.kt-table th {
+    padding: 0.85rem 1.25rem !important;
+    font-size: 0.75rem !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    color: #A1A5B7 !important;
+    white-space: nowrap !important;
+}
+
+.kt-table td, table.kt-table td {
+    padding: 1rem 1.25rem !important;
+    vertical-align: middle !important;
+    border-bottom: 1px dashed var(--kt-card-border) !important;
+    color: var(--kt-text-dark) !important;
+    font-size: 0.85rem !important;
+}
+
+.kt-table tr:last-child td, table.kt-table tr:last-child td {
+    border-bottom: none !important;
+}
+
+.kt-table tr:hover td, table.kt-table tr:hover td {
+    background-color: #F9F9FB;
+}
+
+/* Stat Cards */
+.kt-stat-card {
+    background: #FFFFFF;
+    border-radius: 0.85rem;
+    border: 1px solid var(--kt-card-border);
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 0 20px 0 rgba(76,87,125,.03);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
+    text-decoration: none;
+}
+.kt-stat-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    transform: translateY(-2px);
+}
+.kt-stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.kt-stat-icon svg {
+    width: 24px !important;
+    height: 24px !important;
+    max-width: 24px !important;
+    max-height: 24px !important;
+}
+.kt-stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--kt-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+.kt-stat-value {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--kt-text-dark);
+    line-height: 1.1;
+    font-family: 'Outfit', sans-serif;
+}
+
+/* Grids */
+.kt-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Buttons */
+.kt-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+.kt-btn-sm {
+    padding: 0.35rem 0.75rem;
+    font-size: 11px;
+}
+.kt-btn svg {
+    width: 15px !important;
+    height: 15px !important;
+}
+.kt-btn-primary {
+    background-color: var(--kt-primary);
+    color: #FFFFFF;
+}
+.kt-btn-primary:hover {
+    background-color: var(--kt-primary-hover);
+}
+.kt-btn-success {
+    background-color: var(--kt-success);
+    color: #FFFFFF;
+}
+.kt-btn-danger {
+    background-color: var(--kt-danger);
+    color: #FFFFFF;
+}
+.kt-btn-light {
+    background-color: #F5F8FA;
+    color: #5E6278;
+    border-color: #EFF2F5;
+}
+.kt-btn-light:hover {
+    background-color: #EFF2F5;
+    color: #181C32;
+}
+.kt-btn-light-primary {
+    background-color: rgba(62,151,255,0.08);
+    color: var(--kt-primary);
+}
+.kt-btn-light-primary:hover {
+    background-color: var(--kt-primary);
+    color: #FFFFFF;
+}
+.kt-btn-light-success {
+    background-color: rgba(80,205,137,0.08);
+    color: #20D489;
+}
+.kt-btn-light-success:hover {
+    background-color: var(--kt-success);
+    color: #FFFFFF;
+}
+.kt-btn-light-danger {
+    background-color: rgba(241,65,108,0.08);
+    color: var(--kt-danger);
+}
+.kt-btn-light-danger:hover {
+    background-color: var(--kt-danger);
+    color: #FFFFFF;
+}
+
+/* Badges */
+.kt-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.65rem;
+    border-radius: 0.4rem;
+    font-size: 11px;
+    font-weight: 700;
+}
+.kt-badge-primary { background: rgba(62,151,255,0.12); color: var(--kt-primary); }
+.kt-badge-success { background: rgba(80,205,137,0.12); color: #20D489; }
+.kt-badge-warning { background: rgba(255,199,0,0.12); color: #B58100; }
+.kt-badge-danger  { background: rgba(241,65,108,0.12); color: var(--kt-danger); }
+.kt-badge-info    { background: rgba(114,57,234,0.12); color: var(--kt-info); }
+.kt-badge-gray    { background: #F5F8FA; color: #7E8299; border: 1px solid #E4E6EF; }
+
+/* Avatars & Empty State */
+.kt-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.kt-empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--kt-text-muted);
+}
+.kt-empty-state svg {
+    width: 48px !important;
+    height: 48px !important;
+    color: #D8D8E5;
+    margin: 0 auto 1rem auto;
+}

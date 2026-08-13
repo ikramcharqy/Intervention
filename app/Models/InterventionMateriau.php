@@ -4,27 +4,38 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Materiau;
 
-class InterventionMateriau extends Model
-{
+class InterventionMateriau extends Model{
     use HasFactory;
 
     protected $fillable = [
         'intervention_id',
         'materiau_id',
 
-        'quantite',
-        'unite',
+        'statut',
+
+        'date_debut',
+        'date_fin',
+
+        'duree',
+
+        'pourcentage',
 
         'commentaire',
 
-        // Nouveau
-        'is_valide',
+        'ordre_execution',
+        'is_validee',
     ];
 
     protected $casts = [
-        'quantite' => 'decimal:2',
-        'is_valide' => 'boolean',
+        'date_debut' => 'datetime',
+        'date_fin' => 'datetime',
+
+        'duree' => 'integer',
+        'pourcentage' => 'integer',
+
+        'is_validee' => 'boolean',
     ];
 
     /*
@@ -39,9 +50,9 @@ class InterventionMateriau extends Model
         return $this->belongsTo(Intervention::class);
     }
 
-    // Matériau utilisé
-    public function materiau()
+    // Tâche concernée
+    public function tache()
     {
-        return $this->belongsTo(Materiau::class);
+        return $this->belongsTo(Tache::class);
     }
 }

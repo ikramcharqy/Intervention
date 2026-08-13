@@ -10,18 +10,17 @@ use App\Models\Client;
 use App\Models\Emplacement;
 use App\Models\TypeIntervention;
 use App\Models\User;
+use App\Models\GpsTrackingSession;
+use App\Models\GpsTrackingPoint;
 use App\Services\InterventionService;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
 /**
  * Gestion des interventions techniques.
- *
- * Actions disponibles :
- *  - CRUD standard          : index, create, store, show, edit, update, destroy
- *  - Workflow statut        : start, suspend, resume, submitValidation, validateIntervention, rejectValidation
  */
 class InterventionController extends Controller
 {
@@ -32,15 +31,6 @@ class InterventionController extends Controller
         $this->interventionService = $interventionService;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | CRUD Standard
-    |--------------------------------------------------------------------------
-    */
-
-    /**
-     * Liste paginée des interventions avec filtres.
-     */
     public function index(Request $request): View
     {
         $search   = $request->input('search');
@@ -68,9 +58,6 @@ class InterventionController extends Controller
         return view('interventions.index', compact('interventions', 'search', 'statut', 'priorite'));
     }
 
-    /**
-     * Formulaire de création d'une intervention.
-     */
     public function create(): View
     {
         $clients          = Client::where('is_active', true)->orderBy('nom')->get(['id', 'nom']);
@@ -84,10 +71,6 @@ class InterventionController extends Controller
         ));
     }
 
-    /**
-     * Enregistre une nouvelle intervention.
-     * Le statut est forcé à 'Planifiee' dans le service.
-     */
     public function store(StoreInterventionRequest $request): RedirectResponse
     {
         $intervention = $this->interventionService->createIntervention($request->validated());
@@ -97,9 +80,6 @@ class InterventionController extends Controller
             ->with('success', "L'intervention **{$intervention->code_intervention}** a été planifiée avec succès.");
     }
 
-    /**
-     * Affiche le détail d'une intervention.
-     */
     public function show(Intervention $intervention): View
     {
         $intervention->load([
@@ -117,12 +97,12 @@ class InterventionController extends Controller
             'validateur',
         ]);
 
-        return view('interventions.show', compact('intervention'));
+        $materiaux = \App\Models\Materiau::where('is_active', true)->orderBy('nom')->get();
+        $taches = \App\Models\Tache::where('is_active', true)->orderBy('nom')->get();
+
+        return view('interventions.show', compact('intervention', 'materiaux', 'taches'));
     }
 
-    /**
-     * Formulaire d'édition.
-     */
     public function edit(Intervention $intervention): View
     {
         $clients          = Client::where('is_active', true)->orderBy('nom')->get(['id', 'nom']);
@@ -136,10 +116,6 @@ class InterventionController extends Controller
         ));
     }
 
-    /**
-     * Met à jour une intervention.
-     * Les champs statut, chantier_id, technicien_id sont protégés dans le service.
-     */
     public function update(UpdateInterventionRequest $request, Intervention $intervention): RedirectResponse
     {
         $this->interventionService->updateIntervention($intervention, $request->validated());
@@ -149,9 +125,6 @@ class InterventionController extends Controller
             ->with('success', "L'intervention **{$intervention->code_intervention}** a été mise à jour.");
     }
 
-    /**
-     * Annule ou supprime logiquement l'intervention.
-     */
     public function destroy(Request $request, Intervention $intervention): RedirectResponse
     {
         $motif = $request->input('motif_annulation', '');
@@ -169,15 +142,6 @@ class InterventionController extends Controller
         }
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Actions de Workflow (Transitions de Statut)
-    |--------------------------------------------------------------------------
-    */
-
-    /**
-     * Le technicien accepte l'intervention planifiée.
-     */
     public function accept(Intervention $intervention)
     {
         try {
@@ -189,10 +153,6 @@ class InterventionController extends Controller
         }
     }
 
-    /**
-     * Démarrage de l'intervention par le technicien.
-     * Modes : GPS | QR | NFC | Manuel
-     */
     public function start(Request $request, Intervention $intervention): RedirectResponse
     {
         $mode   = $request->input('mode', Intervention::MODE_MANUEL);
@@ -211,9 +171,6 @@ class InterventionController extends Controller
         }
     }
 
-    /**
-     * Mise en pause de l'intervention par le technicien ou l'admin.
-     */
     public function suspend(Request $request, Intervention $intervention): RedirectResponse
     {
         $motif = $request->input('motif', '');
@@ -231,9 +188,6 @@ class InterventionController extends Controller
         }
     }
 
-    /**
-     * Reprise d'une intervention suspendue.
-     */
     public function resume(Intervention $intervention): RedirectResponse
     {
         try {
@@ -249,10 +203,6 @@ class InterventionController extends Controller
         }
     }
 
-    /**
-     * Soumission pour validation par le technicien.
-     * L'intervention passe à 'En attente validation'.
-     */
     public function submitValidation(Intervention $intervention): RedirectResponse
     {
         try {
@@ -268,28 +218,27 @@ class InterventionController extends Controller
         }
     }
 
-    /**
-     * Validation finale par l'administrateur (statut → Terminee).
-     */
-    public function validateIntervention(Intervention $intervention): RedirectResponse
+    public function validateIntervention(Request $request, Intervention $intervention): JsonResponse
     {
+        if (!$request->user()->hasAnyRole(['Admin', 'admin', 'Super Admin', 'superadmin'])) {
+            return response()->json([
+                'message' => 'Non autorisé à valider cette intervention.',
+            ], 403);
+        }
+
         try {
             $this->interventionService->validateIntervention($intervention);
 
-            return redirect()
-                ->route('interventions.show', $intervention)
-                ->with('success', "L'intervention a été validée et est officiellement clôturée.");
+            return response()->json([
+                'data' => $intervention->fresh(),
+                'message' => 'Intervention validée et clôturée avec succès.'
+            ], 200);
         } catch (Exception $e) {
-            return redirect()
-                ->route('interventions.show', $intervention)
-                ->with('error', $e->getMessage());
+            return response()->json([
+                'message' => $e->getMessage(),
+            ], 400);
         }
     }
-
-    /**
-     * Rejet de la validation par l'administrateur.
-     * Renvoie le technicien en mode 'En cours' avec un motif.
-     */
     public function rejectValidation(Request $request, Intervention $intervention): RedirectResponse
     {
         $request->validate([
@@ -310,5 +259,87 @@ class InterventionController extends Controller
                 ->route('interventions.show', $intervention)
                 ->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Planifie instantanément une intervention géolocalisée basée sur les coordonnées GPS fournies/capturées.
+     */
+    public function quickSeedLiveGps(Request $request): RedirectResponse
+    {
+        $lat = (float) $request->input('latitude', 33.5731);
+        $lng = (float) $request->input('longitude', -7.5898);
+
+        $chantier = Chantier::first();
+        if (!$chantier) {
+            $client = Client::firstOrCreate(['nom' => 'Client GPS Live'], [
+                'code_client' => 'CL-GPS-01',
+                'type_client' => 'Entreprise',
+                'telephone'   => '0600000000',
+                'is_active'   => true,
+            ]);
+            $chantier = Chantier::create([
+                'client_id'     => $client->id,
+                'code_chantier' => 'CH-GPS-01',
+                'nom'           => 'Site Principal GPS Live',
+                'is_active'     => true,
+            ]);
+        }
+
+        $emplacement = Emplacement::where('chantier_id', $chantier->id)->first();
+        if (!$emplacement) {
+            $emplacement = Emplacement::create([
+                'chantier_id' => $chantier->id,
+                'nom'         => 'Zone GPS Principal',
+                'is_active'   => true,
+            ]);
+        }
+
+        $technicien = User::role('technicien')->first() ?? auth()->user();
+        $type = TypeIntervention::firstOrCreate(['nom' => 'Maintenance GPS Live'], ['is_active' => true]);
+
+        $code = 'INT-GPS-' . rand(1000, 9999);
+
+        $intervention = Intervention::create([
+            'code_intervention'    => $code,
+            'chantier_id'          => $chantier->id,
+            'emplacement_id'       => $emplacement->id,
+            'technicien_id'        => $technicien->id,
+            'type_intervention_id' => $type->id,
+            'createur_id'          => auth()->id(),
+            'statut'               => 'En cours',
+            'priorite'             => 'Urgente',
+            'date_prevue_debut'    => now(),
+            'date_prevue_fin'      => now()->addHours(2),
+            'date_debut_reelle'    => now(),
+            'notes_admin'          => "Intervention générée en direct depuis la position GPS réelle (" . round($lat, 5) . ", " . round($lng, 5) . ").",
+        ]);
+
+        $session = GpsTrackingSession::create([
+            'intervention_id' => $intervention->id,
+            'technicien_id'   => $technicien->id,
+            'started_at'      => now()->subMinutes(15),
+            'distance_metres' => 1850.00,
+        ]);
+
+        $waypoints = [
+            ['lat' => $lat - 0.0080, 'lng' => $lng - 0.0060, 'mins' => 15],
+            ['lat' => $lat - 0.0050, 'lng' => $lng - 0.0040, 'mins' => 10],
+            ['lat' => $lat - 0.0020, 'lng' => $lng - 0.0015, 'mins' => 5],
+            ['lat' => $lat - 0.0008, 'lng' => $lng - 0.0005, 'mins' => 2],
+            ['lat' => $lat,          'lng' => $lng,          'mins' => 0],
+        ];
+
+        foreach ($waypoints as $wp) {
+            GpsTrackingPoint::create([
+                'gps_tracking_session_id' => $session->id,
+                'latitude'                => $wp['lat'],
+                'longitude'               => $wp['lng'],
+                'captured_at'             => now()->subMinutes($wp['mins']),
+            ]);
+        }
+
+        return redirect()
+            ->route('gps.index')
+            ->with('success', "Intervention GPS Live #{$intervention->code_intervention} planifiée avec succès depuis votre position actuelle !");
     }
 }

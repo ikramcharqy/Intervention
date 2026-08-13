@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')
+            ->nullable()
+            ->constrained()
+            ->nullOnDelete();
             $table->string('code_client')->unique();
             $table->enum('type_client',['Entreprise',
             'Particulier',

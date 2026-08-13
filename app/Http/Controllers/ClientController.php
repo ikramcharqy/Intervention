@@ -31,6 +31,11 @@ class ClientController extends Controller
         $search = $request->input('search');
         $commercialFilter = $request->input('commercial_id');
 
+        // Si l'utilisateur connecté est un Commercial, il ne voit que ses propres clients
+        if (auth()->user()->hasRole('Commercial')) {
+            $commercialFilter = auth()->id();
+        }
+
         $clients = Client::with('commercial')
             ->when($search, function ($query, $search) {
                 $query->where('nom', 'like', "%{$search}%")

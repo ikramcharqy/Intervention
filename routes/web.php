@@ -20,8 +20,20 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
+    if (auth()->user()->hasRole('Super Admin')) {
+        return redirect()->route('superadmin.dashboard');
+    }
+
     if (auth()->user()->hasRole('Commercial')) {
         return redirect()->route('commercial.dashboard');
+    }
+
+    if (auth()->user()->hasRole('Client')) {
+        return redirect()->route('client.dashboard');
+    }
+
+    if (auth()->user()->hasRole('technicien') || auth()->user()->hasRole('Technicien')) {
+        return redirect()->route('technicien.dashboard');
     }
 
     $stats = [
@@ -51,6 +63,7 @@ Route::middleware('auth')->group(function () {
 
     // Routes CRM Commercial
     Route::post('prospects/{prospect}/convert', [\App\Http\Controllers\ProspectController::class, 'convert'])->name('prospects.convert');
+    Route::post('prospects/{prospect}/notes', [\App\Http\Controllers\ProspectController::class, 'addNote'])->name('prospects.notes.store');
     Route::resource('prospects', \App\Http\Controllers\ProspectController::class);
     
     Route::resource('demande-interventions', \App\Http\Controllers\DemandeInterventionController::class);
@@ -93,6 +106,7 @@ Route::middleware('auth')->group(function () {
     Route::get('interventions/{intervention}/formulaire', [InterventionFormulaireController::class, 'create'])->name('interventions.formulaire.create');
     Route::post('interventions/{intervention}/formulaire', [InterventionFormulaireController::class, 'store'])->name('interventions.formulaire.store');
 
+    Route::post('interventions/quick-gps-seed', [InterventionController::class, 'quickSeedLiveGps'])->name('interventions.quickGpsSeed');
     Route::resource('interventions', InterventionController::class);
 
     // Suivi GPS continu (module indépendant du pointage TrackingSession)
@@ -124,6 +138,9 @@ Route::middleware('auth')->group(function () {
     // Routes Utilisateurs
     Route::post('users/{user}/restore', [UserController::class, 'restore'])->name('users.restore');
     Route::resource('users', UserController::class);
+    // Routes Paramètres Système
+    Route::get('settings', [\App\Http\Controllers\SettingController::class, 'index'])->name('settings.index');
+    Route::post('settings', [\App\Http\Controllers\SettingController::class, 'update'])->name('settings.update');
 
     // Vues simples de reporting et tracking pour la sidebar
     Route::get('/gps-tracking', function() {
@@ -217,6 +234,22 @@ Route::middleware('auth')->group(function () {
         ->orderBy('mois')
         ->pluck('total', 'mois');
 
+        // Données Commerciales Réelles (Prospects & Devis)
+        $nbProspects = \App\Models\Prospect::count();
+        $prospectsConvertis = \App\Models\Prospect::whereIn('statut', ['Converti', 'Client'])->count();
+        $tauxConversionProspects = $nbProspects > 0 ? round(($prospectsConvertis / $nbProspects) * 100, 1) : 0;
+
+        $nbDevis = \App\Models\Devis::count();
+        $devisAcceptes = \App\Models\Devis::whereIn('statut', ['Accepté', 'Accepte', 'Validé'])->count();
+        $devisAttente = \App\Models\Devis::whereIn('statut', ['Envoyé', 'En attente', 'Brouillon'])->count();
+        $devisRefuses = \App\Models\Devis::whereIn('statut', ['Refusé', 'Refuse', 'Annulé'])->count();
+        $montantDevisAcceptes = \App\Models\Devis::whereIn('statut', ['Accepté', 'Accepte', 'Validé'])->sum('montant_ttc');
+        $montantDevisTotal = \App\Models\Devis::sum('montant_ttc');
+
+        $parStatutDevis = \App\Models\Devis::selectRaw('statut, COUNT(*) as total')
+            ->groupBy('statut')
+            ->pluck('total', 'statut');
+
         $viewName = auth()->user()->hasRole('Commercial') && view()->exists('commercial.statistiques')
             ? 'commercial.statistiques'
             : 'statistiques';
@@ -224,7 +257,10 @@ Route::middleware('auth')->group(function () {
         return view($viewName, compact(
             'totalInterventions', 'terminees', 'enCours', 'planifiees', 'annulees',
             'tauxCompletion', 'dureeReelleMoyenne', 'coutMoyenMateriaux',
-            'parStatut', 'topTechniciens', 'parPriorite', 'parMois'
+            'parStatut', 'topTechniciens', 'parPriorite', 'parMois',
+            'nbProspects', 'prospectsConvertis', 'tauxConversionProspects',
+            'nbDevis', 'devisAcceptes', 'devisAttente', 'devisRefuses',
+            'montantDevisAcceptes', 'montantDevisTotal', 'parStatutDevis'
         ));
     })->name('statistiques.index');
 });
@@ -237,11 +273,101 @@ Route::middleware(['auth', 'verified', 'role:Commercial'])
         Route::get('/dashboard', [\App\Http\Controllers\Commercial\DashboardController::class, 'index'])
             ->name('dashboard');
 
-        Route::get('/devis', [\App\Http\Controllers\Commercial\DevisController::class, 'index'])
-            ->name('devis.index');
+        Route::post('devis/{devis}/duplicate', [\App\Http\Controllers\Commercial\DevisController::class, 'duplicate'])
+            ->name('devis.duplicate');
+        Route::get('devis/{devis}/pdf', [\App\Http\Controllers\Commercial\DevisController::class, 'generatePdf'])
+            ->name('devis.pdf');
+        Route::resource('devis', \App\Http\Controllers\Commercial\DevisController::class);
 
         Route::get('/documents', [\App\Http\Controllers\Commercial\DocumentController::class, 'index'])
             ->name('documents.index');
+        Route::post('/documents', [\App\Http\Controllers\Commercial\DocumentController::class, 'store'])
+            ->name('documents.store');
+        Route::get('/documents/{document}/download', [\App\Http\Controllers\Commercial\DocumentController::class, 'download'])
+            ->name('documents.download');
+        Route::delete('/documents/{document}', [\App\Http\Controllers\Commercial\DocumentController::class, 'destroy'])
+            ->name('documents.destroy');
     });
+
+// Espace dédié au rôle Client : routes protégées par le rôle Spatie "Client".
+Route::middleware(['auth', 'verified', 'role:Client'])
+    ->prefix('client')
+    ->name('client.')
+    ->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\ClientModule\DashboardController::class, 'index'])
+            ->name('dashboard');
+
+        Route::get('/profile', [\App\Http\Controllers\ClientModule\ProfileController::class, 'edit'])
+            ->name('profile.edit');
+        Route::put('/profile', [\App\Http\Controllers\ClientModule\ProfileController::class, 'update'])
+            ->name('profile.update');
+        Route::put('/profile/password', [\App\Http\Controllers\ClientModule\ProfileController::class, 'updatePassword'])
+            ->name('profile.password');
+
+        Route::get('/chantiers', [\App\Http\Controllers\ClientModule\ChantierController::class, 'index'])
+            ->name('chantiers.index');
+        Route::get('/chantiers/{chantier}', [\App\Http\Controllers\ClientModule\ChantierController::class, 'show'])
+            ->name('chantiers.show');
+
+        Route::get('/interventions', [\App\Http\Controllers\ClientModule\InterventionController::class, 'index'])
+            ->name('interventions.index');
+        Route::get('/interventions/{intervention}', [\App\Http\Controllers\ClientModule\InterventionController::class, 'show'])
+            ->name('interventions.show');
+
+        Route::get('/rapports', [\App\Http\Controllers\ClientModule\RapportController::class, 'index'])
+            ->name('rapports.index');
+        Route::get('/rapports/{rapport}', [\App\Http\Controllers\ClientModule\RapportController::class, 'show'])
+            ->name('rapports.show');
+        Route::get('/rapports/{rapport}/pdf', [\App\Http\Controllers\ClientModule\RapportController::class, 'pdf'])
+            ->name('rapports.pdf');
+
+        Route::get('/documents', [\App\Http\Controllers\ClientModule\DocumentController::class, 'index'])
+            ->name('documents.index');
+        Route::get('/documents/{document}/download', [\App\Http\Controllers\ClientModule\DocumentController::class, 'download'])
+            ->name('documents.download');
+
+        Route::get('/notifications', [\App\Http\Controllers\ClientModule\NotificationController::class, 'index'])
+            ->name('notifications.index');
+    });
+
+// Espace dédié au rôle Super Admin : routes protégées par le rôle Spatie "Super Admin".
+Route::middleware(['auth', 'verified', 'role:Super Admin'])
+    ->prefix('superadmin')
+    ->name('superadmin.')
+    ->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\SuperAdmin\DashboardController::class, 'index'])->name('dashboard');
+        
+        Route::get('/admins', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'admins'])->name('admins');
+        Route::post('/admins', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'storeAdmin'])->name('admins.store');
+        
+        Route::get('/roles', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'roles'])->name('roles');
+        Route::post('/roles', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'storeRole'])->name('roles.store');
+        
+        Route::get('/users', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'users'])->name('users');
+        Route::post('/users/{user}/toggle-status', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'toggleUserStatus'])->name('users.toggleStatus');
+        
+        Route::get('/settings', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'settings'])->name('settings');
+        Route::post('/settings', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'updateSettings'])->name('settings.update');
+        
+        Route::get('/logs', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'logs'])->name('logs');
+        
+        Route::get('/backups', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'backups'])->name('backups');
+        Route::post('/backups', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'createBackup'])->name('backups.create');
+        Route::get('/backups/{filename}/download', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'downloadBackup'])->name('backups.download');
+        Route::delete('/backups/{filename}', [\App\Http\Controllers\SuperAdmin\SystemController::class, 'deleteBackup'])->name('backups.delete');
+    });
+
+// Espace dédié au rôle Technicien : routes protégées par le rôle Spatie "technicien" ou "Technicien".
+Route::middleware(['auth', 'verified', 'role:technicien|Technicien'])
+    ->prefix('technicien')
+    ->name('technicien.')
+    ->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\TechnicienModule\DashboardController::class, 'index'])->name('dashboard');
+    });
+
+// Application Mobile Technicien (Mobile Web SPA / PWA)
+Route::get('/mobile/{any?}', function () {
+    return view('mobile.app');
+})->where('any', '.*')->name('mobile.app');
 
 require __DIR__.'/auth.php';

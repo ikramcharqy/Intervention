@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Client;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class ClientService
 {
@@ -11,22 +13,42 @@ class ClientService
      * Enregistre un nouveau client avec ses informations optionnelles d'entreprise.
      */
     public function createClient(array $data): Client
-    {
-        return DB::transaction(function () use ($data) {
-            $client = Client::create($data);
+{
+    return DB::transaction(function () use ($data) {
 
-            if ($client->type_client === 'Entreprise') {
-                $client->clientEntreprise()->create([
-                    'ice'     => $data['ice'] ?? null,
-                    'if'      => $data['if'] ?? null,
-                    'rc'      => $data['rc'] ?? null,
-                    'patente' => $data['patente'] ?? null,
-                ]);
-            }
+        // Création du compte utilisateur
+        $user = User::create([
+            'name'       => $data['nom'],
+            'prenom'     => $data['nom_contact'] ?? $data['nom'],
+            'email'      => $data['email'],
+            'telephone'  => $data['telephone'],
+            'adresse'    => $data['adresse_facturation'] ?? '',
+            'password'   => Hash::make('password123'),
+            'is_active'  => true,
+        ]);
 
-            return $client;
-        });
-    }
+        // Attribution du rôle Client
+        $user->assignRole('Client');
+
+        // Création du client
+        $client = Client::create([
+            ...$data,
+            'user_id' => $user->id,
+        ]);
+
+        // Informations entreprise
+        if ($client->type_client === 'Entreprise') {
+            $client->clientEntreprise()->create([
+                'ice'     => $data['ice'] ?? null,
+                'if'      => $data['if'] ?? null,
+                'rc'      => $data['rc'] ?? null,
+                'patente' => $data['patente'] ?? null,
+            ]);
+        }
+
+        return $client;
+    });
+}
 
     /**
      * Met à jour un client existant et ses informations d'entreprise.

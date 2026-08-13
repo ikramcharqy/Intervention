@@ -7,47 +7,41 @@ use App\Models\Client;
 use App\Models\Chantier;
 use App\Models\DemandeIntervention;
 use App\Models\Prospect;
+use App\Models\Devis;
 use Illuminate\View\View;
 
-/**
- * Tableau de bord dédié au rôle Commercial.
- *
- * Ce contrôleur ne fait qu'agréger des compteurs en lecture seule à partir
- * des modèles existants (aucune nouvelle logique métier, aucune écriture
- * en base). Il sert uniquement à alimenter la vue commercial.dashboard.
- */
 class DashboardController extends Controller
 {
     public function index(): View
     {
         $commercialId = auth()->id();
 
+        $nbProspects = Prospect::count();
+        $nbClients = Client::count();
+        $nbDevis = Devis::count();
+        $devisAttente = Devis::whereIn('statut', ['Envoyé', 'En attente', 'Brouillon'])->count();
+        $devisAcceptes = Devis::whereIn('statut', ['Accepté', 'Accepte', 'Validé'])->count();
+        $devisRefuses = Devis::whereIn('statut', ['Refusé', 'Refuse', 'Annulé'])->count();
+
+        $prospectsConvertis = Prospect::whereIn('statut', ['Converti', 'Client'])->count();
+        $tauxConversion = $nbProspects > 0 ? round(($prospectsConvertis / $nbProspects) * 100, 1) : 0;
+
         $stats = [
-            'prospects' => Prospect::where('commercial_id', $commercialId)->count(),
-            'prospects_a_relancer' => Prospect::where('commercial_id', $commercialId)
-                ->whereNotIn('statut', ['Converti', 'Perdu'])
-                ->count(),
-            'clients' => Client::where('commercial_id', $commercialId)->count(),
-            'chantiers' => Chantier::whereHas('client', function ($query) use ($commercialId) {
-                $query->where('commercial_id', $commercialId);
-            })->count(),
-            'demandes' => DemandeIntervention::where('commercial_id', $commercialId)->count(),
-            'demandes_en_attente' => DemandeIntervention::where('commercial_id', $commercialId)
-                ->where('statut', 'En attente')
-                ->count(),
+            'prospects' => $nbProspects,
+            'clients' => $nbClients,
+            'devis' => $nbDevis,
+            'devis_attente' => $devisAttente,
+            'devis_acceptes' => $devisAcceptes,
+            'devis_refuses' => $devisRefuses,
+            'taux_conversion' => $tauxConversion,
         ];
 
-        $prospectsRecents = Prospect::where('commercial_id', $commercialId)
-            ->latest()
-            ->limit(5)
-            ->get();
+        $recentProspects = Prospect::latest()->limit(5)->get();
+        $recentDevis = Devis::with('prospect')->latest()->limit(5)->get();
 
-        $demandesRecentes = DemandeIntervention::with(['client', 'chantier', 'typeIntervention'])
-            ->where('commercial_id', $commercialId)
-            ->latest()
-            ->limit(5)
-            ->get();
+        $prospectsRecents = $recentProspects;
+        $devisRecents = $recentDevis;
 
-        return view('commercial.dashboard', compact('stats', 'prospectsRecents', 'demandesRecentes'));
+        return view('commercial.dashboard', compact('stats', 'recentProspects', 'recentDevis', 'prospectsRecents', 'devisRecents'));
     }
 }

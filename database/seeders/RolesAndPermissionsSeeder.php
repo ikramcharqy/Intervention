@@ -36,8 +36,18 @@ class RolesAndPermissionsSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission]);
         }
         //Création des rôles
+        $superAdmin = Role::firstOrCreate([
+            'name' => 'Super Admin',
+            'guard_name' => 'web'
+        ]);
+
         $admin = Role::firstOrCreate([
             'name' => 'admin',
+            'guard_name' => 'web'
+        ]);
+
+        $adminAlt = Role::firstOrCreate([
+            'name' => 'Administrateur',
             'guard_name' => 'web'
         ]);
 
@@ -46,8 +56,33 @@ class RolesAndPermissionsSeeder extends Seeder
             'guard_name' => 'web'
         ]);
 
-        //Donner tous les permissions a l'admin
-        $admin ->SyncPermissions(Permission::all());
+        $technicienAlt = Role::firstOrCreate([
+            'name' => 'Technicien',
+            'guard_name' => 'web'
+        ]);
+
+        $commercial = Role::firstOrCreate([
+            'name' => 'Commercial',
+            'guard_name' => 'web'
+        ]);
+
+        $clientRole = Role::firstOrCreate([
+            'name' => 'Client',
+            'guard_name' => 'web'
+        ]);
+
+        $adminAlt->SyncPermissions(Permission::all());
+        $technicienAlt->SyncPermissions([
+            'view-own-interventions',
+            'start-intervention',
+            'finish-intervention',
+            'submit-report',
+            'upload-media',
+            'scan-qr']);
+
+        //Donner toutes les permissions à superAdmin et admin
+        $superAdmin->SyncPermissions(Permission::all());
+        $admin->SyncPermissions(Permission::all());
         //Synchroniser les permissions du technicien
 
 
