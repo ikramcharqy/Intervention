@@ -14,7 +14,7 @@ class DemandeInterventionController extends Controller
     {
         $query = DemandeIntervention::with(['commercial', 'client', 'chantier', 'typeIntervention']);
         
-        if (auth()->user()->hasRole('Commercial')) {
+        if (auth()->user()->hasAnyRole(config('roles.COMMERCIAL'))) {
             $query->where('commercial_id', auth()->id());
         }
 
@@ -24,7 +24,7 @@ class DemandeInterventionController extends Controller
 
     public function create()
     {
-        $clients = auth()->user()->hasRole('Commercial') 
+        $clients = auth()->user()->hasAnyRole(config('roles.COMMERCIAL')) 
             ? Client::where('commercial_id', auth()->id())->get()
             : Client::all();
             
@@ -78,7 +78,7 @@ class DemandeInterventionController extends Controller
 
     public function edit(DemandeIntervention $demandeIntervention)
     {
-        $clients = auth()->user()->hasRole('Commercial') 
+        $clients = auth()->user()->hasAnyRole(config('roles.COMMERCIAL')) 
             ? Client::where('commercial_id', auth()->id())->get()
             : Client::all();
             

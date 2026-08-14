@@ -30,10 +30,10 @@ class RapportController extends BaseApiController
             'intervention.technicien',
             'intervention.typeIntervention',
         ])
-        ->when($user->hasRole('Client'), function ($q) {
+        ->when($user->hasAnyRole(config('roles.CLIENT')), function ($q) {
             $q->whereHas('intervention', fn($qi) => $qi->where('statut', 'Terminee'));
         })
-        ->when($user->hasRole('Technicien') || $user->hasRole('technicien'), function ($q) use ($user) {
+        ->when($user->hasAnyRole(config('roles.TECHNICIAN')), function ($q) use ($user) {
             $q->whereHas('intervention', fn($qi) => $qi->where('technicien_id', $user->id));
         })
         ->when($search, function ($query, $search) {
@@ -59,7 +59,7 @@ class RapportController extends BaseApiController
 
         if (
             $intervention->technicien_id !== $user->id
-            && !$user->hasAnyRole(['Admin', 'admin', 'Super Admin', 'superadmin'])
+            && !$user->hasAnyRole(array_merge(config('roles.ADMIN'), config('roles.SUPER_ADMIN')))
         ) {
             return $this->errorResponse('Non autorisé à consulter ce rapport.', null, 403);
         }

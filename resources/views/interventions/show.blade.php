@@ -151,56 +151,9 @@
 
                     <div class="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-3">
                         <h4 class="font-bold text-sm text-gray-900 dark:text-white">Actions disponibles</h4>
-                        
-                        @can('update interventions')
-                            @if($intervention->statut !== 'Terminee' && $intervention->statut !== 'Annulee')
-                                <a href="{{ route('interventions.edit', $intervention) }}" class="w-full bg-yellow-500 text-white font-medium py-2.5 px-4 rounded-xl hover:bg-yellow-600 transition flex items-center justify-center gap-2 text-sm">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
-                                    Modifier la planification
-                                </a>
-                            @endif
-                        @endcan
 
-                        @if ($intervention->statut === 'Planifiee' && auth()->user()->hasRole('Technicien'))
-                            <form method="POST" action="{{ route('interventions.accept', $intervention) }}">
-                                @csrf
-                                <button type="submit" class="w-full bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl hover:bg-indigo-700 transition flex items-center justify-center gap-2 text-sm shadow-sm">
-                                    Accepter l'intervention
-                                </button>
-                            </form>
-                        @endif
-
-                        @if ($intervention->statut === 'Acceptee')
-                            <form method="POST" action="{{ route('interventions.start', $intervention) }}">
-                                @csrf
-                                <input type="hidden" name="mode" value="Manuel">
-                                <button type="submit" class="w-full bg-green-600 text-white font-medium py-2.5 px-4 rounded-xl hover:bg-green-700 transition flex items-center justify-center gap-2 text-sm shadow-sm">
-                                    Démarrer l'intervention
-                                </button>
-                            </form>
-                        @endif
-
-                        @if (in_array($intervention->statut, ['En cours', 'Formulaire rempli']) && $intervention->typeIntervention && $intervention->typeIntervention->formulaire && $intervention->typeIntervention->formulaire->is_active)
-                            <a href="{{ route('interventions.formulaire.create', $intervention) }}" class="w-full bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-xl hover:bg-indigo-700 transition flex items-center justify-center gap-2 text-sm shadow-sm">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                {{ $intervention->statut === 'Formulaire rempli' ? 'Modifier le formulaire' : 'Remplir le formulaire' }}
-                            </a>
-                        @endif
-
-                        @if ($intervention->statut === 'Formulaire rempli' && auth()->user()->hasAnyRole(['Administrateur', 'Super Admin']))
-                            <form method="POST" action="{{ route('interventions.validate', $intervention) }}">
-                                @csrf
-                                <button type="submit" class="w-full bg-green-700 text-white font-medium py-2.5 px-4 rounded-xl hover:bg-green-800 transition flex items-center justify-center gap-2 text-sm shadow-sm">
-                                    Valider & Clôturer
-                                </button>
-                            </form>
-                        @endif
-
-                        @if ($intervention->statut === 'Terminee' && $intervention->typeIntervention && $intervention->typeIntervention->formulaire)
-                            <a href="{{ route('interventions.formulaire.create', $intervention) }}" class="w-full bg-gray-600 text-white font-medium py-2.5 px-4 rounded-xl hover:bg-gray-700 transition flex items-center justify-center gap-2 text-sm">
-                                Consulter le formulaire
-                            </a>
-                        @endif
+                        {{-- Use the shared actions partial which relies on policies for availability --}}
+                        @include('interventions._actions', ['intervention' => $intervention])
 
                         <a href="{{ route('interventions.index') }}" class="w-full bg-gray-200 dark:bg-gray-800 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-750 transition flex items-center justify-center gap-2 text-sm">
                             Retour à la liste
