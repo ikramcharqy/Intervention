@@ -20,19 +20,19 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', function () {
-    if (auth()->user()->hasRole('Super Admin')) {
+    if (auth()->user()->hasAnyRole(config('roles.SUPER_ADMIN'))) {
         return redirect()->route('superadmin.dashboard');
     }
 
-    if (auth()->user()->hasRole('Commercial')) {
+    if (auth()->user()->hasAnyRole(config('roles.COMMERCIAL'))) {
         return redirect()->route('commercial.dashboard');
     }
 
-    if (auth()->user()->hasRole('Client')) {
+    if (auth()->user()->hasAnyRole(config('roles.CLIENT'))) {
         return redirect()->route('client.dashboard');
     }
 
-    if (auth()->user()->hasRole('technicien') || auth()->user()->hasRole('Technicien')) {
+    if (auth()->user()->hasAnyRole(config('roles.TECHNICIAN'))) {
         return redirect()->route('technicien.dashboard');
     }
 
@@ -250,7 +250,7 @@ Route::middleware('auth')->group(function () {
             ->groupBy('statut')
             ->pluck('total', 'statut');
 
-        $viewName = auth()->user()->hasRole('Commercial') && view()->exists('commercial.statistiques')
+        $viewName = auth()->user()->hasAnyRole(config('roles.COMMERCIAL')) && view()->exists('commercial.statistiques')
             ? 'commercial.statistiques'
             : 'statistiques';
 
@@ -266,7 +266,7 @@ Route::middleware('auth')->group(function () {
 });
 
 // Espace dédié au rôle Commercial : routes protégées par le rôle Spatie "Commercial".
-Route::middleware(['auth', 'verified', 'role:Commercial'])
+Route::middleware(['auth', 'verified', 'role:' . implode('|', config('roles.COMMERCIAL'))])
     ->prefix('commercial')
     ->name('commercial.')
     ->group(function () {
@@ -290,7 +290,7 @@ Route::middleware(['auth', 'verified', 'role:Commercial'])
     });
 
 // Espace dédié au rôle Client : routes protégées par le rôle Spatie "Client".
-Route::middleware(['auth', 'verified', 'role:Client'])
+Route::middleware(['auth', 'verified', 'role:' . implode('|', config('roles.CLIENT'))])
     ->prefix('client')
     ->name('client.')
     ->group(function () {
@@ -331,7 +331,7 @@ Route::middleware(['auth', 'verified', 'role:Client'])
     });
 
 // Espace dédié au rôle Super Admin : routes protégées par le rôle Spatie "Super Admin".
-Route::middleware(['auth', 'verified', 'role:Super Admin'])
+Route::middleware(['auth', 'verified', 'role:' . implode('|', config('roles.SUPER_ADMIN'))])
     ->prefix('superadmin')
     ->name('superadmin.')
     ->group(function () {
@@ -358,7 +358,7 @@ Route::middleware(['auth', 'verified', 'role:Super Admin'])
     });
 
 // Espace dédié au rôle Technicien : routes protégées par le rôle Spatie "technicien" ou "Technicien".
-Route::middleware(['auth', 'verified', 'role:technicien|Technicien'])
+Route::middleware(['auth', 'verified', 'role:' . implode('|', config('roles.TECHNICIAN'))])
     ->prefix('technicien')
     ->name('technicien.')
     ->group(function () {

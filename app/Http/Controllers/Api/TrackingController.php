@@ -22,7 +22,7 @@ class TrackingController extends BaseApiController
     public function start(Request $request, Intervention $intervention): JsonResponse
     {
         $user = $request->user();
-        $isAdmin = $user->hasAnyRole(['Admin', 'admin', 'Super Admin', 'superadmin']);
+        $isAdmin = $user->hasAnyRole(array_merge(config('roles.ADMIN'), config('roles.SUPER_ADMIN')));
 
         if ($intervention->technicien_id !== $user->id && !$isAdmin) {
             return $this->errorResponse('Non autorisé à démarrer le tracking GPS sur cette intervention.', null, 403);
@@ -42,7 +42,7 @@ class TrackingController extends BaseApiController
     public function addPoint(Request $request, GpsTrackingSession $session): JsonResponse
     {
         $user = $request->user();
-        $isAdmin = $user->hasAnyRole(['Admin', 'admin', 'Super Admin', 'superadmin']);
+        $isAdmin = $user->hasAnyRole(array_merge(config('roles.ADMIN'), config('roles.SUPER_ADMIN')));
 
         if ($session->technicien_id !== $user->id && !$isAdmin) {
             return $this->errorResponse('Non autorisé.', null, 403);
@@ -72,7 +72,7 @@ class TrackingController extends BaseApiController
     public function stop(Request $request, GpsTrackingSession $session): JsonResponse
     {
         $user = $request->user();
-        $isAdmin = $user->hasAnyRole(['Admin', 'admin', 'Super Admin', 'superadmin']);
+        $isAdmin = $user->hasAnyRole(array_merge(config('roles.ADMIN'), config('roles.SUPER_ADMIN')));
 
         if ($session->technicien_id !== $user->id && !$isAdmin) {
             return $this->errorResponse('Non autorisé.', null, 403);
@@ -92,7 +92,7 @@ class TrackingController extends BaseApiController
     public function show(Request $request, Intervention $intervention): JsonResponse
     {
         $user = $request->user();
-        $isAdmin = $user->hasAnyRole(['Admin', 'admin', 'Super Admin', 'superadmin']);
+        $isAdmin = $user->hasAnyRole(array_merge(config('roles.ADMIN'), config('roles.SUPER_ADMIN')));
 
         if ($intervention->technicien_id !== $user->id && !$isAdmin) {
             return $this->errorResponse('Non autorisé.', null, 403);

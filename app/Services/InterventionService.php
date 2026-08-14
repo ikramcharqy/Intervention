@@ -490,13 +490,182 @@ class InterventionService
         string $statut_apres,
         string $commentaire = ''
     ): void {
-        InterventionHistorique::create([
+        // Support both legacy and new migration schemas by checking columns
+        $payload = [
             'intervention_id' => $intervention->id,
             'user_id'         => Auth::id(),
-            'statut_avant'    => $statut_avant ?? '—',
-            'statut_apres'    => $statut_apres,
-            'commentaire'     => $commentaire,
-        ]);
+            'metadata'        => null,
+            'ip_address'      => request()?->ip() ?? null,
+            'device_id'       => request()->header('X-Device-Id') ?? null,
+        ];
+
+        // Prefer new column names if present
+        if (\Illuminate\Support\Facades\Schema::hasColumn('intervention_historiques', 'ancien_statut')) {
+            $payload['ancien_statut']  = $statut_avant ?? '—';
+            $payload['nouveau_statut'] = $statut_apres;
+            $payload['action']         = $commentaire ? substr($commentaire, 0, 255) : null;
+            $payload['motif']          = $commentaire ?: null;
+        } else {
+            // Fallback to legacy column names
+            $payload['statut_avant'] = $statut_avant ?? '—';
+            $payload['statut_apres'] = $statut_apres;
+            $payload['commentaire']  = $commentaire ?: null;
+        }
+
+        InterventionHistorique::create($payload);
+    }
+
+    /**
+     * Le technicien refuse l'intervention (motif obligatoire) — passe à REFUSEE.
+     */
+    public function refuseIntervention(Intervention $intervention, string $motif): void
+    {
+        if (!in_array($intervention->statut, [Intervention::STATUT_AFFECTEE, Intervention::STATUT_PLANIFIEE], true)) {
+            throw new \Exception('Impossible de refuser : statut invalide.');
+        }
+
+        DB::transaction(function () use ($intervention, $motif) {
+            $ancien = $intervention->statut;
+
+            $intervention->update([
+                'statut' => Intervention::STATUT_REFUSEE,
+            ]);
+
+            $this->enregistrerHistorique(
+                $intervention,
+                statut_avant: $ancien,
+                statut_apres: Intervention::STATUT_REFUSEE,
+                commentaire: "Refus technicien : {$motif}"
+            );
+
+            // Notifier l'admin/planificateur
+            if ($intervention->createur) {
+                $intervention->createur->notify(new \App\Notifications\InterventionRefuseeNotification($intervention, $motif));
+            }
+        });
+    }
+
+    /**
+     * Reporter / replanifier une intervention (Admin ou Planificateur).
+     */
+    public function reporterIntervention(Intervention $intervention, string $nouvelleDate, string $motif = ''): void
+    {
+        // Validation simple de date (format attendu: YYYY-MM-DD or parsable)
+        $date = null;
+        try { $date = \Illuminate\Support\Carbon::parse($nouvelleDate); } catch (\Throwable $e) { }
+        if (!$date) {
+            throw new \Exception('Date de report invalide');
+        }
+
+        DB::transaction(function () use ($intervention, $date, $motif) {
+            $ancien = $intervention->statut;
+
+            $intervention->update([
+                'statut' => Intervention::STATUT_REPORTEE,
+                'date_prevue_debut' => $date,
+            ]);
+
+            $this->enregistrerHistorique(
+                $intervention,
+                statut_avant: $ancien,
+                statut_apres: Intervention::STATUT_REPORTEE,
+                commentaire: "Reporté à {$date->toDateTimeString()} - {$motif}"
+            );
+
+            // Notifier technicien et planificateur
+            if ($intervention->technicien) {
+                $intervention->technicien->notify(new \App\Notifications\InterventionReporteeNotification($intervention, $date, $motif));
+            }
+        });
+    }
+
+    /**
+     * Réaffecter une intervention à un autre technicien (Admin / Planificateur).
+     */
+    public function reassignIntervention(Intervention $intervention, int $nouveauTechnicienId, string $motif = ''): void
+    {
+        DB::transaction(function () use ($intervention, $nouveauTechnicienId, $motif) {
+            $ancien = $intervention->statut;
+            $ancienTech = $intervention->technicien_id;
+
+            $intervention->update([
+                'technicien_id' => $nouveauTechnicienId,
+                'statut' => Intervention::STATUT_AFFECTEE,
+            ]);
+
+            $this->enregistrerHistorique(
+                $intervention,
+                statut_avant: $ancien,
+                statut_apres: Intervention::STATUT_AFFECTEE,
+                commentaire: "Réaffectation de technicien ({$ancienTech} -> {$nouveauTechnicienId}) : {$motif}"
+            );
+
+            // Notifications basiques
+            $nouveau = \App\Models\User::find($nouveauTechnicienId);
+            if ($nouveau) {
+                $nouveau->notify(new \App\Notifications\InterventionAffecteeNotification($intervention));
+            }
+        });
+    }
+
+    /**
+     * Clôture administrative finale (après Terminee) → passe à VALIDEE
+     */
+    public function cloturerIntervention(Intervention $intervention): void
+    {
+        if ($intervention->statut !== Intervention::STATUT_TERMINEE) {
+            throw new \Exception('Lintervention doit être au statut Terminee pour être clôturée.');
+        }
+
+        DB::transaction(function () use ($intervention) {
+            $ancien = $intervention->statut;
+
+            $intervention->update([
+                'statut' => Intervention::STATUT_VALIDEE,
+                'valide_par' => Auth::id(),
+                'date_validation' => now(),
+            ]);
+
+            $this->enregistrerHistorique(
+                $intervention,
+                statut_avant: $ancien,
+                statut_apres: Intervention::STATUT_VALIDEE,
+                commentaire: 'Clôture administrative'
+            );
+
+            if ($intervention->technicien) {
+                $intervention->technicien->notify(new \App\Notifications\InterventionClotureeNotification($intervention));
+            }
+        });
+    }
+
+    /**
+     * Rouvrir une intervention clôturée/validée pour complément ou litige.
+     */
+    public function rouvrirIntervention(Intervention $intervention, string $motif = ''): void
+    {
+        if (!in_array($intervention->statut, [Intervention::STATUT_VALIDEE, Intervention::STATUT_TERMINEE], true)) {
+            throw new \Exception('Seules les interventions Validée/Terminée peuvent être rouvertes.');
+        }
+
+        DB::transaction(function () use ($intervention, $motif) {
+            $ancien = $intervention->statut;
+
+            $intervention->update([
+                'statut' => Intervention::STATUT_ROUVERTE,
+            ]);
+
+            $this->enregistrerHistorique(
+                $intervention,
+                statut_avant: $ancien,
+                statut_apres: Intervention::STATUT_ROUVERTE,
+                commentaire: "Réouverture : {$motif}"
+            );
+
+            if ($intervention->technicien) {
+                $intervention->technicien->notify(new \App\Notifications\InterventionRouverteNotification($intervention, $motif));
+            }
+        });
     }
 
     /*

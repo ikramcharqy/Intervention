@@ -18,12 +18,17 @@ class Intervention extends Model
 
     // Statuts possibles (ordre du workflow)
     const STATUT_PLANIFIEE            = 'Planifiee';
+    const STATUT_AFFECTEE             = 'Affectee';
     const STATUT_ACCEPTEE             = 'Acceptee';
+    const STATUT_REFUSEE              = 'Refusee';
     const STATUT_EN_COURS             = 'En cours';
-    const STATUT_FORM_REMPLI          = 'Formulaire rempli';
     const STATUT_SUSPENDUE            = 'Suspendue';
-    const STATUT_EN_ATTENTE_VALID     = 'En attente validation'; // Obsolète mais gardé pour rétrocompatibilité
+    const STATUT_REPORTEE             = 'Reportee';
+    const STATUT_FORM_REMPLI          = 'Formulaire rempli';
+    const STATUT_REJETEE              = 'Rejetee';
     const STATUT_TERMINEE             = 'Terminee';
+    const STATUT_VALIDEE              = 'Validee';
+    const STATUT_ROUVERTE             = 'Rouverte';
     const STATUT_ANNULEE              = 'Annulee';
 
     // Priorités (ordre croissant d'urgence)
@@ -37,6 +42,33 @@ class Intervention extends Model
     const MODE_QR     = 'QR';
     const MODE_NFC    = 'NFC';
     const MODE_MANUEL = 'Manuel';
+
+    // Matrice des transitions autorisées par statut courant
+    // Format: 'Statut_courant' => ['StatutCible1', 'StatutCible2', ...]
+    public static array $ALLOWED_TRANSITIONS = [
+        self::STATUT_PLANIFIEE => [self::STATUT_AFFECTEE, self::STATUT_ANNULEE, self::STATUT_REPORTEE],
+        self::STATUT_AFFECTEE  => [self::STATUT_ACCEPTEE, self::STATUT_REFUSEE, self::STATUT_ANNULEE],
+        self::STATUT_ACCEPTEE   => [self::STATUT_EN_COURS, self::STATUT_SUSPENDUE, self::STATUT_ANNULEE],
+        self::STATUT_REFUSEE    => [self::STATUT_AFFECTEE, self::STATUT_REPORTEE],
+        self::STATUT_EN_COURS   => [self::STATUT_SUSPENDUE, self::STATUT_REPORTEE, self::STATUT_FORM_REMPLI, self::STATUT_ANNULEE],
+        self::STATUT_SUSPENDUE  => [self::STATUT_EN_COURS, self::STATUT_REPORTEE, self::STATUT_ANNULEE],
+        self::STATUT_REPORTEE   => [self::STATUT_AFFECTEE, self::STATUT_PLANIFIEE, self::STATUT_ANNULEE],
+        self::STATUT_FORM_REMPLI=> [self::STATUT_REJETEE, self::STATUT_TERMINEE],
+        self::STATUT_REJETEE    => [self::STATUT_EN_COURS, self::STATUT_REPORTEE],
+        self::STATUT_TERMINEE   => [self::STATUT_VALIDEE, self::STATUT_ROUVERTE],
+        self::STATUT_VALIDEE    => [],
+        self::STATUT_ROUVERTE   => [self::STATUT_EN_COURS, self::STATUT_ANNULEE],
+        self::STATUT_ANNULEE    => [],
+    ];
+
+    // Roles => actions autorisées (exposé pour politique)
+    public static array $ROLE_TRANSITIONS = [
+        'ADMIN'       => ['create','assign','reassign','reschedule','cancel','validate','reject','reopen','manage_clients'],
+        'PLANIFICATEUR'=> ['create','assign','reassign','reschedule'],
+        'COMMERCIAL'  => ['create','view'],
+        'TECHNICIEN'  => ['accept','refuse','start','suspend','resume','reschedule_request','submit_form'],
+        'CLIENT'      => ['view'],
+    ];
 
     protected $fillable = [
         'code_intervention',
@@ -72,6 +104,13 @@ class Intervention extends Model
         'description',
         'observations',
         'motif_annulation',
+
+        // Signature client
+        'signature_client_path',
+        'signed_at',
+
+        // Verrou optimiste
+        'status_version',
     ];
 
     protected $casts = [
@@ -81,7 +120,23 @@ class Intervention extends Model
         'date_reelle_fin'             => 'datetime',
         'date_soumission_validation'  => 'datetime',
         'date_validation'             => 'datetime',
+        'signed_at'                   => 'datetime',
+        'status_version'              => 'integer',
     ];
+
+    /**
+     * Vérifie si une transition de statut est autorisée (statut courant -> $nouveauStatut)
+     * et réalise des vérifications métier basiques. La vérification RBAC doit être
+     * faite via la Policy (InterventionPolicy) côté service ou contrôleur.
+     */
+    public function peutPasserA(string $nouveauStatut): bool
+    {
+        $courant = $this->statut;
+        if (!isset(self::$ALLOWED_TRANSITIONS[$courant])) {
+            return false;
+        }
+        return in_array($nouveauStatut, self::$ALLOWED_TRANSITIONS[$courant], true);
+    }
 
     /*
     |--------------------------------------------------------------------------

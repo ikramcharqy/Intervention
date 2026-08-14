@@ -31,16 +31,16 @@ class AuthenticatedSessionController extends Controller
         $user = $request->user();
 
         if ($user) {
-            if ($user->hasRole('Super Admin')) {
+            if ($user->hasAnyRole(config('roles.SUPER_ADMIN'))) {
                 return redirect()->intended(route('superadmin.dashboard', absolute: false));
             }
-            if ($user->hasRole('Commercial')) {
+            if ($user->hasAnyRole(config('roles.COMMERCIAL'))) {
                 return redirect()->intended(route('commercial.dashboard', absolute: false));
             }
-            if ($user->hasRole('Client')) {
+            if ($user->hasAnyRole(config('roles.CLIENT'))) {
                 return redirect()->intended(route('client.dashboard', absolute: false));
             }
-            if ($user->hasRole('technicien') || $user->hasRole('Technicien')) {
+            if ($user->hasAnyRole(config('roles.TECHNICIAN'))) {
                 return redirect()->intended(route('technicien.dashboard', absolute: false));
             }
         }

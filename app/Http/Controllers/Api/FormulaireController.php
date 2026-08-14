@@ -89,7 +89,7 @@ class FormulaireController extends BaseApiController
 
         try {
             $data = $request->input('reponses', []);
-            $files = $request->allFiles()['fichiers'] ?? [];
+            $files = $request->file('fichiers', []);
 
             // 1. Sauvegarder les réponses
             $this->remplissageFormulaireService->sauvegarderReponses(

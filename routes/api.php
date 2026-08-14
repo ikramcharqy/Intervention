@@ -27,9 +27,23 @@ Route::middleware('auth:sanctum')->group(function () {
     // 1. Module Interventions
     Route::get('/interventions', [InterventionController::class, 'index']);
     Route::get('/interventions/{intervention}', [InterventionController::class, 'show']);
-    Route::post('/interventions/{intervention}/accept', [InterventionController::class, 'accept']);
-    Route::post('/interventions/{intervention}/start', [InterventionController::class, 'start']);
-    Route::post('/interventions/{intervention}/validate', [InterventionController::class, 'validate']);
+
+    // Actions technicien
+    Route::post('/interventions/{intervention}/accept', [InterventionController::class, 'accept'])->name('api.interventions.accept');
+    Route::post('/interventions/{intervention}/refuse', [InterventionController::class, 'refuse'])->name('api.interventions.refuse');
+    Route::post('/interventions/{intervention}/start', [InterventionController::class, 'start'])->name('api.interventions.start');
+    Route::post('/interventions/{intervention}/suspend', [InterventionController::class, 'suspend'])->name('api.interventions.suspend');
+    Route::post('/interventions/{intervention}/resume', [InterventionController::class, 'resume'])->name('api.interventions.resume');
+    Route::post('/interventions/{intervention}/submit-form', [InterventionController::class, 'submitForm'])->name('api.interventions.submitForm');
+
+    // Actions admin / planificateur
+    Route::post('/interventions/{intervention}/reassign', [InterventionController::class, 'reassign'])->name('api.interventions.reassign');
+    Route::post('/interventions/{intervention}/report', [InterventionController::class, 'report'])->name('api.interventions.report');
+    Route::post('/interventions/{intervention}/signature', [InterventionController::class, 'uploadSignature'])->name('api.interventions.signature');
+    Route::post('/interventions/{intervention}/reopen', [InterventionController::class, 'reopen'])->name('api.interventions.reopen');
+    Route::post('/interventions/{intervention}/close', [InterventionController::class, 'close'])->name('api.interventions.close');
+    Route::post('/interventions/{intervention}/cancel', [InterventionController::class, 'cancel'])->name('api.interventions.cancel');
+    Route::post('/interventions/{intervention}/validate', [InterventionController::class, 'validate'])->name('api.interventions.validate');
 
     // 2. Module Formulaires Dynamiques
     Route::get('/interventions/{intervention}/formulaire', [FormulaireController::class, 'show']);

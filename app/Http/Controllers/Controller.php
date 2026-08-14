@@ -18,7 +18,7 @@ abstract class Controller
     {
         $user = auth()->user();
 
-        if ($user && $user->hasRole('Commercial')) {
+        if ($user && $user->hasAnyRole(config('roles.COMMERCIAL'))) {
             $commercialView = 'commercial.'.$view;
 
             if (view()->exists($commercialView)) {
