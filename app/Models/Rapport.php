@@ -32,6 +32,12 @@ class Rapport extends Model
         'signature_technicien',
 
         'pdf_path',
+
+        // GPS et Meta Photos
+        'gps_latitude',
+        'gps_longitude',
+        'gps_adresse',
+        'photos_meta',
     ];
 
     protected $casts = [
@@ -40,6 +46,10 @@ class Rapport extends Model
 
         'duree_reelle' => 'integer',
         'pourcentage_global' => 'integer',
+
+        'gps_latitude'  => 'decimal:7',
+        'gps_longitude' => 'decimal:7',
+        'photos_meta'   => 'array',
     ];
 
     /*

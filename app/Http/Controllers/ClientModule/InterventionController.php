@@ -58,4 +58,52 @@ class InterventionController extends Controller
 
         return view('client.interventions.show', compact('intervention'));
     }
+
+    /**
+     * Formulaire pour permettre au Client d'émettre une demande d'intervention.
+     */
+    public function createDemande(): View
+    {
+        $client = $this->getClient();
+        $chantiers = $client ? Chantier::where('client_id', $client->id)->get() : collect();
+        $typesIntervention = \App\Models\TypeIntervention::where('is_active', true)->get();
+
+        return view('client.interventions.create_demande', compact('chantiers', 'typesIntervention'));
+    }
+
+    /**
+     * Enregistre la demande d'intervention émise par le Client.
+     */
+    public function storeDemande(Request $request)
+    {
+        $client = $this->getClient();
+        if (!$client) {
+            abort(403, 'Profil client introuvable.');
+        }
+
+        $validated = $request->validate([
+            'chantier_id'          => 'required|exists:chantiers,id',
+            'type_intervention_id' => 'nullable|exists:type_interventions,id',
+            'priorite'             => 'required|string',
+            'objet'                => 'required|string|max:255',
+            'description'          => 'required|string',
+        ]);
+
+        $commercialId = $client->commercial_id;
+        if (!$commercialId) {
+            $commercialUser = \App\Models\User::role('Commercial')->first() 
+                ?? \App\Models\User::whereHas('roles', function($q) { $q->where('name', 'Commercial'); })->first();
+            $commercialId = $commercialUser?->id;
+        }
+
+        $validated['client_id']     = $client->id;
+        $validated['commercial_id'] = $commercialId;
+        $validated['reference']     = 'DEM-CL-' . strtoupper(uniqid());
+        $validated['statut']        = 'En attente';
+
+        \App\Models\DemandeIntervention::create($validated);
+
+        return redirect()->route('client.interventions.index')
+            ->with('success', 'Votre demande d\'intervention a été soumise avec succès. Votre responsable commercial examinera votre demande et vous contactera par téléphone ou email.');
+    }
 }

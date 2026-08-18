@@ -129,46 +129,61 @@
             </div>
             @endif
 
-            {{-- Action Admin : Planifier --}}
-            @role('Admin')
+            {{-- Qualification Commerciale (Appel / Email / Validation / Refus) --}}
             @if($demandeIntervention->statut === 'En attente')
-            <div class="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
-                    <p class="font-semibold text-indigo-800 dark:text-indigo-300">Action Administrateur</p>
-                    <p class="text-sm text-indigo-600 dark:text-indigo-400 mt-1">Vous pouvez accepter et planifier cette demande ou la refuser.</p>
-                </div>
-                <div class="flex gap-3">
-                    {{-- Bouton Planifier → redirige vers créer une intervention avec données pré-remplies --}}
-                    <a href="{{ route('interventions.create', [
-                            'client_id' => $demandeIntervention->client_id,
-                            'chantier_id' => $demandeIntervention->chantier_id,
-                            'type_intervention_id' => $demandeIntervention->type_intervention_id,
-                            'priorite' => $demandeIntervention->priorite,
-                            'description' => $demandeIntervention->description,
-                            'demande_id' => $demandeIntervention->id
-                        ]) }}"
-                       class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-md hover:bg-green-700">
-                        Planifier l'intervention
-                    </a>
+                <div class="bg-white dark:bg-gray-800 shadow-sm sm:rounded-lg p-6 border-2 border-indigo-500/40">
+                    <h3 class="text-base font-extrabold text-indigo-700 dark:text-indigo-400 border-b border-gray-100 dark:border-gray-700 pb-3 mb-4 flex items-center space-x-2">
+                        <i class="fa-solid fa-phone-volume"></i>
+                        <span>Qualification Commerciale (Échange Client par Téléphone / Email)</span>
+                    </h3>
 
-                    <form action="{{ route('demande-interventions.update', $demandeIntervention) }}" method="POST">
-                        @csrf @method('PUT')
-                        <input type="hidden" name="client_id" value="{{ $demandeIntervention->client_id }}">
-                        <input type="hidden" name="chantier_id" value="{{ $demandeIntervention->chantier_id }}">
-                        <input type="hidden" name="type_intervention_id" value="{{ $demandeIntervention->type_intervention_id }}">
-                        <input type="hidden" name="priorite" value="{{ $demandeIntervention->priorite }}">
-                        <input type="hidden" name="objet" value="{{ $demandeIntervention->objet }}">
-                        <input type="hidden" name="description" value="{{ $demandeIntervention->description }}">
-                        <input type="hidden" name="statut" value="Refusée">
-                        <button type="submit" onclick="return confirm('Refuser cette demande ?')"
-                            class="px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-md hover:bg-red-700">
-                            Refuser
+                    <p class="text-xs text-gray-600 dark:text-gray-300 mb-4">
+                        Consultez la demande, puis contactez le client par téléphone (<strong>{{ $demandeIntervention->client->telephone ?? 'Non renseigné' }}</strong>) ou email (<strong>{{ $demandeIntervention->client->email ?? 'Non renseigné' }}</strong>). Complétez le compte-rendu pour <strong>Valider</strong> (transmet l'intervention à l'Admin) ou <strong>Refuser</strong> la demande.
+                    </p>
+
+                    <form action="{{ route('demande-interventions.validerConvertir', $demandeIntervention) }}" method="POST" class="space-y-4">
+                        @csrf
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Compte-rendu d'échange (Téléphone / Email) <span class="text-red-500">*</span></label>
+                                <textarea name="compte_rendu_echange" rows="3" required placeholder="Ex: Client contacté par téléphone. Demande confirmée et détails d'accès validés..." class="w-full text-xs rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:ring-indigo-500 shadow-sm"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Date d'intervention souhaitée par le client</label>
+                                <input type="datetime-local" name="date_prevue_souhaitee" class="w-full text-xs rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:ring-indigo-500 shadow-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">Notes internes Commercial</label>
+                            <input type="text" name="notes_commercial" placeholder="Notes visibles par l'administration..." class="w-full text-xs rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:ring-indigo-500 shadow-sm">
+                        </div>
+
+                        <div class="flex flex-wrap gap-3 pt-2">
+                            <button type="submit" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center space-x-2">
+                                <i class="fa-solid fa-circle-check"></i>
+                                <span>Valider & Transmettre à l'Admin pour Planification</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <hr class="my-4 border-gray-200 dark:border-gray-700">
+
+                    {{-- Formulaire de Refus --}}
+                    <form action="{{ route('demande-interventions.refuser', $demandeIntervention) }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir refuser cette demande ?');" class="flex items-center gap-3">
+                        @csrf
+                        <input type="text" name="motif_refus" required placeholder="Motif du refus à notifier au client..." class="flex-1 text-xs rounded-xl border-gray-300 dark:border-gray-700 dark:bg-gray-900 focus:ring-red-500 shadow-sm">
+                        <button type="submit" class="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs transition shrink-0 flex items-center space-x-1">
+                            <i class="fa-solid fa-ban"></i>
+                            <span>Refuser la Demande</span>
                         </button>
                     </form>
                 </div>
-            </div>
+            @else
+                <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-xs font-bold text-gray-700 dark:text-gray-300">
+                    Statut actuel de la demande : <span class="uppercase text-indigo-600">{{ $demandeIntervention->statut }}</span>
+                </div>
             @endif
-            @endrole
 
             <div class="text-right">
                 <a href="{{ route('demande-interventions.index') }}" class="text-sm text-gray-500 hover:underline">

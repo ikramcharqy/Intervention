@@ -17,6 +17,7 @@ class InterventionHistorique extends Model
         'statut_avant',
         'statut_apres',
         'commentaire',
+        'source',
     ];
 
     /*

@@ -8,7 +8,6 @@ use App\Models\Reponse;
 use App\Models\Question;
 use App\Models\Formulaire;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 
 class RemplissageFormulaireService
@@ -37,9 +36,20 @@ class RemplissageFormulaireService
                 // Fichiers uploadés
                 if (isset($files[$question->id])) {
                     $file = $files[$question->id];
-                    if ($file instanceof UploadedFile) {
+                    $path = null;
+                    if (is_array($file)) {
+                        $paths = [];
+                        foreach ($file as $f) {
+                            if ($f instanceof UploadedFile) {
+                                $paths[] = $f->store('formulaires_fichiers', 'public');
+                            }
+                        }
+                        $path = implode(', ', $paths);
+                    } elseif ($file instanceof UploadedFile) {
                         $path = $file->store('formulaires_fichiers', 'public');
-                        
+                    }
+
+                    if ($path) {
                         Reponse::create([
                             'rapport_id'      => $rapport->id,
                             'question_id'     => $question->id,
@@ -49,92 +59,132 @@ class RemplissageFormulaireService
                     continue;
                 }
 
-                // Si pas de réponse dans les données, on skip
-                if (!isset($data[$question->id]) && !in_array($question->type_reponse, ['Checkbox', 'Materiaux'])) {
+                // Matériaux utilisés (gérés séparément dans l'onglet Matériaux)
+                if ($question->type_reponse === 'Materiaux') {
                     continue;
                 }
 
-                $reponseValue = $data[$question->id] ?? null;
+                // Si pas de réponse dans les données, on skip
+                if (!isset($data[$question->id])) {
+                    continue;
+                }
 
-                // Gestion spécifique pour les Checkboxes (multiples réponses)
+                $reponseValue = $data[$question->id];
+
+                if ($reponseValue === null || $reponseValue === '') {
+                    continue;
+                }
+
+                // Checkbox
                 if ($question->type_reponse === 'Checkbox') {
                     if (is_array($reponseValue)) {
-                        foreach ($reponseValue as $choixId) {
+                        if (count($reponseValue) === 1 && is_numeric(reset($reponseValue))) {
                             Reponse::create([
                                 'rapport_id'        => $rapport->id,
                                 'question_id'       => $question->id,
-                                'choix_question_id' => $choixId,
+                                'choix_question_id' => (int)reset($reponseValue),
+                            ]);
+                        } else {
+                            Reponse::create([
+                                'rapport_id'    => $rapport->id,
+                                'question_id'   => $question->id,
+                                'reponse_texte' => $this->formatStringValue($reponseValue),
+                            ]);
+                        }
+                    } else {
+                        if (is_numeric($reponseValue)) {
+                            Reponse::create([
+                                'rapport_id'        => $rapport->id,
+                                'question_id'       => $question->id,
+                                'choix_question_id' => (int)$reponseValue,
+                            ]);
+                        } else {
+                            Reponse::create([
+                                'rapport_id'    => $rapport->id,
+                                'question_id'   => $question->id,
+                                'reponse_texte' => $this->formatStringValue($reponseValue),
                             ]);
                         }
                     }
                     continue;
                 }
 
-                // Matériaux utilisés (saisis via le formulaire, stockés dans intervention_materiaus)
-                if ($question->type_reponse === 'Materiaux') {
-                    $intervention->materiaux()->delete();
-
-                    if (is_array($reponseValue)) {
-                        foreach ($reponseValue as $ligne) {
-                            if (empty($ligne['materiau_id']) || !isset($ligne['quantite'])) {
-                                continue;
-                            }
-
-                            $intervention->materiaux()->create([
-                                'materiau_id' => $ligne['materiau_id'],
-                                'quantite'    => $ligne['quantite'],
-                                'commentaire' => $ligne['commentaire'] ?? null,
-                            ]);
-                        }
-                    }
-
-                    continue;
-                }
-
-                // Pour les types Liste et Radio (un seul choix stocké sous forme d'ID de choix)
+                // Liste / Radio
                 if (in_array($question->type_reponse, ['Liste', 'Radio'])) {
-                    Reponse::create([
-                        'rapport_id'        => $rapport->id,
-                        'question_id'       => $question->id,
-                        'choix_question_id' => $reponseValue,
-                    ]);
+                    $singleVal = is_array($reponseValue) ? reset($reponseValue) : $reponseValue;
+                    if (is_numeric($singleVal)) {
+                        Reponse::create([
+                            'rapport_id'        => $rapport->id,
+                            'question_id'       => $question->id,
+                            'choix_question_id' => (int)$singleVal,
+                        ]);
+                    } else {
+                        Reponse::create([
+                            'rapport_id'    => $rapport->id,
+                            'question_id'   => $question->id,
+                            'reponse_texte' => $this->formatStringValue($singleVal),
+                        ]);
+                    }
                     continue;
                 }
 
-                // Types texte
-                $texteTypes = ['Texte', 'TexteLong', 'Date', 'Heure', 'DateHeure', 'GPS', 'QRCode'];
-                if (in_array($question->type_reponse, $texteTypes)) {
-                    Reponse::create([
-                        'rapport_id'    => $rapport->id,
-                        'question_id'   => $question->id,
-                        'reponse_texte' => $reponseValue,
-                    ]);
-                    continue;
-                }
-
-                // Nombres
+                // Nombre
                 if ($question->type_reponse === 'Nombre') {
-                    Reponse::create([
-                        'rapport_id'     => $rapport->id,
-                        'question_id'    => $question->id,
-                        'reponse_nombre' => $reponseValue,
-                    ]);
+                    $numVal = is_array($reponseValue) ? reset($reponseValue) : $reponseValue;
+                    if ($numVal !== null && $numVal !== '' && is_numeric($numVal)) {
+                        Reponse::create([
+                            'rapport_id'     => $rapport->id,
+                            'question_id'    => $question->id,
+                            'reponse_nombre' => $numVal,
+                        ]);
+                    } elseif ($numVal !== null && $numVal !== '') {
+                        Reponse::create([
+                            'rapport_id'    => $rapport->id,
+                            'question_id'   => $question->id,
+                            'reponse_texte' => $this->formatStringValue($numVal),
+                        ]);
+                    }
                     continue;
                 }
-                
-                // Oui/Non (booléen stocké en texte "1" ou "0")
-                if ($question->type_reponse === 'OuiNon') {
+
+                // Oui/Non
+                if (in_array($question->type_reponse, ['OuiNon', 'Oui_Non'])) {
+                    $boolVal = is_array($reponseValue) ? reset($reponseValue) : $reponseValue;
                     Reponse::create([
                         'rapport_id'    => $rapport->id,
                         'question_id'   => $question->id,
-                        'reponse_texte' => $reponseValue ? '1' : '0',
+                        'reponse_texte' => $this->formatStringValue($boolVal),
                     ]);
                     continue;
                 }
+
+                // Types texte, fichiers/médias, fallback
+                Reponse::create([
+                    'rapport_id'    => $rapport->id,
+                    'question_id'   => $question->id,
+                    'reponse_texte' => $this->formatStringValue($reponseValue),
+                ]);
             }
-            
-            // On peut éventuellement changer le statut de l'intervention à 'Terminee' ou 'Suspendue'
-            // Mais la consigne demande juste de sauvegarder les réponses.
         });
+    }
+
+    /**
+     * Formate n'importe quelle valeur (tableau, booléen, string) de manière sécurisée pour reponse_texte.
+     */
+    private function formatStringValue($val): ?string
+    {
+        if (is_null($val)) {
+            return null;
+        }
+        if (is_array($val)) {
+            $formatted = array_map(function ($item) {
+                return is_array($item) ? json_encode($item, JSON_UNESCAPED_UNICODE) : (string)$item;
+            }, $val);
+            return implode(', ', array_filter($formatted, fn($item) => $item !== ''));
+        }
+        if (is_bool($val)) {
+            return $val ? 'Oui' : 'Non';
+        }
+        return (string)$val;
     }
 }

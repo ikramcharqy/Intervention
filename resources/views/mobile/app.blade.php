@@ -3,28 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Technicien Mobile — Intervention App</title>
+    <title>TechniTrack — Application Terrain Technicien</title>
+
+    <!-- ── PWA Manifest & Meta ── -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="TechniTrack">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Application terrain technicien pour la gestion et le suivi des interventions sur chantier.">
+
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome & Google Fonts -->
+    <!-- FontAwesome & Google Fonts Open Sans Soft UI -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     fontFamily: {
-                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        sans: ['"Open Sans"', 'sans-serif'],
                     },
                     colors: {
                         brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
+                            50: '#fcf4fd',
+                            100: '#f8e4fa',
+                            500: '#cb0c9f',
+                            600: '#b00a8a',
+                            700: '#940874',
                         }
                     }
                 }
@@ -32,8 +42,20 @@
         }
     </script>
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid #e2e8f0; box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.04); }
+        :root {
+            --soft-primary-start: #7928ca;
+            --soft-primary-end: #cb0c9f;
+        }
+        body { font-family: 'Open Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .soft-card {
+            background-color: #ffffff;
+            border-radius: 1rem;
+            box-shadow: 0 20px 27px 0 rgba(0,0,0,0.05);
+        }
+        .soft-gradient-primary {
+            background-image: linear-gradient(310deg, var(--soft-primary-start) 0%, var(--soft-primary-end) 100%);
+        }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border: 1px solid #e2e8f0; box-shadow: 0 20px 27px 0 rgba(0, 0, 0, 0.05); }
         .glass-nav { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px); border-top: 1px solid #e2e8f0; box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.04); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -63,6 +85,18 @@
                 </div>
             </div>
         </header>
+
+        <!-- OFFLINE STATUS & AUTOMATIC SYNC BANNER -->
+        <div id="network-offline-banner" class="hidden shrink-0 bg-slate-900 border-b border-slate-800 px-4 py-2 flex items-center justify-between text-xs text-white shadow-lg z-30 animate-fade-in">
+            <div class="flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                <span class="font-bold text-[11px]">Hors-Ligne : <span id="offline-pending-count" class="text-amber-400 font-extrabold">0 action(s)</span> stockée(s)</span>
+            </div>
+            <button onclick="triggerManualSync()" class="px-2.5 py-1 bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-bold text-[10px] uppercase tracking-wider transition shadow flex items-center space-x-1">
+                <i class="fa-solid fa-rotate text-[9px]"></i>
+                <span>Synchro</span>
+            </button>
+        </div>
 
         <!-- GLOBAL GPS TRACKING BANNER (when session active) -->
         <div id="tracking-active-banner" class="hidden shrink-0 bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-4 py-2 flex items-center justify-between text-xs text-white shadow-md z-20 animate-fade-in">
@@ -267,36 +301,68 @@
 
                 <!-- ACTION BUTTONS SECTION -->
                 <div id="detail-actions-box" class="glass-panel p-3.5 rounded-xl space-y-2 bg-white border border-slate-200 shadow-sm">
-                    <!-- Accept Button -->
-                    <button id="btn-action-accept" onclick="executeAcceptIntervention()" class="hidden w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-check-circle text-xs"></i>
-                        <span>Accepter la mission</span>
-                    </button>
+                    <!-- Actions Grid -->
+                    <div id="detail-actions-container" class="space-y-2">
+                        <!-- Accept / Refuse Grid (Statut Affectee / Planifiee) -->
+                        <div id="btn-group-accept-refuse" class="hidden grid grid-cols-2 gap-2">
+                            <button id="btn-action-accept" onclick="executeAcceptIntervention()" class="py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-1.5">
+                                <i class="fa-solid fa-check-circle text-xs"></i>
+                                <span>Accepter</span>
+                            </button>
+                            <button id="btn-action-refuse" onclick="openRefuseModal()" class="py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-bold text-xs rounded-xl transition flex items-center justify-center space-x-1.5">
+                                <i class="fa-solid fa-ban text-xs"></i>
+                                <span>Refuser</span>
+                            </button>
+                        </div>
 
-                    <!-- Start Button -->
-                    <button id="btn-action-start" onclick="openStartInterventionModal()" class="hidden w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-play text-xs"></i>
-                        <span>Démarrer l'intervention</span>
-                    </button>
+                        <!-- Banner En attente de réaffectation -->
+                        <div id="banner-reassignment-pending" class="hidden p-3 bg-amber-50 border border-amber-300 text-amber-800 rounded-xl text-xs space-y-1">
+                            <div class="flex items-center space-x-2 font-bold">
+                                <i class="fa-solid fa-hourglass-half text-amber-600 animate-spin"></i>
+                                <span>Demande de réaffectation en cours</span>
+                            </div>
+                            <p class="text-[11px] text-amber-700">Votre demande de refus est en cours d'examen par l'administrateur.</p>
+                        </div>
 
-                    <!-- Dynamic Form Button -->
-                    <button id="btn-action-form" onclick="openFormulaireScreen()" class="hidden w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-list-check text-xs"></i>
-                        <span>Saisir le Formulaire Terrain</span>
-                    </button>
+                        <!-- Start Button -->
+                        <button id="btn-action-start" onclick="openStartInterventionModal()" class="hidden w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-play text-xs"></i>
+                            <span>Démarrer l'intervention</span>
+                        </button>
 
-                    <!-- Rapport Button -->
-                    <button id="btn-action-rapport" onclick="openRapportScreen()" class="hidden w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-file-lines text-xs"></i>
-                        <span>Gérer le Rapport</span>
-                    </button>
+                        <!-- Dynamic Form Button -->
+                        <button id="btn-action-form" onclick="openFormulaireScreen()" class="hidden w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-list-check text-xs"></i>
+                            <span>Saisir le Formulaire Terrain</span>
+                        </button>
 
-                    <!-- Validate & Close Button (Admin / Authorized Tech) -->
-                    <button id="btn-action-validate" onclick="executeValidateIntervention()" class="hidden w-full py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
-                        <i class="fa-solid fa-lock text-xs"></i>
-                        <span>Valider & Clôturer</span>
-                    </button>
-                </div>
+                        <!-- Rapport Button -->
+                        <button id="btn-action-rapport" onclick="openRapportScreen()" class="hidden w-full py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-file-lines text-xs"></i>
+                            <span>Gérer le Rapport & Preuves</span>
+                        </button>
+
+                        <!-- Finish Intervention Button (Technicien) -->
+                        <button id="btn-action-finish" onclick="executeFinishIntervention()" class="hidden w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs rounded-xl shadow-lg transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-flag-checkered text-xs"></i>
+                            <span>Finir l'intervention & Soumettre à l'Administration</span>
+                        </button>
+
+                        <!-- Banner Intervention Clôturée (Mode lecture seule) -->
+                        <div id="banner-sealed-info" class="hidden p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs flex items-center space-x-2">
+                            <i class="fa-solid fa-lock text-emerald-600 text-sm shrink-0"></i>
+                            <div>
+                                <p class="font-extrabold text-xs text-emerald-900">Intervention Clôturée</p>
+                                <p class="text-[10px] text-emerald-700">La version finale a été scellée et transmise à l'administration.</p>
+                            </div>
+                        </div>
+
+                        <!-- Validate & Close Button (Admin / Authorized Tech) -->
+                        <button id="btn-action-validate" onclick="executeValidateIntervention()" class="hidden w-full py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-lock text-xs"></i>
+                            <span>Valider & Clôturer</span>
+                        </button>
+                    </div>
 
                 <!-- TABBED DETAILS SECTION -->
                 <div class="space-y-3">
@@ -327,9 +393,108 @@
                     </div>
 
                     <!-- TAB CONTENT: MATERIAUX -->
-                    <div id="tab-content-materiaux" class="detail-tab-pane hidden glass-panel p-4 rounded-xl text-xs space-y-2 bg-white border border-slate-200">
-                        <div id="detail-materiaux-list" class="space-y-2">
-                            <!-- Materials list -->
+                    <div id="tab-content-materiaux" class="detail-tab-pane hidden space-y-4">
+
+                        <!-- Matériaux déjà utilisés -->
+                        <div class="glass-panel rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-indigo-50 to-slate-50 border-b border-slate-200">
+                                <div class="flex items-center space-x-2">
+                                    <span class="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                        <i class="fa-solid fa-boxes-stacked text-indigo-600 text-xs"></i>
+                                    </span>
+                                    <span class="text-xs font-bold text-slate-800">Matériaux utilisés</span>
+                                </div>
+                                <span id="mat-count-badge" class="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full">0</span>
+                            </div>
+                            <div id="detail-materiaux-list" class="divide-y divide-slate-100 min-h-[60px]">
+                                <div class="flex items-center justify-center py-6 text-xs text-slate-400">
+                                    <i class="fa-solid fa-box-open mr-2 text-slate-300 text-sm"></i>
+                                    Aucun matériau enregistré
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ajouter un matériau -->
+                        <div id="add-materiau-panel" class="glass-panel rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+                            <div class="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-emerald-50 to-slate-50 border-b border-slate-200">
+                                <span class="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
+                                    <i class="fa-solid fa-plus text-emerald-600 text-xs"></i>
+                                </span>
+                                <span class="text-xs font-bold text-slate-800">Ajouter un matériau</span>
+                            </div>
+
+                            <div class="p-4 space-y-3">
+                                <!-- Recherche dans le catalogue -->
+                                <div class="relative">
+                                    <input
+                                        type="text"
+                                        id="mat-search-input"
+                                        placeholder="Rechercher un matériau..."
+                                        class="w-full pl-9 pr-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition"
+                                        oninput="searchCatalogueMateriau(this.value)"
+                                        autocomplete="off"
+                                    >
+                                    <i class="fa-solid fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs pointer-events-none"></i>
+                                </div>
+
+                                <!-- Dropdown résultats -->
+                                <div id="mat-catalogue-dropdown" class="hidden rounded-xl border border-slate-200 bg-white shadow-lg max-h-48 overflow-y-auto divide-y divide-slate-100 text-xs">
+                                    <!-- Rempli dynamiquement -->
+                                </div>
+
+                                <!-- Matériau sélectionné -->
+                                <div id="mat-selected-preview" class="hidden p-3 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between">
+                                    <div>
+                                        <p id="mat-selected-nom" class="text-xs font-bold text-indigo-800"></p>
+                                        <p id="mat-selected-ref" class="text-[10px] text-indigo-500"></p>
+                                    </div>
+                                    <button type="button" onclick="clearSelectedMateriau()" class="text-indigo-400 hover:text-indigo-600">
+                                        <i class="fa-solid fa-xmark text-xs"></i>
+                                    </button>
+                                </div>
+                                <input type="hidden" id="mat-selected-id" value="">
+
+                                <!-- Quantité + Unité -->
+                                <div class="flex space-x-2">
+                                    <div class="flex-1">
+                                        <label class="block text-[10px] font-semibold text-slate-500 mb-1">Quantité *</label>
+                                        <input
+                                            type="number"
+                                            id="mat-quantite-input"
+                                            step="0.01"
+                                            min="0.01"
+                                            placeholder="0.00"
+                                            class="w-full px-3 py-2.5 text-xs border border-slate-200 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition"
+                                        >
+                                    </div>
+                                    <div class="w-24">
+                                        <label class="block text-[10px] font-semibold text-slate-500 mb-1">Unité</label>
+                                        <div id="mat-unite-display" class="px-3 py-2.5 text-xs border border-slate-200 bg-slate-100 rounded-xl text-slate-500 text-center">—</div>
+                                    </div>
+                                </div>
+
+                                <!-- Commentaire optionnel -->
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-500 mb-1">Commentaire (optionnel)</label>
+                                    <textarea
+                                        id="mat-commentaire-input"
+                                        rows="2"
+                                        placeholder="Ex : matériau posé en zone nord..."
+                                        class="w-full px-3 py-2 text-xs border border-slate-200 bg-slate-50 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400 transition resize-none"
+                                    ></textarea>
+                                </div>
+
+                                <!-- Bouton Enregistrer -->
+                                <button
+                                    type="button"
+                                    onclick="saveMateriau()"
+                                    id="btn-save-materiau"
+                                    class="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-2 disabled:opacity-50 disabled:pointer-events-none"
+                                >
+                                    <i class="fa-solid fa-floppy-disk text-xs"></i>
+                                    <span>Enregistrer le matériau</span>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
@@ -418,6 +583,24 @@
                         </div>
                     </div>
 
+                    <!-- Section : Géolocalisation GPS Terrain -->
+                    <div class="glass-panel p-4 rounded-2xl space-y-3 bg-white border border-slate-200 shadow-sm">
+                        <h3 class="text-xs font-extrabold text-blue-700 uppercase tracking-wider flex items-center space-x-2">
+                            <i class="fa-solid fa-location-dot"></i><span>Géolocalisation GPS Terrain</span>
+                        </h3>
+                        <div class="space-y-2">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input type="text" id="rapport-gps-lat" readonly placeholder="Latitude" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-700 font-mono shadow-sm">
+                                <input type="text" id="rapport-gps-lng" readonly placeholder="Longitude" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-700 font-mono shadow-sm">
+                            </div>
+                            <input type="text" id="rapport-gps-addr" placeholder="Adresse ou repère géographique..." class="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 shadow-sm">
+                            <button type="button" onclick="getDeviceGpsPosition()" class="w-full py-2 bg-blue-50 hover:bg-blue-100 border border-blue-300 text-blue-700 rounded-xl text-xs font-bold transition flex items-center justify-center space-x-2 shadow-sm">
+                                <i class="fa-solid fa-crosshairs text-xs"></i>
+                                <span>Capturer ma Position GPS Actuelle</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Section : Identification QR Code -->
                     <div class="glass-panel p-4 rounded-2xl space-y-3 bg-white border border-slate-200 shadow-sm">
                         <h3 class="text-xs font-extrabold text-cyan-700 uppercase tracking-wider flex items-center space-x-2">
@@ -436,12 +619,29 @@
                         </div>
                     </div>
 
-                    <!-- Section : Photos du rapport -->
+                    <!-- Section : Photos du rapport avec catégorie -->
                     <div class="glass-panel p-4 rounded-2xl space-y-3 bg-white border border-slate-200 shadow-sm">
                         <h3 class="text-xs font-extrabold text-emerald-700 uppercase tracking-wider flex items-center space-x-2">
-                            <i class="fa-solid fa-camera"></i><span>Photos d'Intervention</span>
+                            <i class="fa-solid fa-camera"></i><span>Photos d'Intervention (Avant / Après / Problèmes)</span>
                         </h3>
-                        <p class="text-[11px] text-slate-500">Prenez des photos en direct via l'API Caméra WebRTC ou importez depuis la galerie.</p>
+                        
+                        <div class="space-y-1">
+                            <label class="block text-[11px] font-bold text-slate-700">Catégorie des prochaines photos :</label>
+                            <div class="flex space-x-2">
+                                <label class="flex-1 text-center py-1.5 bg-emerald-50 border border-emerald-300 rounded-lg text-xs font-bold text-emerald-800 cursor-pointer">
+                                    <input type="radio" name="photo-category-select" value="avant" checked class="hidden" onchange="updatePhotoCategoryLabel('Avant')">
+                                    <span>📷 Avant</span>
+                                </label>
+                                <label class="flex-1 text-center py-1.5 bg-blue-50 border border-blue-300 rounded-lg text-xs font-bold text-blue-800 cursor-pointer">
+                                    <input type="radio" name="photo-category-select" value="apres" class="hidden" onchange="updatePhotoCategoryLabel('Après')">
+                                    <span>📸 Après</span>
+                                </label>
+                                <label class="flex-1 text-center py-1.5 bg-amber-50 border border-amber-300 rounded-lg text-xs font-bold text-amber-800 cursor-pointer">
+                                    <input type="radio" name="photo-category-select" value="probleme" class="hidden" onchange="updatePhotoCategoryLabel('Problème')">
+                                    <span>⚠️ Problème</span>
+                                </label>
+                            </div>
+                        </div>
 
                         <!-- Aperçu photos -->
                         <div id="rapport-photos-preview" class="grid grid-cols-3 gap-2"></div>
@@ -466,17 +666,13 @@
                         <h3 class="text-xs font-extrabold text-blue-700 uppercase tracking-wider flex items-center space-x-2">
                             <i class="fa-solid fa-video"></i><span>Vidéos de Démonstration</span>
                         </h3>
-                        <p class="text-[11px] text-slate-500">Enregistrez une vidéo de démonstration (test connexion, validation système, etc.).</p>
-
                         <div id="rapport-videos-preview" class="space-y-2"></div>
-
                         <div class="flex space-x-2">
                             <label for="rapport-video-record" class="flex-1 flex items-center justify-center space-x-2 py-2.5 bg-blue-50 hover:bg-blue-100 border border-blue-300 text-blue-700 rounded-xl text-xs font-bold cursor-pointer transition shadow-sm">
                                 <i class="fa-solid fa-circle-dot text-xs"></i>
                                 <span>Enregistrer</span>
                             </label>
                             <input type="file" id="rapport-video-record" accept="video/*" capture="environment" class="hidden" onchange="addRapportVideo(event)">
-
                             <label for="rapport-video-file" class="flex-1 flex items-center justify-center space-x-2 py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold cursor-pointer transition shadow-sm">
                                 <i class="fa-solid fa-folder-open text-xs"></i>
                                 <span>Choisir fichier</span>
@@ -484,6 +680,55 @@
                             <input type="file" id="rapport-video-file" accept="video/mp4,video/mov,video/webm" class="hidden" onchange="addRapportVideo(event)">
                         </div>
                         <div id="rapport-videos-count" class="text-[10px] text-slate-400 text-center font-medium">0 vidéo(s) sélectionnée(s)</div>
+                    </div>
+
+                    <!-- Section : Signatures (Technicien & Client) -->
+                    <div class="glass-panel p-4 rounded-2xl space-y-4 bg-white border border-slate-200 shadow-sm">
+                        <h3 class="text-xs font-extrabold text-indigo-900 uppercase tracking-wider flex items-center space-x-2">
+                            <i class="fa-solid fa-signature"></i><span>Visas & Signatures Numériques</span>
+                        </h3>
+
+                        <!-- Signature Technicien -->
+                        <div class="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-extrabold text-indigo-900">Signature du Technicien <span class="text-red-500">*</span></label>
+                                <button type="button" onclick="clearSignatureTech()" class="text-[10px] font-bold text-rose-600 hover:underline">Effacer</button>
+                            </div>
+
+                            <!-- Prévisualisation signature enregistrée ou importée -->
+                            <div id="sig-tech-preview-container" class="hidden bg-white p-2 border border-emerald-300 rounded-lg text-center shadow-inner">
+                                <span class="text-[9px] font-bold text-emerald-600 block mb-1">✓ Signature Technicien enregistrée :</span>
+                                <img id="sig-tech-preview" src="" class="max-h-20 mx-auto object-contain">
+                            </div>
+
+                            <canvas id="canvas-sig-tech" width="300" height="120" class="w-full h-28 bg-white border border-slate-300 rounded-lg touch-none cursor-crosshair shadow-sm"></canvas>
+                            <div class="flex items-center justify-between text-[10px] text-slate-400">
+                                <span>Dessinez votre signature avec le doigt</span>
+                                <label for="sig-tech-file-input" class="text-indigo-600 font-bold cursor-pointer hover:underline">Ou photo signature papier</label>
+                                <input type="file" id="sig-tech-file-input" accept="image/*" class="hidden" onchange="previewPaperSignature(this, 'sig-tech-preview', 'sig-tech-preview-container')">
+                            </div>
+                        </div>
+
+                        <!-- Signature Client -->
+                        <div class="space-y-2 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-extrabold text-indigo-900">Signature du Client (Accusé de Réception)</label>
+                                <button type="button" onclick="clearSignatureClient()" class="text-[10px] font-bold text-rose-600 hover:underline">Effacer</button>
+                            </div>
+
+                            <!-- Prévisualisation signature enregistrée ou importée -->
+                            <div id="sig-client-preview-container" class="hidden bg-white p-2 border border-emerald-300 rounded-lg text-center shadow-inner">
+                                <span class="text-[9px] font-bold text-emerald-600 block mb-1">✓ Signature Client enregistrée :</span>
+                                <img id="sig-client-preview" src="" class="max-h-20 mx-auto object-contain">
+                            </div>
+
+                            <canvas id="canvas-sig-client" width="300" height="120" class="w-full h-28 bg-white border border-slate-300 rounded-lg touch-none cursor-crosshair shadow-sm"></canvas>
+                            <div class="flex items-center justify-between text-[10px] text-slate-400">
+                                <span>Le client peut signer avec le doigt</span>
+                                <label for="sig-client-file-input" class="text-indigo-600 font-bold cursor-pointer hover:underline">Ou photo signature papier</label>
+                                <input type="file" id="sig-client-file-input" accept="image/*" class="hidden" onchange="previewPaperSignature(this, 'sig-client-preview', 'sig-client-preview-container')">
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Boutons d'action finaux -->
@@ -691,6 +936,31 @@
             </div>
         </div>
 
+        <!-- MODAL REFUSE INTERVENTION (DEMANDE DE REAFFECTATION) -->
+        <div id="modal-refuse-intervention" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="glass-panel max-w-sm w-full p-5 rounded-2xl space-y-4 animate-fade-in bg-white border border-slate-200 shadow-2xl">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2 text-rose-600">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        <span>Refuser la Mission</span>
+                    </h3>
+                    <button onclick="closeRefuseModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                
+                <p class="text-xs text-slate-600 leading-relaxed">Veuillez indiquer le motif obligatoire de votre refus. Une demande de réaffectation sera automatiquement transmise à l'administrateur pour arbitrage.</p>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Motif du refus <span class="text-red-500">*</span></label>
+                    <textarea id="refuse-motif-input" rows="3" placeholder="Ex: Indisponibilité planning, compétence spécifique manquante, problème de transport..." class="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-rose-600 shadow-sm resize-none"></textarea>
+                </div>
+
+                <div class="flex space-x-2 pt-1">
+                    <button onclick="closeRefuseModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs border border-slate-200">Annuler</button>
+                    <button onclick="submitRefuseIntervention()" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-xs shadow-md">Transmettre le refus</button>
+                </div>
+            </div>
+        </div>
+
         <!-- CONFIG API BASE URL MODAL -->
         <div id="modal-config-api" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
             <div class="glass-panel max-w-sm w-full p-5 rounded-2xl space-y-4 animate-fade-in bg-white border border-slate-200 shadow-2xl">
@@ -710,6 +980,57 @@
                     <button onclick="resetApiUrlDefault()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs border border-slate-200">Réinitialiser</button>
                     <button onclick="saveApiUrlConfig()" class="flex-1 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl text-xs shadow-sm">Enregistrer</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- UPLOAD PROGRESS & SYNC MODAL -->
+        <div id="modal-upload-progress" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 border border-slate-100 animate-fade-in">
+                <div class="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 text-brand-600 flex items-center justify-center mx-auto shadow-inner">
+                    <i id="upload-icon" class="fa-solid fa-cloud-arrow-up text-2xl animate-bounce"></i>
+                </div>
+                <div>
+                    <h3 id="upload-title" class="text-sm font-extrabold text-slate-900">Envoi des Preuves Terrain...</h3>
+                    <p id="upload-subtitle" class="text-xs text-slate-500 mt-1">Compression photos &amp; transfert sécurisé</p>
+                </div>
+                <div class="space-y-1.5">
+                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200">
+                        <div id="upload-progress-bar" class="bg-gradient-to-r from-brand-600 to-indigo-500 h-full rounded-full transition-all duration-150" style="width: 0%"></div>
+                    </div>
+                    <div class="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                        <span id="upload-status-text">Transfert réseau...</span>
+                        <span id="upload-percentage" class="text-brand-600 font-extrabold">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAMERA & GPS PERMISSIONS GUIDE MODAL -->
+        <div id="modal-permissions-guide" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl space-y-4 border border-slate-100 text-center animate-fade-in">
+                <div class="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center mx-auto">
+                    <i class="fa-solid fa-shield-halved text-2xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-extrabold text-slate-900">Autorisations Téléphone Requises</h3>
+                    <p class="text-xs text-slate-500 mt-1">L'application nécessite l'accès à la Caméra et à la Géolocalisation GPS pour valider les interventions sur le chantier.</p>
+                </div>
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 text-left text-xs space-y-2 text-slate-700">
+                    <div class="flex items-center space-x-2 font-bold text-slate-900">
+                        <i class="fa-solid fa-camera text-brand-600"></i>
+                        <span>1. Caméra WebRTC &amp; Scan QR</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 pl-5">Nécessaire pour photographier les équipements et scanner les QR codes.</p>
+                    
+                    <div class="flex items-center space-x-2 font-bold text-slate-900 pt-1">
+                        <i class="fa-solid fa-location-dot text-emerald-600"></i>
+                        <span>2. Geolocation GPS Haute Précision</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 pl-5">Nécessaire pour valider votre présence physique sur le lieu du chantier.</p>
+                </div>
+                <button onclick="closePermissionsGuide()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl text-xs shadow-md transition">
+                    J'ai compris – Réessayer
+                </button>
             </div>
         </div>
 
@@ -762,10 +1083,73 @@
             document.getElementById('config-api-url').value = API_BASE_URL;
             if (authToken) {
                 verifyTokenAndInitialize();
+                registerServiceWorkerAndPush();
             } else {
                 navigateTo('login');
             }
         });
+
+        // PWA SERVICE WORKER & WEB PUSH SUBSCRIPTION ENGINE
+        async function registerServiceWorkerAndPush() {
+            if (!('serviceWorker' in navigator)) {
+                console.warn('Service Worker non supporté par ce navigateur.');
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js');
+                console.log('[PWA] Service Worker actif:', registration.scope);
+
+                if ('Notification' in window && Notification.permission === 'default') {
+                    setTimeout(async () => {
+                        const permission = await Notification.requestPermission();
+                        if (permission === 'granted') {
+                            showToast('🔔 Notifications Push OS activées sur votre mobile !', 'success');
+                            if (authToken) subscribeUserToPush(registration);
+                        }
+                    }, 3000);
+                } else if ('Notification' in window && Notification.permission === 'granted' && authToken) {
+                    subscribeUserToPush(registration);
+                }
+            } catch (err) {
+                console.error('[PWA] Erreur enregistrement Service Worker:', err);
+            }
+        }
+
+        async function subscribeUserToPush(registration) {
+            try {
+                let subscription = null;
+                if (registration.pushManager) {
+                    subscription = await registration.pushManager.getSubscription();
+                    if (!subscription) {
+                        subscription = await registration.pushManager.subscribe({
+                            userVisibleOnly: true,
+                            applicationServerKey: urlBase64ToUint8Array('BEl62iUYgUivxIkv69yViEuiBIa40yYVR0epw0L9HIna5z5nN3Lz96m3z_9nK91z432')
+                        }).catch(() => null);
+                    }
+                }
+
+                const endpoint = subscription ? subscription.endpoint : `https://push.technitrack.ma/devices/${Date.now()}`;
+                
+                await apiFetch('/push/subscribe', 'POST', {
+                    endpoint: endpoint,
+                    device_name: navigator.userAgent
+                });
+            } catch (e) {
+                console.warn('[Push] Souscription enregistrée:', e);
+            }
+        }
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
 
         // HTTP CLIENT WRAPPER (Axios-like Fetch Wrapper)
         async function apiFetch(endpoint, method = 'GET', body = null, isFormData = false) {
@@ -804,6 +1188,246 @@
             } catch (err) {
                 return { success: false, message: 'Erreur réseau : impossible de joindre le serveur API.' };
             }
+        }
+
+        // ── MODULE HORS-LIGNE & SYNCHRONISATION AUTOMATIQUE (IndexedDB / LocalStorage) ──
+        const OFFLINE_QUEUE_KEY = 'technitrack_sync_queue';
+
+        function getOfflineQueue() {
+            try {
+                return JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveOfflineAction(endpoint, method, data, label = 'Action Terrain') {
+            const queue = getOfflineQueue();
+            const payload = data instanceof FormData ? serializeFormData(data) : data;
+            const item = {
+                id: 'sync_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+                endpoint,
+                method,
+                label,
+                payload,
+                timestamp: new Date().toISOString()
+            };
+            queue.push(item);
+            localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+            updateOfflineUI();
+            showToast(`💾 Mode Hors-Ligne : Action "${label}" enregistrée localement.`, 'info');
+        }
+
+        function serializeFormData(formData) {
+            const obj = {};
+            for (let [k, v] of formData.entries()) {
+                if (!(v instanceof File)) {
+                    obj[k] = v;
+                }
+            }
+            return obj;
+        }
+
+        function updateOfflineUI() {
+            const queue = getOfflineQueue();
+            const banner = document.getElementById('network-offline-banner');
+            const countEl = document.getElementById('offline-pending-count');
+
+            if (countEl) countEl.innerText = `${queue.length} action(s)`;
+
+            if (!navigator.onLine || queue.length > 0) {
+                if (banner) banner.classList.remove('hidden');
+            } else {
+                if (banner) banner.classList.add('hidden');
+            }
+        }
+
+        async function processOfflineSyncQueue() {
+            if (!navigator.onLine) return;
+            const queue = getOfflineQueue();
+            if (queue.length === 0) return;
+
+            showToast(`🔄 Synchronisation de ${queue.length} action(s) hors-ligne...`, 'info');
+            const remaining = [];
+
+            for (let item of queue) {
+                try {
+                    const res = await apiFetch(item.endpoint, item.method, item.payload);
+                    if (res.success) {
+                        showToast(`✓ Synchro réussie : ${item.label}`, 'success');
+                    } else {
+                        remaining.push(item);
+                    }
+                } catch (e) {
+                    remaining.push(item);
+                }
+            }
+
+            localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remaining));
+            updateOfflineUI();
+
+            if (remaining.length === 0) {
+                showToast('🎉 Toutes les données hors-ligne ont été synchronisées !', 'success');
+                if (selectedIntervention) openInterventionDetails(selectedIntervention.id);
+            }
+        }
+
+        function triggerManualSync() {
+            if (!navigator.onLine) {
+                showToast('Aucune connexion Internet disponible.', 'error');
+                return;
+            }
+            processOfflineSyncQueue();
+        }
+
+        window.addEventListener('online', () => {
+            updateOfflineUI();
+            showToast('🟢 Connexion Internet rétablie ! Synchronisation automatique...', 'success');
+            processOfflineSyncQueue();
+        });
+
+        window.addEventListener('offline', () => {
+            updateOfflineUI();
+            showToast('🔴 Mode Hors-Ligne activé. Les données seront stockées localement.', 'error');
+        });
+
+        // ── COMPRESSION PHOTO CLIENT (HTML5 Canvas) ──
+        function compressPhotoFile(file, maxDimension = 1600, quality = 0.8) {
+            return new Promise((resolve) => {
+                if (!file || !file.type.startsWith('image/')) {
+                    resolve(file);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.src = event.target.result;
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > maxDimension || height > maxDimension) {
+                            if (width > height) {
+                                height = Math.round((height * maxDimension) / width);
+                                width = maxDimension;
+                            } else {
+                                width = Math.round((width * maxDimension) / height);
+                                height = maxDimension;
+                            }
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(compressedFile);
+                            } else {
+                                resolve(file);
+                            }
+                        }, 'image/jpeg', quality);
+                    };
+                    img.onerror = () => resolve(file);
+                };
+                reader.onerror = () => resolve(file);
+            });
+        }
+
+        // ── UPLOAD AVEC PROGRESSION & RETRY AUTOMATIQUE ──
+        async function apiFetchWithProgress(endpoint, method = 'POST', formData = null, maxRetries = 3) {
+            const url = `${API_BASE_URL}${endpoint}`;
+            const progressBar = document.getElementById('upload-progress-bar');
+            const progressPct = document.getElementById('upload-percentage');
+            const progressModal = document.getElementById('modal-upload-progress');
+
+            if (progressModal) progressModal.classList.remove('hidden');
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressPct) progressPct.innerText = '0%';
+
+            // Compress photos in formData before transfer
+            if (formData && formData.has('photos[]')) {
+                const photos = formData.getAll('photos[]');
+                const types = formData.getAll('photos_types[]');
+                formData.delete('photos[]');
+                formData.delete('photos_types[]');
+
+                for (let i = 0; i < photos.length; i++) {
+                    const comp = await compressPhotoFile(photos[i]);
+                    formData.append('photos[]', comp);
+                    if (types[i]) formData.append('photos_types[]', types[i]);
+                }
+            }
+
+            let attempt = 0;
+            while (attempt < maxRetries) {
+                attempt++;
+                try {
+                    const result = await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open(method, url, true);
+                        xhr.setRequestHeader('Accept', 'application/json');
+                        if (authToken) {
+                            xhr.setRequestHeader('Authorization', `Bearer ${authToken}`);
+                        }
+
+                        xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable) {
+                                const percent = Math.round((e.loaded / e.total) * 100);
+                                if (progressBar) progressBar.style.width = `${percent}%`;
+                                if (progressPct) progressPct.innerText = `${percent}%`;
+                            }
+                        };
+
+                        xhr.onload = () => {
+                            if (progressModal) progressModal.classList.add('hidden');
+                            try {
+                                const json = JSON.parse(xhr.responseText);
+                                if (xhr.status >= 200 && xhr.status < 300) {
+                                    resolve({ success: true, status: xhr.status, ...json });
+                                } else {
+                                    resolve({ success: false, status: xhr.status, message: json.message || 'Erreur serveur', errors: json.errors || null });
+                                }
+                            } catch (e) {
+                                resolve({ success: false, message: 'Erreur réponse serveur' });
+                            }
+                        };
+
+                        xhr.onerror = () => {
+                            reject(new Error('Réseau interrompu'));
+                        };
+
+                        xhr.send(formData);
+                    });
+
+                    return result;
+
+                } catch (err) {
+                    console.warn(`Tentative d'upload ${attempt}/${maxRetries} échouée...`);
+                    if (attempt < maxRetries) {
+                        await new Promise(r => setTimeout(r, attempt * 1500));
+                    } else {
+                        if (progressModal) progressModal.classList.add('hidden');
+                        saveOfflineAction(endpoint, method, formData, 'Rapport & Preuves Terrain');
+                        return { success: false, offline: true, message: 'Erreur réseau. Données sauvegardées en mode Hors-Ligne.' };
+                    }
+                }
+            }
+        }
+
+        // ── GESTION DES PERMISSIONS TÉLÉPHONE ──
+        function showPermissionsGuide() {
+            document.getElementById('modal-permissions-guide')?.classList.remove('hidden');
+        }
+        function closePermissionsGuide() {
+            document.getElementById('modal-permissions-guide')?.classList.add('hidden');
         }
 
         // NAVIGATION ROUTER
@@ -1073,64 +1697,182 @@
             document.getElementById('detail-mode-suivi-badge').innerText = item.mode_suivi || 'MANUEL';
 
             // ACTION BUTTONS CONTROLS
-            const btnAccept = document.getElementById('btn-action-accept');
-            const btnStart = document.getElementById('btn-action-start');
-            const btnForm = document.getElementById('btn-action-form');
-            const btnRapport = document.getElementById('btn-action-rapport');
-            const btnValidate = document.getElementById('btn-action-validate');
+            const btnGroupAcceptRefuse = document.getElementById('btn-group-accept-refuse');
+            const bannerReassignment   = document.getElementById('banner-reassignment-pending');
+            const btnStart              = document.getElementById('btn-action-start');
+            const btnForm               = document.getElementById('btn-action-form');
+            const btnRapport            = document.getElementById('btn-action-rapport');
+            const btnFinish             = document.getElementById('btn-action-finish');
+            const bannerSealed          = document.getElementById('banner-sealed-info');
+            const btnValidate           = document.getElementById('btn-action-validate');
 
-            btnAccept.classList.add('hidden');
-            btnStart.classList.add('hidden');
-            btnForm.classList.add('hidden');
-            btnRapport.classList.add('hidden');
-            btnValidate.classList.add('hidden');
+            if (btnGroupAcceptRefuse) btnGroupAcceptRefuse.classList.add('hidden');
+            if (bannerReassignment)   bannerReassignment.classList.add('hidden');
+            if (btnStart)              btnStart.classList.add('hidden');
+            if (btnForm)               btnForm.classList.add('hidden');
+            if (btnRapport)            btnRapport.classList.add('hidden');
+            if (btnFinish)             btnFinish.classList.add('hidden');
+            if (bannerSealed)          bannerSealed.classList.add('hidden');
+            if (btnValidate)           btnValidate.classList.add('hidden');
 
-            if (item.statut === 'Planifiee') {
-                btnAccept.classList.remove('hidden');
-            } else if (item.statut === 'Acceptee') {
-                btnStart.classList.remove('hidden');
-            } else if (item.statut === 'En cours') {
-                btnForm.classList.remove('hidden');
-                btnRapport.classList.remove('hidden');
-            } else if (item.statut === 'Formulaire rempli') {
-                btnForm.classList.remove('hidden');
-                btnRapport.classList.remove('hidden');
-                btnValidate.classList.remove('hidden');
+            if (item.statut === 'Planifiee' || item.statut === 'Affectee') {
+                if (btnGroupAcceptRefuse) btnGroupAcceptRefuse.classList.remove('hidden');
+            } else if (item.statut === 'En attente reafectation') {
+                if (bannerReassignment) bannerReassignment.classList.remove('hidden');
+            } else if (['Acceptee', 'Suspendue', 'Reportee', 'Rejetee', 'Rouverte'].includes(item.statut)) {
+                if (btnStart) btnStart.classList.remove('hidden');
+            } else if (item.statut === 'En cours' || item.statut === 'Formulaire rempli') {
+                if (btnForm) btnForm.classList.remove('hidden');
+                if (btnRapport) btnRapport.classList.remove('hidden');
+                if (btnFinish) btnFinish.classList.remove('hidden');
+            } else if (item.statut === 'Terminee' || item.statut === 'Validee') {
+                if (bannerSealed) bannerSealed.classList.remove('hidden');
+                if (btnForm) btnForm.classList.remove('hidden');
+                if (btnRapport) btnRapport.classList.remove('hidden');
+            }
+
+            // Masquer la zone d'ajout de matériau si l'intervention est clôturée
+            const addMatPanel = document.getElementById('add-materiau-panel');
+            if (addMatPanel) {
+                if (['Terminee', 'Validee', 'Annulee'].includes(item.statut)) {
+                    addMatPanel.classList.add('hidden');
+                } else {
+                    addMatPanel.classList.remove('hidden');
+                }
             }
 
             // Render sub-tabs content
             renderDetailTabs();
         }
 
+        function openRefuseModal() {
+            document.getElementById('refuse-motif-input').value = '';
+            document.getElementById('modal-refuse-intervention').classList.remove('hidden');
+        }
+
+        function closeRefuseModal() {
+            document.getElementById('modal-refuse-intervention').classList.add('hidden');
+        }
+
+        async function submitRefuseIntervention() {
+            if (!selectedIntervention) return;
+
+            const motif = document.getElementById('refuse-motif-input').value.trim();
+            if (!motif || motif.length < 5) {
+                showToast('Veuillez préciser un motif de refus d\'au moins 5 caractères.', 'error');
+                return;
+            }
+
+            const res = await apiFetch(`/interventions/${selectedIntervention.id}/refuse`, 'POST', { motif });
+
+            if (res.success) {
+                showToast('Demande de réaffectation transmise à l\'administrateur !', 'success');
+                closeRefuseModal();
+                openInterventionDetails(selectedIntervention.id);
+            } else {
+                showToast(res.message || 'Erreur lors de la transmission du refus.', 'error');
+            }
+        }
+
+        function renderMobileTaskCard(t, isParent = false) {
+            const pct = t.pourcentage || 0;
+            const statut = t.statut || 'Non commencee';
+            const isDone = statut === 'Terminee' || pct >= 100;
+            const isStarted = statut === 'En cours' || pct > 0;
+            const taskNom = t.tache ? t.tache.nom : 'Tâche';
+
+            return `
+                <div class="p-3 rounded-xl bg-white border border-slate-200 shadow-sm space-y-2" id="mobile-task-card-${t.id}">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="font-bold text-slate-800 text-xs">${taskNom}</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${isDone ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : (isStarted ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-slate-100 text-slate-600 border border-slate-200')}">
+                            ${statut} (${pct}%)
+                        </span>
+                    </div>
+
+                    <!-- Barre de progression de la tâche -->
+                    <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                        <div class="h-2 rounded-full ${isDone ? 'bg-emerald-500' : 'bg-indigo-600'} transition-all duration-300" style="width: ${pct}%"></div>
+                    </div>
+
+                    <!-- Actions Technicien sur la tâche -->
+                    <div class="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-slate-50">
+                        <div class="flex items-center gap-1">
+                            ${!isStarted ? `
+                                <button onclick="mobileStartTask(${t.id})" class="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[10px] rounded-lg shadow-sm transition flex items-center gap-1">
+                                    ▶ Démarrer
+                                </button>
+                            ` : ''}
+                            ${!isDone ? `
+                                <button onclick="mobileFinishTask(${t.id})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg shadow-sm transition flex items-center gap-1">
+                                    ✓ Terminer
+                                </button>
+                            ` : ''}
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="mobileSetTaskProgressPrompt(${t.id}, ${pct})" class="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 font-bold text-[10px] rounded-lg transition">
+                                📊 Prog: ${pct}%
+                            </button>
+                            <button onclick="mobileTaskCommentPrompt(${t.id}, '${(t.commentaire || '').replace(/'/g, "\\'")}')" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] rounded-lg transition">
+                                💬 Note
+                            </button>
+                        </div>
+                    </div>
+                    ${t.commentaire ? `<p class="text-[10px] text-slate-600 italic bg-amber-50/70 p-1.5 rounded-lg border border-amber-100">💬 "${t.commentaire}"</p>` : ''}
+                </div>
+            `;
+        }
+
         function renderDetailTabs() {
             const item = selectedIntervention;
             if (!item) return;
 
-            // Taches
+            // Taches avec hiérarchie Grandes Tâches -> Sous-tâches
             const containerTaches = document.getElementById('detail-taches-list');
             if (item.taches && item.taches.length > 0) {
-                containerTaches.innerHTML = item.taches.map(t => `
-                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                        <span class="font-medium text-slate-800">${t.tache ? t.tache.nom : 'Tâche'}</span>
-                        <span class="text-[10px] font-bold ${t.statut === 'Terminee' ? 'text-emerald-600' : 'text-slate-500'}">${t.statut || 'En attente'}</span>
-                    </div>
-                `).join('');
+                const grandes = item.taches.filter(t => !t.tache || !t.tache.parent_id);
+                const subTasks = item.taches.filter(t => t.tache && t.tache.parent_id);
+
+                let html = `
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-2.5 rounded-xl bg-indigo-50 border border-indigo-100 mb-2">
+                            <span class="font-bold text-slate-700 text-xs">Progression globale calculée</span>
+                            <span class="text-xs font-extrabold text-indigo-700 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 shadow-sm" id="mobile-live-global-pct">
+                                ${item.pourcentage_global || 0}%
+                            </span>
+                        </div>
+                `;
+
+                if (grandes.length === 0 && subTasks.length > 0) {
+                    html += subTasks.map(t => renderMobileTaskCard(t)).join('');
+                } else {
+                    html += grandes.map(g => {
+                        const subs = subTasks.filter(s => s.tache && s.tache.parent_id === g.tache_id);
+                        return `
+                            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-extrabold text-slate-900 text-xs">📌 ${g.tache ? g.tache.nom : 'Grande Tâche'}</span>
+                                    <span class="text-[11px] font-extrabold text-indigo-600 bg-white px-2 py-0.5 rounded border border-indigo-100">${g.pourcentage || 0}%</span>
+                                </div>
+                                ${renderMobileTaskCard(g, true)}
+                                ${subs.length > 0 ? `
+                                    <div class="ml-3 pl-2 border-l-2 border-indigo-300 space-y-2 mt-2">
+                                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sous-tâches</span>
+                                        ${subs.map(s => renderMobileTaskCard(s, false)).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                }
+                html += `</div>`;
+                containerTaches.innerHTML = html;
             } else {
-                containerTaches.innerHTML = `<p class="text-slate-400 italic">Aucune tâche assignée.</p>`;
+                containerTaches.innerHTML = `<p class="text-slate-400 italic">Aucune tâche assignée à cette intervention.</p>`;
             }
 
-            // Materiaux
-            const containerMateriaux = document.getElementById('detail-materiaux-list');
-            if (item.materiaux && item.materiaux.length > 0) {
-                containerMateriaux.innerHTML = item.materiaux.map(m => `
-                    <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 border border-slate-200">
-                        <span class="font-medium text-slate-800">${m.materiau ? m.materiau.nom : 'Matériau'}</span>
-                        <span class="text-xs font-bold text-indigo-600">Qté: ${m.quantite}</span>
-                    </div>
-                `).join('');
-            } else {
-                containerMateriaux.innerHTML = `<p class="text-slate-400 italic">Aucun matériau enregistré.</p>`;
-            }
+            // Materiaux - mise à jour de la liste
+            renderMateriauList(item.materiaux || []);
 
             // Historique
             const containerHist = document.getElementById('detail-historique-list');
@@ -1162,7 +1904,344 @@
             document.getElementById(`tab-content-${tabName}`).classList.remove('hidden');
         }
 
-        // ACTIONS EXECUTION
+        // ACTIONS CLIENTS & TECHNICIENS SUR LES TÂCHES ET MATÉRIAUX
+        async function mobileStartTask(tachePivotId) {
+            if (!selectedIntervention) return;
+            try {
+                const res = await apiFetch(`/interventions/${selectedIntervention.id}/taches/${tachePivotId}/start`, 'POST', {});
+                if (res.success || res.data) {
+                    showToast('Tâche démarrée !', 'success');
+                    openInterventionDetails(selectedIntervention.id);
+                } else {
+                    showToast(res.message || 'Erreur au démarrage de la tâche', 'error');
+                }
+            } catch (e) {
+                showToast(e.message || 'Erreur lors du démarrage de la tâche', 'error');
+            }
+        }
+
+        async function mobileFinishTask(tachePivotId) {
+            if (!selectedIntervention) return;
+            try {
+                const res = await apiFetch(`/interventions/${selectedIntervention.id}/taches/${tachePivotId}/finish`, 'POST', {});
+                if (res.success || res.data) {
+                    showToast('Tâche marquée comme terminée ! Pourcentage global recalculé.', 'success');
+                    openInterventionDetails(selectedIntervention.id);
+                } else {
+                    showToast(res.message || 'Erreur lors de la fin de tâche', 'error');
+                }
+            } catch (e) {
+                showToast(e.message || 'Erreur lors de la fin de la tâche', 'error');
+            }
+        }
+
+        // --- Modal Progression Tâche ---
+        let _progressTachePivotId = null;
+
+        function mobileSetTaskProgressPrompt(tachePivotId, currentPct) {
+            _progressTachePivotId = tachePivotId;
+            const slider = document.getElementById('modal-progress-slider');
+            const display = document.getElementById('modal-progress-value');
+            slider.value = currentPct;
+            display.textContent = currentPct + '%';
+            slider.oninput = () => { display.textContent = slider.value + '%'; };
+            document.getElementById('modal-task-progress').classList.remove('hidden');
+            document.getElementById('modal-task-progress').classList.add('flex');
+        }
+
+        function closeProgressModal() {
+            document.getElementById('modal-task-progress').classList.add('hidden');
+            document.getElementById('modal-task-progress').classList.remove('flex');
+            _progressTachePivotId = null;
+        }
+
+        async function submitTaskProgress() {
+            if (!selectedIntervention || _progressTachePivotId === null) return;
+            const pct = parseInt(document.getElementById('modal-progress-slider').value, 10);
+            const btn = document.getElementById('btn-submit-progress');
+            btn.disabled = true;
+            try {
+                const res = await apiFetch(`/interventions/${selectedIntervention.id}/taches/${_progressTachePivotId}/progress`, 'POST', {
+                    pourcentage: pct
+                });
+                if (res.success || res.data) {
+                    showToast(`Progression enregistrée : ${pct}%`, 'success');
+                    closeProgressModal();
+                    openInterventionDetails(selectedIntervention.id);
+                } else {
+                    showToast(res.message || 'Erreur mise à jour progression', 'error');
+                }
+            } catch (e) {
+                showToast(e.message || 'Erreur enregistrement progression', 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // --- Modal Commentaire Tâche ---
+        let _commentTachePivotId = null;
+        let _commentCurrentPct = 0;
+
+        function mobileTaskCommentPrompt(tachePivotId, currentComment) {
+            _commentTachePivotId = tachePivotId;
+            const taskObj = (selectedIntervention?.taches || []).find(t => t.id === tachePivotId);
+            _commentCurrentPct = taskObj ? (taskObj.pourcentage || 0) : 0;
+            document.getElementById('modal-comment-textarea').value = currentComment || '';
+            document.getElementById('modal-task-comment').classList.remove('hidden');
+            document.getElementById('modal-task-comment').classList.add('flex');
+            setTimeout(() => document.getElementById('modal-comment-textarea').focus(), 100);
+        }
+
+        function closeCommentModal() {
+            document.getElementById('modal-task-comment').classList.add('hidden');
+            document.getElementById('modal-task-comment').classList.remove('flex');
+            _commentTachePivotId = null;
+        }
+
+        async function submitTaskComment() {
+            if (!selectedIntervention || _commentTachePivotId === null) return;
+            const comment = document.getElementById('modal-comment-textarea').value.trim();
+            const btn = document.getElementById('btn-submit-comment');
+            btn.disabled = true;
+            try {
+                const res = await apiFetch(`/interventions/${selectedIntervention.id}/taches/${_commentTachePivotId}/progress`, 'POST', {
+                    pourcentage: _commentCurrentPct,
+                    commentaire: comment
+                });
+                if (res.success || res.data) {
+                    showToast('Commentaire enregistré !', 'success');
+                    closeCommentModal();
+                    openInterventionDetails(selectedIntervention.id);
+                } else {
+                    showToast(res.message || 'Erreur enregistrement commentaire', 'error');
+                }
+            } catch (e) {
+                showToast(e.message || 'Erreur enregistrement commentaire', 'error');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        /* ==========================================
+           GESTION DES MATÉRIAUX - INTERFACE NATIVE
+           ========================================== */
+
+        let _catalogueMateriaux = [];
+        let _searchDebounce = null;
+
+        /** Rend la liste des matériaux utilisés dans la carte intervention */
+        function renderMateriauList(materiaux) {
+            const container = document.getElementById('detail-materiaux-list');
+            const badge = document.getElementById('mat-count-badge');
+            if (!container) return;
+
+            if (badge) badge.textContent = materiaux.length;
+
+            if (materiaux.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-8 text-xs text-slate-400 space-y-2">
+                        <i class="fa-solid fa-box-open text-2xl text-slate-200"></i>
+                        <span>Aucun matériau enregistré</span>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = materiaux.map(m => {
+                const nom  = m.materiau ? m.materiau.nom  : (m.nom  || 'Matériau');
+                const ref  = m.materiau ? m.materiau.reference : '';
+                const unit = m.materiau ? m.materiau.unite : '';
+                const qte  = parseFloat(m.quantite || 0).toLocaleString('fr-FR', {minimumFractionDigits: 0, maximumFractionDigits: 3});
+                return `
+                    <div class="flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition group" id="mat-row-${m.id}">
+                        <div class="flex items-center space-x-3 min-w-0">
+                            <span class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                                <i class="fa-solid fa-cube text-indigo-500 text-[10px]"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold text-slate-800 truncate">${nom}</p>
+                                ${ref ? `<p class="text-[10px] text-slate-400">Réf: ${ref}</p>` : ''}
+                                ${m.commentaire ? `<p class="text-[10px] text-slate-500 italic truncate">${m.commentaire}</p>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 shrink-0">
+                            <span class="text-xs font-extrabold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-lg">
+                                ${qte} ${unit || ''}
+                            </span>
+                            <button onclick="deleteMateriau(${m.id})" class="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-red-500 transition p-1 rounded-lg hover:bg-red-50" title="Supprimer">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        /** Recherche dans le catalogue matériaux (debounced) */
+        async function searchCatalogueMateriau(query) {
+            if (_searchDebounce) clearTimeout(_searchDebounce);
+            const dropdown = document.getElementById('mat-catalogue-dropdown');
+
+            if (!query || query.length < 1) {
+                dropdown.classList.add('hidden');
+                return;
+            }
+
+            _searchDebounce = setTimeout(async () => {
+                try {
+                    const res = await apiFetch(`/materiaux?q=${encodeURIComponent(query)}`, 'GET');
+                    const items = res.data || res || [];
+                    _catalogueMateriaux = items;
+
+                    if (items.length === 0) {
+                        dropdown.innerHTML = `<div class="px-4 py-3 text-xs text-slate-400 italic">Aucun résultat pour "${query}"</div>`;
+                    } else {
+                        dropdown.innerHTML = items.map(m => `
+                            <button type="button"
+                                onclick="selectMateriauFromCatalogue(${m.id}, '${(m.nom||'').replace(/'/g, "\\'")}', '${(m.reference||'').replace(/'/g, "\\'")}', '${(m.unite||'').replace(/'/g, "\\'")}', '${(m.description||'').replace(/'/g, "\\'")}')"
+                                class="w-full text-left px-4 py-2.5 hover:bg-indigo-50 transition flex items-center justify-between group">
+                                <div>
+                                    <p class="text-xs font-bold text-slate-800 group-hover:text-indigo-800">${m.nom}</p>
+                                    ${m.reference ? `<p class="text-[10px] text-slate-400">Réf: ${m.reference}</p>` : ''}
+                                </div>
+                                ${m.unite ? `<span class="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">${m.unite}</span>` : ''}
+                            </button>`).join('');
+                    }
+                    dropdown.classList.remove('hidden');
+                } catch (e) {
+                    dropdown.innerHTML = `<div class="px-4 py-3 text-xs text-red-400">Erreur de chargement du catalogue</div>`;
+                    dropdown.classList.remove('hidden');
+                }
+            }, 300);
+        }
+
+        /** Sélectionner un matériau depuis le catalogue */
+        function selectMateriauFromCatalogue(id, nom, ref, unite, desc) {
+            document.getElementById('mat-selected-id').value = id;
+            document.getElementById('mat-selected-nom').textContent = nom;
+            document.getElementById('mat-selected-ref').textContent = [ref && `Réf: ${ref}`, desc].filter(Boolean).join(' — ');
+            document.getElementById('mat-unite-display').textContent = unite || '—';
+            document.getElementById('mat-selected-preview').classList.remove('hidden');
+            document.getElementById('mat-catalogue-dropdown').classList.add('hidden');
+            document.getElementById('mat-search-input').value = nom;
+            document.getElementById('mat-quantite-input').focus();
+        }
+
+        /** Effacer la sélection de matériau */
+        function clearSelectedMateriau() {
+            document.getElementById('mat-selected-id').value = '';
+            document.getElementById('mat-selected-preview').classList.add('hidden');
+            document.getElementById('mat-search-input').value = '';
+            document.getElementById('mat-unite-display').textContent = '—';
+        }
+
+        /** Enregistrer le matériau utilisé */
+        async function saveMateriau() {
+            if (!selectedIntervention) return;
+
+            const materiauId = document.getElementById('mat-selected-id').value;
+            const quantite   = document.getElementById('mat-quantite-input').value;
+            const commentaire = document.getElementById('mat-commentaire-input').value;
+
+            if (!materiauId) {
+                showToast('Sélectionnez un matériau dans le catalogue.', 'warning');
+                return;
+            }
+            if (!quantite || parseFloat(quantite) <= 0) {
+                showToast('Saisissez une quantité valide.', 'warning');
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-materiau');
+            const origHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>Enregistrement...</span>`;
+
+            try {
+                const res = await apiFetch(`/interventions/${selectedIntervention.id}/materiaux`, 'POST', {
+                    materiau_id: parseInt(materiauId, 10),
+                    quantite:    parseFloat(quantite),
+                    commentaire: commentaire || null
+                });
+
+                if (res.success || res.data) {
+                    showToast('Matériau enregistré avec succès !', 'success');
+                    // Réinitialiser le formulaire
+                    clearSelectedMateriau();
+                    document.getElementById('mat-quantite-input').value = '';
+                    document.getElementById('mat-commentaire-input').value = '';
+                    // Rafraîchir depuis l'API
+                    await refreshMateriaux();
+                } else {
+                    showToast(res.message || 'Erreur lors de l\'enregistrement.', 'error');
+                }
+            } catch (e) {
+                showToast(e.message || 'Erreur serveur.', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+
+        /** Supprimer un matériau de l'intervention */
+        async function deleteMateriau(pivotId) {
+            if (!selectedIntervention) return;
+            if (!confirm('Supprimer ce matériau de l\'intervention ?')) return;
+
+            try {
+                const res = await apiFetch(`/interventions/${selectedIntervention.id}/materiaux/${pivotId}`, 'DELETE');
+                if (res.success || res.data === null) {
+                    showToast('Matériau supprimé.', 'success');
+                    // Retirer visuellement sans rechargement complet
+                    const row = document.getElementById(`mat-row-${pivotId}`);
+                    if (row) row.remove();
+                    // Mettre à jour le badge et selectedIntervention
+                    if (selectedIntervention.materiaux) {
+                        selectedIntervention.materiaux = selectedIntervention.materiaux.filter(m => m.id !== pivotId);
+                        const badge = document.getElementById('mat-count-badge');
+                        if (badge) badge.textContent = selectedIntervention.materiaux.length;
+                    }
+                } else {
+                    showToast(res.message || 'Erreur suppression.', 'error');
+                }
+            } catch (e) {
+                showToast(e.message || 'Erreur serveur.', 'error');
+            }
+        }
+
+        /** Rafraîchir la liste des matériaux depuis l'API sans recharger toute l'intervention */
+        async function refreshMateriaux() {
+            if (!selectedIntervention) return;
+            try {
+                const res = await apiFetch(`/interventions/${selectedIntervention.id}`, 'GET');
+                if (res.data) {
+                    selectedIntervention.materiaux = res.data.materiaux || [];
+                    renderMateriauList(selectedIntervention.materiaux);
+                    // Mise à jour du badge dans les onglets
+                    const badge = document.getElementById('mat-count-badge');
+                    if (badge) badge.textContent = selectedIntervention.materiaux.length;
+                }
+            } catch (e) {
+                // Silent fail, la liste reste en place
+            }
+        }
+
+
+        async function executeFinishIntervention() {
+            if (!selectedIntervention) return;
+            if (!confirm('Confirmez-vous la fin de cette intervention ? Les éléments (formulaire et rapport) seront transmis à l\'administration et scellés.')) return;
+
+            try {
+                const res = await apiFetch(`/interventions/${selectedIntervention.id}/finish`, 'POST');
+                if (res.success || res.data) {
+                    showToast('Intervention terminée avec succès ! transmise à l\'administration.', 'success');
+                    openInterventionDetails(selectedIntervention.id);
+                } else {
+                    showToast(res.message || 'Impossible de terminer l\'intervention', 'error');
+                }
+            } catch (e) {
+                showToast(e.message || 'Erreur lors de la fin de l\'intervention', 'error');
+            }
+        }
+
         async function executeAcceptIntervention() {
             if (!selectedIntervention) return;
             const res = await apiFetch(`/interventions/${selectedIntervention.id}/accept`, 'POST');
@@ -1331,7 +2410,9 @@
             const BASE = `w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 shadow-sm transition`;
             const BASE_AREA = `w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 shadow-sm transition resize-none`;
 
-            container.innerHTML = formulaire.questions.map(q => {
+            container.innerHTML = formulaire.questions
+                .filter(q => (q.type_reponse || q.type_champ) !== 'Materiaux')
+                .map(q => {
                 const req   = q.obligatoire ? 'required' : '';
                 const star  = q.obligatoire ? '<span class="text-red-500 font-bold">*</span>' : '<span class="text-slate-400 text-[10px]">(optionnel)</span>';
                 const ph    = q.placeholder  ? q.placeholder  : '';
@@ -1375,17 +2456,16 @@
                     case 'OuiNon':
                     case 'Oui_Non':
                         inputHtml = `
-                            <div class="grid grid-cols-2 gap-2.5 sm:gap-3 w-full pt-1">
-                                <label class="flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl border border-emerald-500/30 bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 cursor-pointer transition shadow-sm text-xs group">
-                                    <input type="radio" name="q_${q.id}" value="Oui" ${req} class="hidden">
+                            <div class="ouinon-container flex gap-3 w-full pt-1" data-qid="${q.id}">
+                                <button type="button" data-val="Oui" onclick="selectOuiNon(this, ${q.id}, 'Oui')" class="ouinon-btn flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 cursor-pointer transition shadow-sm text-xs group">
                                     <i class="fa-solid fa-check text-emerald-600 text-xs"></i>
                                     <span>Oui</span>
-                                </label>
-                                <label class="flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl border border-red-500/30 bg-red-50 text-red-700 font-bold hover:bg-red-100 cursor-pointer transition shadow-sm text-xs group">
-                                    <input type="radio" name="q_${q.id}" value="Non" class="hidden">
+                                </button>
+                                <button type="button" data-val="Non" onclick="selectOuiNon(this, ${q.id}, 'Non')" class="ouinon-btn flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl border border-red-300 bg-red-50 text-red-700 font-bold hover:bg-red-100 cursor-pointer transition shadow-sm text-xs group">
                                     <i class="fa-solid fa-xmark text-red-600 text-xs"></i>
                                     <span>Non</span>
-                                </label>
+                                </button>
+                                <input type="hidden" id="input_q_${q.id}" name="q_${q.id}" value="" ${req}>
                             </div>`;
                         break;
 
@@ -1533,6 +2613,31 @@
             formulaire.questions.filter(q => (q.type_reponse || q.type_champ) === 'Signature').forEach(q => initSignatureCanvas(q.id));
         }
 
+        function selectOuiNon(btn, questionId, val) {
+            const container = btn.closest('.ouinon-container');
+            if (!container) return;
+
+            // Reset buttons styling in container
+            container.querySelectorAll('.ouinon-btn').forEach(b => {
+                if (b.dataset.val === 'Oui') {
+                    b.className = 'ouinon-btn flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-700 font-bold hover:bg-emerald-100 cursor-pointer transition shadow-sm text-xs';
+                } else {
+                    b.className = 'ouinon-btn flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl border border-red-300 bg-red-50 text-red-700 font-bold hover:bg-red-100 cursor-pointer transition shadow-sm text-xs';
+                }
+            });
+
+            // Set hidden input value
+            const input = document.getElementById(`input_q_${questionId}`);
+            if (input) input.value = val;
+
+            // Highlight active button
+            if (val === 'Oui') {
+                btn.className = 'ouinon-btn flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl border-2 border-emerald-600 bg-emerald-600 text-white font-extrabold shadow-md ring-2 ring-emerald-200 cursor-pointer transition text-xs';
+            } else {
+                btn.className = 'ouinon-btn flex-1 flex items-center justify-center space-x-2 py-2.5 px-3 rounded-xl border-2 border-red-600 bg-red-600 text-white font-extrabold shadow-md ring-2 ring-red-200 cursor-pointer transition text-xs';
+            }
+        }
+
         async function handleFormulaireSubmit(e) {
             e.preventDefault();
             if (!selectedIntervention) return;
@@ -1543,8 +2648,18 @@
 
             formData.forEach((val, key) => {
                 if (key.startsWith('q_')) {
-                    const qId = key.replace('q_', '');
-                    reponses[qId] = val;
+                    let cleanKey = key.replace('q_', '');
+                    let isArray = false;
+                    if (cleanKey.endsWith('[]')) {
+                        cleanKey = cleanKey.replace('[]', '');
+                        isArray = true;
+                    }
+                    if (isArray) {
+                        if (!reponses[cleanKey]) reponses[cleanKey] = [];
+                        reponses[cleanKey].push(val);
+                    } else {
+                        reponses[cleanKey] = val;
+                    }
                 }
             });
 
@@ -1560,10 +2675,179 @@
         // MODULE 9: RAPPORT
         let rapportPhotoFiles = [];
         let rapportVideoFiles = [];
+        let currentPhotoCategory = 'avant';
+
+        function updatePhotoCategoryLabel(catName) {
+            const rad = document.querySelector('input[name="photo-category-select"]:checked');
+            if (rad) currentPhotoCategory = rad.value;
+        }
+
+        // Canvas Signature Technicien
+        let canvasTech, ctxTech, isDrawingTech = false, hasDrawnTech = false;
+        function initSignatureCanvasTech() {
+            canvasTech = document.getElementById('canvas-sig-tech');
+            if (!canvasTech) return;
+
+            const rect = canvasTech.getBoundingClientRect();
+            if (rect.width > 0) {
+                canvasTech.width = rect.width;
+                canvasTech.height = 120;
+            }
+
+            ctxTech = canvasTech.getContext('2d');
+            ctxTech.lineWidth = 2.5;
+            ctxTech.strokeStyle = '#1e1b4b';
+            ctxTech.lineCap = 'round';
+            ctxTech.lineJoin = 'round';
+
+            function getPos(e) {
+                const r = canvasTech.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: clientX - r.left, y: clientY - r.top };
+            }
+
+            function startDraw(e) {
+                if (e.type === 'touchstart') e.preventDefault();
+                isDrawingTech = true;
+                const pos = getPos(e);
+                ctxTech.beginPath();
+                ctxTech.moveTo(pos.x, pos.y);
+            }
+
+            function moveDraw(e) {
+                if (!isDrawingTech) return;
+                if (e.type === 'touchmove') e.preventDefault();
+                hasDrawnTech = true;
+                const pos = getPos(e);
+                ctxTech.lineTo(pos.x, pos.y);
+                ctxTech.stroke();
+            }
+
+            function stopDraw(e) {
+                isDrawingTech = false;
+            }
+
+            canvasTech.onmousedown = startDraw;
+            canvasTech.onmousemove = moveDraw;
+            canvasTech.onmouseup = stopDraw;
+
+            canvasTech.ontouchstart = startDraw;
+            canvasTech.ontouchmove = moveDraw;
+            canvasTech.ontouchend = stopDraw;
+        }
+
+        function clearSignatureTech() {
+            if (ctxTech && canvasTech) {
+                ctxTech.clearRect(0, 0, canvasTech.width, canvasTech.height);
+                hasDrawnTech = false;
+                const container = document.getElementById('sig-tech-preview-container');
+                if (container) container.classList.add('hidden');
+            }
+        }
+
+        // Canvas Signature Client
+        let canvasClient, ctxClient, isDrawingClient = false, hasDrawnClient = false;
+        function initSignatureCanvasClient() {
+            canvasClient = document.getElementById('canvas-sig-client');
+            if (!canvasClient) return;
+
+            const rect = canvasClient.getBoundingClientRect();
+            if (rect.width > 0) {
+                canvasClient.width = rect.width;
+                canvasClient.height = 120;
+            }
+
+            ctxClient = canvasClient.getContext('2d');
+            ctxClient.lineWidth = 2.5;
+            ctxClient.strokeStyle = '#1e1b4b';
+            ctxClient.lineCap = 'round';
+            ctxClient.lineJoin = 'round';
+
+            function getPos(e) {
+                const r = canvasClient.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return { x: clientX - r.left, y: clientY - r.top };
+            }
+
+            function startDraw(e) {
+                if (e.type === 'touchstart') e.preventDefault();
+                isDrawingClient = true;
+                const pos = getPos(e);
+                ctxClient.beginPath();
+                ctxClient.moveTo(pos.x, pos.y);
+            }
+
+            function moveDraw(e) {
+                if (!isDrawingClient) return;
+                if (e.type === 'touchmove') e.preventDefault();
+                hasDrawnClient = true;
+                const pos = getPos(e);
+                ctxClient.lineTo(pos.x, pos.y);
+                ctxClient.stroke();
+            }
+
+            function stopDraw(e) {
+                isDrawingClient = false;
+            }
+
+            canvasClient.onmousedown = startDraw;
+            canvasClient.onmousemove = moveDraw;
+            canvasClient.onmouseup = stopDraw;
+
+            canvasClient.ontouchstart = startDraw;
+            canvasClient.ontouchmove = moveDraw;
+            canvasClient.ontouchend = stopDraw;
+        }
+
+        function clearSignatureClient() {
+            if (ctxClient && canvasClient) {
+                ctxClient.clearRect(0, 0, canvasClient.width, canvasClient.height);
+                hasDrawnClient = false;
+                const container = document.getElementById('sig-client-preview-container');
+                if (container) container.classList.add('hidden');
+            }
+        }
+
+        function previewPaperSignature(input, imgId, containerId) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById(imgId).src = e.target.result;
+                    document.getElementById(containerId).classList.remove('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // GPS Capture
+        function getDeviceGpsPosition() {
+            if (!navigator.geolocation) {
+                showToast('La géolocalisation n\'est pas supportée par votre navigateur.', 'error');
+                return;
+            }
+            showToast('Recherche de la position GPS en cours...', 'info');
+            navigator.geolocation.getCurrentPosition(pos => {
+                const lat = pos.coords.latitude;
+                const lng = pos.coords.longitude;
+                document.getElementById('rapport-gps-lat').value = lat;
+                document.getElementById('rapport-gps-lng').value = lng;
+                document.getElementById('rapport-gps-addr').value = `GPS: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                showToast('Position GPS capturée !', 'success');
+            }, err => {
+                showToast('Impossible de capturer la position GPS.', 'error');
+            });
+        }
 
         async function openRapportScreen() {
             if (!selectedIntervention) return;
             navigateTo('rapport');
+
+            setTimeout(() => {
+                initSignatureCanvasTech();
+                initSignatureCanvasClient();
+            }, 150);
 
             // Reset media buffers
             rapportPhotoFiles = [];
@@ -1582,9 +2866,37 @@
                 document.getElementById('rapport-commentaire').value          = r.commentaire         || '';
                 document.getElementById('rapport-qrcode').value               = r.qrcode_scanne       || '';
                 document.getElementById('rapport-statut-equipement').value    = r.statut_equipement   || 'Conforme';
+                if (r.gps_latitude) document.getElementById('rapport-gps-lat').value  = r.gps_latitude;
+                if (r.gps_longitude) document.getElementById('rapport-gps-lng').value = r.gps_longitude;
+                if (r.gps_adresse) document.getElementById('rapport-gps-addr').value   = r.gps_adresse;
+
+                // Afficher les signatures existantes si déjà enregistrées
+                if (r.signature_technicien) {
+                    const imgTech = document.getElementById('sig-tech-preview');
+                    const contTech = document.getElementById('sig-tech-preview-container');
+                    if (imgTech && contTech) {
+                        imgTech.src = r.signature_technicien.startsWith('data:') ? r.signature_technicien : `/storage/${r.signature_technicien}`;
+                        contTech.classList.remove('hidden');
+                    }
+                } else {
+                    const contTech = document.getElementById('sig-tech-preview-container');
+                    if (contTech) contTech.classList.add('hidden');
+                }
+
+                if (r.signature_client) {
+                    const imgClient = document.getElementById('sig-client-preview');
+                    const contClient = document.getElementById('sig-client-preview-container');
+                    if (imgClient && contClient) {
+                        imgClient.src = r.signature_client.startsWith('data:') ? r.signature_client : `/storage/${r.signature_client}`;
+                        contClient.classList.remove('hidden');
+                    }
+                } else {
+                    const contClient = document.getElementById('sig-client-preview-container');
+                    if (contClient) contClient.classList.add('hidden');
+                }
+
                 document.getElementById('btn-download-pdf').classList.remove('hidden');
 
-                // Show existing photos as thumbnails (read-only)
                 if (r.photos && r.photos.length > 0) {
                     const preview = document.getElementById('rapport-photos-preview');
                     r.photos.forEach(p => {
@@ -1594,41 +2906,37 @@
                         preview.appendChild(img);
                     });
                 }
-
-                // Show existing videos list
-                if (r.videos && r.videos.length > 0) {
-                    const vidPrev = document.getElementById('rapport-videos-preview');
-                    r.videos.forEach(v => {
-                        const div = document.createElement('div');
-                        div.className = 'flex items-center space-x-2 p-2 rounded-lg bg-slate-800/60 border border-slate-700 text-xs text-slate-300';
-                        div.innerHTML = `<i class="fa-solid fa-video text-blue-400"></i><span>${v.nom_original || v.chemin}</span>`;
-                        vidPrev.appendChild(div);
-                    });
-                }
             } else {
-                ['rapport-travaux','rapport-observations','rapport-recommandations','rapport-commentaire','rapport-qrcode'].forEach(id => {
+                ['rapport-travaux','rapport-observations','rapport-recommandations','rapport-commentaire','rapport-qrcode','rapport-gps-lat','rapport-gps-lng','rapport-gps-addr'].forEach(id => {
                     const el = document.getElementById(id); if(el) el.value = '';
                 });
                 document.getElementById('rapport-statut-equipement').value = 'Conforme';
                 document.getElementById('btn-download-pdf').classList.add('hidden');
+                document.getElementById('sig-tech-preview-container')?.classList.add('hidden');
+                document.getElementById('sig-client-preview-container')?.classList.add('hidden');
             }
         }
 
         function addRapportPhotos(e) {
             const files = Array.from(e.target.files);
-            rapportPhotoFiles.push(...files);
-            const preview = document.getElementById('rapport-photos-preview');
+            const rad = document.querySelector('input[name="photo-category-select"]:checked');
+            const category = rad ? rad.value : 'avant';
+
             files.forEach(file => {
+                file.type_photo = category;
+                rapportPhotoFiles.push(file);
+
                 const reader = new FileReader();
                 reader.onload = ev => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'relative';
                     wrapper.innerHTML = `
                         <img src="${ev.target.result}" class="w-full aspect-square object-cover rounded-lg border border-emerald-500/40">
+                        <span class="absolute bottom-1 left-1 px-1.5 py-0.5 bg-slate-900/80 text-white text-[8px] font-bold rounded uppercase">${category}</span>
                         <button type="button" onclick="removeRapportPhoto(this, '${file.name}')" class="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-600 text-white rounded-full text-[9px] flex items-center justify-center shadow-lg">
                             <i class="fa-solid fa-xmark"></i>
                         </button>`;
-                    preview.appendChild(wrapper);
+                    document.getElementById('rapport-photos-preview').appendChild(wrapper);
                 };
                 reader.readAsDataURL(file);
             });
@@ -1669,11 +2977,41 @@
             fd.append('commentaire',         document.getElementById('rapport-commentaire').value);
             fd.append('qrcode_scanne',       document.getElementById('rapport-qrcode').value);
             fd.append('statut_equipement',   document.getElementById('rapport-statut-equipement').value);
+            fd.append('gps_latitude',        document.getElementById('rapport-gps-lat').value);
+            fd.append('gps_longitude',       document.getElementById('rapport-gps-lng').value);
+            fd.append('gps_adresse',         document.getElementById('rapport-gps-addr').value);
 
-            rapportPhotoFiles.forEach(f => fd.append('photos[]', f));
+            // Export Signatures Canvas Base64
+            if (canvasTech) {
+                const dataUrlTech = canvasTech.toDataURL('image/png');
+                if (dataUrlTech && dataUrlTech.length > 500) {
+                    fd.append('signature_technicien', dataUrlTech);
+                }
+            }
+            if (canvasClient) {
+                const dataUrlClient = canvasClient.toDataURL('image/png');
+                if (dataUrlClient && dataUrlClient.length > 500) {
+                    fd.append('signature_client', dataUrlClient);
+                }
+            }
+
+            // Paper Signatures Files if selected
+            const fileTechInput = document.getElementById('sig-tech-file-input');
+            if (fileTechInput && fileTechInput.files[0]) {
+                fd.append('signature_technicien_file', fileTechInput.files[0]);
+            }
+            const fileClientInput = document.getElementById('sig-client-file-input');
+            if (fileClientInput && fileClientInput.files[0]) {
+                fd.append('signature_client_file', fileClientInput.files[0]);
+            }
+
+            rapportPhotoFiles.forEach(f => {
+                fd.append('photos[]', f);
+                fd.append('photos_types[]', f.type_photo || 'avant');
+            });
             rapportVideoFiles.forEach(f => fd.append('videos[]', f));
 
-            const res = await apiFetch(`/interventions/${selectedIntervention.id}/rapport`, 'POST', fd, true);
+            const res = await apiFetchWithProgress(`/interventions/${selectedIntervention.id}/rapport`, 'POST', fd, 3);
 
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-xs"></i><span>Enregistrer le Rapport</span>';
@@ -1682,6 +3020,9 @@
                 showToast('Rapport enregistré avec succès !', 'success');
                 rapportPhotoFiles = [];
                 rapportVideoFiles = [];
+                openInterventionDetails(selectedIntervention.id);
+            } else if (res.offline) {
+                showToast('Rapport sauvegardé localement en mode Hors-Ligne !', 'info');
                 openInterventionDetails(selectedIntervention.id);
             } else {
                 showToast(res.message || 'Erreur sauvegarde du rapport.', 'error');
@@ -2080,11 +3421,21 @@
 
         function getStatusClass(statut) {
             switch (statut) {
+                case 'Demande': return 'bg-sky-100 text-sky-800 border border-sky-300';
                 case 'Planifiee': return 'bg-amber-100 text-amber-800 border border-amber-300';
+                case 'Affectee': return 'bg-cyan-100 text-cyan-800 border border-cyan-300';
+                case 'En attente reafectation': return 'bg-rose-100 text-rose-800 border border-rose-300';
                 case 'Acceptee': return 'bg-blue-100 text-blue-800 border border-blue-300';
+                case 'Refusee': return 'bg-rose-100 text-rose-800 border border-rose-300';
                 case 'En cours': return 'bg-indigo-100 text-indigo-800 border border-indigo-300';
+                case 'Suspendue': return 'bg-orange-100 text-orange-800 border border-orange-300';
+                case 'Reportee': return 'bg-amber-100 text-amber-800 border border-amber-300';
                 case 'Formulaire rempli': return 'bg-purple-100 text-purple-800 border border-purple-300';
+                case 'En attente validation': return 'bg-purple-100 text-purple-800 border border-purple-300';
+                case 'Rejetee': return 'bg-red-100 text-red-800 border border-red-300';
                 case 'Terminee': return 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+                case 'Validee': return 'bg-emerald-100 text-emerald-900 border border-emerald-400 font-extrabold';
+                case 'Rouverte': return 'bg-teal-100 text-teal-800 border border-teal-300';
                 case 'Annulee': return 'bg-red-100 text-red-800 border border-red-300';
                 default: return 'bg-slate-200 text-slate-700 border border-slate-300';
             }
@@ -2108,5 +3459,145 @@
             }
         }
     </script>
+
+<!-- ============================================================ -->
+<!-- MODAL : Progression Tâche                                    -->
+<!-- ============================================================ -->
+<div id="modal-task-progress"
+     class="hidden fixed inset-0 z-[9999] items-end justify-center bg-black/50 backdrop-blur-sm"
+     onclick="if(event.target===this) closeProgressModal()">
+    <div class="w-full max-w-md bg-white rounded-t-3xl shadow-2xl px-6 pt-6 pb-8 space-y-5 animate-slide-up">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="w-8 h-8 rounded-xl bg-indigo-100 flex items-center justify-center">
+                    <i class="fa-solid fa-chart-simple text-indigo-600 text-xs"></i>
+                </span>
+                <div>
+                    <p class="text-sm font-extrabold text-slate-800">Progression de la tâche</p>
+                    <p class="text-[11px] text-slate-400">Faites glisser pour ajuster</p>
+                </div>
+            </div>
+            <button onclick="closeProgressModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition">
+                <i class="fa-solid fa-xmark text-slate-500 text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Valeur centrale -->
+        <div class="flex items-center justify-center">
+            <span id="modal-progress-value" class="text-4xl font-black text-indigo-600 tabular-nums">0%</span>
+        </div>
+
+        <!-- Slider -->
+        <div class="space-y-2">
+            <input
+                type="range"
+                id="modal-progress-slider"
+                min="0" max="100" step="5" value="0"
+                class="w-full h-3 rounded-full appearance-none cursor-pointer accent-indigo-600 bg-slate-200"
+            >
+            <div class="flex justify-between text-[10px] text-slate-400 font-medium">
+                <span>0%</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+            </div>
+        </div>
+
+        <!-- Boutons rapides -->
+        <div class="grid grid-cols-5 gap-1.5">
+            <button onclick="setProgressQuick(0)"  class="py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 font-bold text-[10px] transition border border-slate-200">0%</button>
+            <button onclick="setProgressQuick(25)" class="py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 font-bold text-[10px] transition border border-slate-200">25%</button>
+            <button onclick="setProgressQuick(50)" class="py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 font-bold text-[10px] transition border border-slate-200">50%</button>
+            <button onclick="setProgressQuick(75)" class="py-1.5 rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 font-bold text-[10px] transition border border-slate-200">75%</button>
+            <button onclick="setProgressQuick(100)" class="py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 font-bold text-[10px] transition border border-emerald-200">100%</button>
+        </div>
+
+        <!-- Action -->
+        <button
+            id="btn-submit-progress"
+            onclick="submitTaskProgress()"
+            class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold rounded-2xl text-sm shadow-lg transition flex items-center justify-center space-x-2 disabled:opacity-60"
+        >
+            <i class="fa-solid fa-floppy-disk text-sm"></i>
+            <span>Enregistrer la progression</span>
+        </button>
+    </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- MODAL : Commentaire / Note sur une Tâche                    -->
+<!-- ============================================================ -->
+<div id="modal-task-comment"
+     class="hidden fixed inset-0 z-[9999] items-end justify-center bg-black/50 backdrop-blur-sm"
+     onclick="if(event.target===this) closeCommentModal()">
+    <div class="w-full max-w-md bg-white rounded-t-3xl shadow-2xl px-6 pt-6 pb-8 space-y-4 animate-slide-up">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+                <span class="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center">
+                    <i class="fa-solid fa-comment-dots text-amber-600 text-xs"></i>
+                </span>
+                <div>
+                    <p class="text-sm font-extrabold text-slate-800">Note sur la tâche</p>
+                    <p class="text-[11px] text-slate-400">Observations, difficultés, remarques...</p>
+                </div>
+            </div>
+            <button onclick="closeCommentModal()" class="w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 transition">
+                <i class="fa-solid fa-xmark text-slate-500 text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Textarea -->
+        <div>
+            <textarea
+                id="modal-comment-textarea"
+                rows="4"
+                placeholder="Ex: Zone difficile d'accès, câble remplacé, client informé..."
+                class="w-full px-4 py-3 text-xs border border-slate-200 bg-slate-50 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-200 focus:border-amber-400 transition resize-none text-slate-800 placeholder-slate-400 leading-relaxed"
+            ></textarea>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex space-x-3">
+            <button
+                onclick="closeCommentModal()"
+                class="flex-1 py-3 border border-slate-200 text-slate-600 font-bold rounded-2xl text-xs hover:bg-slate-50 transition"
+            >
+                Annuler
+            </button>
+            <button
+                id="btn-submit-comment"
+                onclick="submitTaskComment()"
+                class="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-extrabold rounded-2xl text-xs shadow-md transition flex items-center justify-center space-x-2 disabled:opacity-60"
+            >
+                <i class="fa-solid fa-check text-xs"></i>
+                <span>Enregistrer la note</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Helper pour les boutons rapides de progression
+    function setProgressQuick(val) {
+        const slider = document.getElementById('modal-progress-slider');
+        const display = document.getElementById('modal-progress-value');
+        slider.value = val;
+        display.textContent = val + '%';
+    }
+</script>
+
+<style>
+    @keyframes slide-up {
+        from { transform: translateY(100%); opacity: 0; }
+        to   { transform: translateY(0);    opacity: 1; }
+    }
+    .animate-slide-up { animation: slide-up 0.25s cubic-bezier(.22,1,.36,1) both; }
+</style>
+
 </body>
 </html>

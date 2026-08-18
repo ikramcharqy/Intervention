@@ -1,180 +1,580 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', config('app.name', 'TechniTrack') . ' — Console')</title>
 
-    <title>Metronic Admin - {{ config('app.name', 'FieldFlow') }}</title>
-
-    <!-- Google Fonts Inter & Outfit -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- Scripts -->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+    <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
+        /* ═══════════════════════════════════════════════════════
+           TECHNITRACK DESIGN SYSTEM — DARK VIOLET EDITION
+           Palette: Violet profond + Dark slate + Accents néon
+        ═══════════════════════════════════════════════════════ */
         :root {
-            --kt-body-bg: #F9F9FB;
-            --kt-sidebar-bg: #1E1E2D;
-            --kt-sidebar-border: #2B2B40;
-            --kt-sidebar-hover: #1B1B28;
-            --kt-card-bg: #FFFFFF;
-            --kt-card-border: #EFF2F5;
-            --kt-text-dark: #181C32;
-            --kt-text-muted: #A1A5B7;
-            --kt-primary: #3E97FF;
-            --kt-success: #50CD89;
+            /* Backgrounds */
+            --ds-bg:           #0d0d1a;
+            --ds-bg-2:         #13131f;
+            --ds-bg-3:         #1a1a2e;
+            --ds-bg-4:         #1f1f35;
+
+            /* Surfaces (cartes) */
+            --ds-surface:      #16162a;
+            --ds-surface-2:    #1e1e33;
+            --ds-border:       rgba(139, 92, 246, 0.12);
+            --ds-border-hover: rgba(139, 92, 246, 0.35);
+
+            /* Textes */
+            --ds-text-primary:   #e2e8f0;
+            --ds-text-secondary: #94a3b8;
+            --ds-text-muted:     #64748b;
+            --ds-text-caption:   #475569;
+
+            /* Couleurs d'accent Violet */
+            --ds-violet-50:  #f5f3ff;
+            --ds-violet-400: #a78bfa;
+            --ds-violet-500: #8b5cf6;
+            --ds-violet-600: #7c3aed;
+            --ds-violet-700: #6d28d9;
+
+            /* Gradients Principaux (310deg) */
+            --g-primary:   linear-gradient(310deg, #4c1d95 0%, #7c3aed 50%, #a855f7 100%);
+            --g-accent:    linear-gradient(310deg, #7c3aed 0%, #ec4899 100%);
+            --g-info:      linear-gradient(310deg, #1e40af 0%, #3b82f6 100%);
+            --g-success:   linear-gradient(310deg, #065f46 0%, #10b981 100%);
+            --g-warning:   linear-gradient(310deg, #92400e 0%, #f59e0b 100%);
+            --g-danger:    linear-gradient(310deg, #7f1d1d 0%, #ef4444 100%);
+            --g-dark:      linear-gradient(310deg, #0f0f1a 0%, #1e1e33 100%);
+            --g-violet-pink: linear-gradient(310deg, #4c1d95 0%, #7c3aed 60%, #ec4899 100%);
+
+            /* Ombres */
+            --shadow-card:  0 4px 24px 0 rgba(0,0,0,0.45);
+            --shadow-hover: 0 8px 32px 0 rgba(139,92,246,0.2);
+            --shadow-glow:  0 0 20px rgba(139,92,246,0.3);
         }
-        body { font-family: 'Inter', sans-serif; background-color: var(--kt-body-bg); color: var(--kt-text-dark); }
-        h1, h2, h3, .font-heading { font-family: 'Outfit', sans-serif; }
-        .metronic-card {
-            background-color: #FFFFFF;
-            border: 1px solid var(--kt-card-border);
-            box-shadow: 0px 0px 20px 0px rgba(76, 87, 125, 0.03);
-            border-radius: 0.85rem;
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Open Sans', sans-serif;
+            background-color: var(--ds-bg);
+            color: var(--ds-text-primary);
+            -webkit-font-smoothing: antialiased;
         }
-        .metronic-sidebar { background-color: var(--kt-sidebar-bg); }
-        .metronic-nav-link { color: #9899AC; transition: all 0.2s ease; }
-        .metronic-nav-link:hover { color: #FFFFFF; background-color: var(--kt-sidebar-hover); }
-        .metronic-nav-link.active { color: #FFFFFF; background-color: #1B1B28; border-left: 4px solid var(--kt-primary); }
+
+        /* ── SCROLLBAR DARK ── */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: var(--ds-bg-2); }
+        ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.4); border-radius: 9999px; }
+
+        /* ── CARTES ── */
+        .ds-card {
+            background: var(--ds-surface);
+            border: 1px solid var(--ds-border);
+            border-radius: 1rem;
+            box-shadow: var(--shadow-card);
+            transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }
+        .ds-card-hover:hover {
+            border-color: var(--ds-border-hover);
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-3px);
+        }
+        /* Alias rétro-compat */
+        .soft-card { background: var(--ds-surface); border: 1px solid var(--ds-border); border-radius: 1rem; box-shadow: var(--shadow-card); }
+
+        /* ── GRADIENTS CLASSES ── */
+        .sg-primary   { background-image: var(--g-primary);   }
+        .sg-accent    { background-image: var(--g-accent);     }
+        .sg-info      { background-image: var(--g-info);       }
+        .sg-success   { background-image: var(--g-success);    }
+        .sg-warning   { background-image: var(--g-warning);    }
+        .sg-danger    { background-image: var(--g-danger);     }
+        .sg-dark      { background-image: var(--g-dark);       }
+        .sg-vp        { background-image: var(--g-violet-pink); }
+
+        /* Alias rétro-compat */
+        .soft-gradient-primary   { background-image: var(--g-primary);   }
+        .soft-gradient-secondary { background-image: var(--g-dark);      }
+        .soft-gradient-info      { background-image: var(--g-info);      }
+        .soft-gradient-success   { background-image: var(--g-success);   }
+        .soft-gradient-warning   { background-image: var(--g-warning);   }
+        .soft-gradient-danger    { background-image: var(--g-danger);    }
+        .soft-gradient-dark      { background-image: var(--g-dark);      }
+
+        /* ── SIDEBAR ── */
+        #app-sidebar {
+            width: 264px;
+            min-height: 100vh;
+            flex-shrink: 0;
+            background: var(--ds-bg-2);
+            border-right: 1px solid var(--ds-border);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease;
+            z-index: 40;
+        }
+        @media (max-width: 768px) {
+            #app-sidebar { position:fixed; top:0; left:0; height:100vh; transform:translateX(-100%); }
+            #app-sidebar.open { transform:translateX(0); box-shadow:var(--shadow-glow); }
+        }
+
+        .sidebar-nav-item a {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.55rem 0.875rem;
+            border-radius: 0.625rem;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--ds-text-secondary);
+            text-decoration: none;
+            transition: all 0.18s ease;
+        }
+        .sidebar-nav-item a:hover {
+            background: var(--ds-bg-3);
+            color: var(--ds-text-primary);
+        }
+        .sidebar-nav-item a.active {
+            background: var(--g-primary);
+            background-image: var(--g-primary);
+            color: #fff;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(124,58,237,0.4);
+        }
+        .sidebar-nav-item a.active .nav-icon-box {
+            background: rgba(255,255,255,0.15) !important;
+            box-shadow: none !important;
+        }
+        .nav-icon-box {
+            width: 1.875rem;
+            height: 1.875rem;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            background: var(--ds-bg-3);
+            font-size: 0.65rem;
+        }
+        .sidebar-section-label {
+            font-size: 0.58rem;
+            font-weight: 800;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--ds-text-muted);
+            padding: 0 0.875rem;
+            margin-top: 1.25rem;
+            margin-bottom: 0.375rem;
+        }
+        .ds-badge-pill {
+            font-size: 0.6rem;
+            font-weight: 800;
+            padding: 0.15rem 0.5rem;
+            border-radius: 9999px;
+            color: #fff;
+        }
+
+        /* ── NAVBAR ── */
+        #app-navbar {
+            background: rgba(22,22,42,0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--ds-border);
+            border-radius: 1rem;
+            padding: 0.7rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            position: sticky;
+            top: 0.75rem;
+            z-index: 30;
+            box-shadow: var(--shadow-card);
+        }
+
+        /* ── BOUTONS ── */
+        .ds-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-weight: 700;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            border-radius: 0.75rem;
+            padding: 0.6rem 1.25rem;
+            transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+        }
+        .ds-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+        .ds-btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+        .ds-btn-primary { background-image: var(--g-primary); color: #fff; box-shadow: 0 4px 15px rgba(124,58,237,0.4); }
+        .ds-btn-accent  { background-image: var(--g-accent);  color: #fff; }
+        .ds-btn-info    { background-image: var(--g-info);    color: #fff; }
+        .ds-btn-success { background-image: var(--g-success); color: #fff; }
+        .ds-btn-warning { background-image: var(--g-warning); color: #fff; }
+        .ds-btn-danger  { background-image: var(--g-danger);  color: #fff; }
+        .ds-btn-ghost {
+            background: var(--ds-surface-2);
+            border: 1px solid var(--ds-border);
+            color: var(--ds-text-primary);
+        }
+        /* Alias rétro-compat */
+        .soft-btn { display:inline-flex; align-items:center; gap:0.4rem; font-weight:700; font-size:0.72rem; letter-spacing:0.06em; border-radius:0.75rem; padding:0.6rem 1.25rem; transition:opacity 0.15s,transform 0.15s; cursor:pointer; border:none; text-decoration:none; }
+        .soft-btn:hover { opacity:0.88; transform:translateY(-1px); }
+        .soft-btn-primary { background-image:var(--g-primary); color:#fff; }
+        .soft-btn-info    { background-image:var(--g-info);    color:#fff; }
+        .soft-btn-success { background-image:var(--g-success); color:#fff; }
+        .soft-btn-warning { background-image:var(--g-warning); color:#fff; }
+        .soft-btn-danger  { background-image:var(--g-danger);  color:#fff; }
+        .soft-btn-outline { background:var(--ds-surface-2); border:1px solid var(--ds-border); color:var(--ds-text-primary); }
+
+        /* ── INPUTS ── */
+        .ds-input {
+            width: 100%;
+            padding: 0.65rem 1rem;
+            border: 1px solid var(--ds-border);
+            border-radius: 0.75rem;
+            font-size: 0.78rem;
+            color: var(--ds-text-primary);
+            background: var(--ds-bg-3);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .ds-input:focus {
+            border-color: var(--ds-violet-500);
+            box-shadow: 0 0 0 3px rgba(139,92,246,0.2);
+        }
+        .ds-input::placeholder { color: var(--ds-text-muted); }
+        .ds-label {
+            display: block;
+            font-size: 0.62rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--ds-text-muted);
+            margin-bottom: 0.375rem;
+        }
+        /* Alias */
+        .soft-input { background:var(--ds-bg-3); border:1px solid var(--ds-border); border-radius:0.75rem; padding:0.65rem 1rem; font-size:0.78rem; color:var(--ds-text-primary); outline:none; width:100%; }
+        .soft-input:focus { border-color:var(--ds-violet-500); box-shadow:0 0 0 3px rgba(139,92,246,0.2); }
+        .soft-label { display:block; font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:0.1em; color:var(--ds-text-muted); margin-bottom:0.375rem; }
+
+        /* ── TABLEAUX ── */
+        .ds-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .ds-table thead th {
+            font-size: 0.58rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.12em;
+            color: var(--ds-text-muted);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--ds-border);
+            background: var(--ds-bg-2);
+            white-space: nowrap;
+        }
+        .ds-table tbody td {
+            font-size: 0.78rem;
+            color: var(--ds-text-primary);
+            padding: 0.875rem 1rem;
+            border-bottom: 1px solid rgba(139,92,246,0.06);
+            vertical-align: middle;
+        }
+        .ds-table tbody tr:hover td { background: var(--ds-bg-3); }
+        /* Alias */
+        .soft-table { width:100%; }
+        .soft-table thead th { font-size:0.58rem; font-weight:800; text-transform:uppercase; letter-spacing:0.12em; color:var(--ds-text-muted); padding:0.75rem 1rem; border-bottom:1px solid var(--ds-border); background:var(--ds-bg-2); }
+        .soft-table tbody td { font-size:0.78rem; color:var(--ds-text-primary); padding:0.875rem 1rem; border-bottom:1px solid rgba(139,92,246,0.06); vertical-align:middle; }
+
+        /* ── ALERTES ── */
+        .ds-alert { display:flex; align-items:flex-start; gap:0.75rem; padding:0.875rem 1rem; border-radius:0.75rem; font-size:0.78rem; font-weight:600; margin-bottom:0.75rem; border:1px solid; }
+        .ds-alert-success { background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.25); color:#6ee7b7; }
+        .ds-alert-danger  { background:rgba(239,68,68,0.1);  border-color:rgba(239,68,68,0.25);  color:#fca5a5; }
+        .ds-alert-warning { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.25); color:#fcd34d; }
+        .ds-alert-info    { background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.25); color:#93c5fd; }
+        /* Alias */
+        .soft-alert { display:flex; align-items:flex-start; gap:0.75rem; padding:0.875rem 1rem; border-radius:0.75rem; font-size:0.78rem; font-weight:600; margin-bottom:0.75rem; border:1px solid; }
+        .soft-alert-success { background:rgba(16,185,129,0.1); border-color:rgba(16,185,129,0.25); color:#6ee7b7; }
+        .soft-alert-danger  { background:rgba(239,68,68,0.1);  border-color:rgba(239,68,68,0.25);  color:#fca5a5; }
+        .soft-alert-warning { background:rgba(245,158,11,0.1); border-color:rgba(245,158,11,0.25); color:#fcd34d; }
+        .soft-alert-info    { background:rgba(59,130,246,0.1); border-color:rgba(59,130,246,0.25); color:#93c5fd; }
+
+        /* ── DIVIDERS ── */
+        .ds-divider { height: 1px; background: var(--ds-border); margin: 0; }
+
+        /* ── SEPARATEUR VERTICAL SIDEBAR ── */
+        .sidebar-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, rgba(139,92,246,0.2), transparent);
+            margin: 0 1rem;
+        }
     </style>
+
+    @stack('styles')
 </head>
-<body class="h-full antialiased" x-data="{ sidebarOpen: false }">
-    <div class="min-h-full flex flex-col md:flex-row">
+<body x-data="{ sidebarOpen: false }">
 
-        <!-- SIDEBAR METRONIC ADMIN -->
-        <aside class="fixed inset-y-0 left-0 z-50 w-72 metronic-sidebar text-slate-300 transform -translate-x-full md:translate-x-0 md:static md:flex md:flex-col transition-transform duration-300 ease-in-out shrink-0 border-r border-[#2B2B40]"
-               :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
+    <!-- Overlay mobile -->
+    <div x-show="sidebarOpen" x-cloak @click="sidebarOpen=false"
+         style="position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:35;" aria-hidden="true"></div>
 
-            <!-- Logo Header -->
-            <div class="h-20 flex items-center justify-between px-6 border-b border-[#2B2B40]">
-                <a href="{{ route('dashboard') }}" class="flex items-center gap-3 group">
-                    <div class="h-10 w-10 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md">
-                        FF
-                    </div>
-                    <div>
-                        <span class="text-base font-extrabold text-white tracking-tight block font-heading">FIELD FLOW</span>
-                        <span class="text-[10px] text-blue-400 font-bold uppercase tracking-wider">Admin Console</span>
-                    </div>
-                </a>
-                <button class="md:hidden text-slate-400 hover:text-white" @click="sidebarOpen = false">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+    <div style="display:flex; min-height:100vh;">
+
+        <!-- ══════════════════════════════
+             SIDEBAR DARK VIOLET
+        ══════════════════════════════ -->
+        <aside id="app-sidebar" :class="sidebarOpen ? 'open' : ''">
+
+            <!-- Logo -->
+            <div style="padding:1.25rem 1rem; display:flex; align-items:center; gap:0.75rem;">
+                <div style="width:2.25rem; height:2.25rem; border-radius:0.75rem; flex-shrink:0;
+                            background-image:var(--g-primary); display:flex; align-items:center;
+                            justify-content:center; color:#fff; font-size:0.8rem;
+                            box-shadow:0 4px 12px rgba(124,58,237,0.5);">
+                    <i class="fas fa-tools"></i>
+                </div>
+                <div>
+                    <span style="display:block; font-size:0.72rem; font-weight:900; color:var(--ds-text-primary); letter-spacing:0.06em;">TECHNITRACK</span>
+                    <span style="display:block; font-size:0.58rem; color:var(--ds-violet-400); font-weight:700; text-transform:uppercase; letter-spacing:0.1em;">Console Pro</span>
+                </div>
+                <button @click="sidebarOpen=false" style="margin-left:auto; color:var(--ds-text-muted); background:none; border:none; cursor:pointer; font-size:0.875rem;" class="md:hidden">
+                    <i class="fas fa-times"></i>
                 </button>
             </div>
 
-            <!-- Navigation Menu -->
-            <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-1">
-                <div class="px-3 pt-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-[#565674] font-heading">Pilotage Métier</div>
+            <div class="sidebar-divider"></div>
 
-                <a href="{{ route('dashboard') }}" class="metronic-nav-link flex items-center justify-between px-3.5 py-3 rounded-lg text-xs font-semibold {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                    <div class="flex items-center gap-3">
-                        <svg class="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
-                        <span>Dashboard Admin</span>
-                    </div>
-                </a>
+            <!-- Navigation -->
+            <nav style="flex:1; overflow-y:auto; padding:0.75rem 0.625rem 1rem;">
 
-                <div class="px-3 pt-6 pb-2 text-[10px] font-bold uppercase tracking-widest text-[#565674] font-heading">Opérations & Terrain</div>
+                <!-- Pilotage -->
+                <p class="sidebar-section-label">Pilotage</p>
+                <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:2px;">
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                            <div class="nav-icon-box">
+                                <i class="fas fa-chart-pie" style="color:var(--ds-violet-400);"></i>
+                            </div>
+                            <span>Tableau de Bord</span>
+                        </a>
+                    </li>
+                </ul>
 
-                <a href="{{ route('clients.index') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('clients.*') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                    <span>Clients</span>
-                </a>
+                <!-- Opérations Terrain -->
+                <p class="sidebar-section-label">Opérations Terrain</p>
+                <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:2px;">
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('clients.index') }}" class="{{ request()->routeIs('clients.*') ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-users" style="color:#60a5fa;"></i></div>
+                            <span>Clients & Entreprises</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('chantiers.index') }}" class="{{ request()->routeIs('chantiers.*') ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-building" style="color:#34d399;"></i></div>
+                            <span>Chantiers</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('interventions.index') }}"
+                           class="{{ (request()->routeIs('interventions.*') && !request()->routeIs('interventions.a-planifier')) ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-clipboard-list" style="color:var(--ds-violet-400);"></i></div>
+                            <span>Toutes Interventions</span>
+                        </a>
+                    </li>
+                    @php
+                        $countAPlanifier = \App\Models\Intervention::where('statut', \App\Models\Intervention::STATUT_PLANIFIEE)->whereNull('technicien_id')->count();
+                    @endphp
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('interventions.a-planifier') }}" class="{{ request()->routeIs('interventions.a-planifier') ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-calendar-plus" style="color:#fbbf24;"></i></div>
+                            <span style="flex:1;">À Planifier</span>
+                            @if($countAPlanifier > 0)
+                                <span class="ds-badge-pill sg-warning">{{ $countAPlanifier }}</span>
+                            @endif
+                        </a>
+                    </li>
+                    @php
+                        $countReaffectation = \App\Models\DemandeReaffectation::where('statut', 'En attente')->count();
+                    @endphp
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('demandes-reaffectation.index') }}" class="{{ request()->routeIs('demandes-reaffectation.*') ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-exclamation-triangle" style="color:#f87171;"></i></div>
+                            <span style="flex:1;">Refus Techniciens</span>
+                            @if($countReaffectation > 0)
+                                <span class="ds-badge-pill sg-danger" style="animation:pulse 2s infinite;">{{ $countReaffectation }}</span>
+                            @endif
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('users.index') }}?role=Technicien"
+                           class="{{ (request()->routeIs('users.*') && request()->input('role') === 'Technicien') ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-user-cog" style="color:#94a3b8;"></i></div>
+                            <span>Équipe Techniciens</span>
+                        </a>
+                    </li>
+                </ul>
 
-                <a href="{{ route('chantiers.index') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('chantiers.*') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
-                    <span>Chantiers</span>
-                </a>
-
-                <a href="{{ route('interventions.index') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('interventions.*') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                    <span>Interventions</span>
-                </a>
-
-                <a href="{{ route('users.index') }}?role=Technicien" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->input('role') === 'Technicien' ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                    <span>Équipe Techniciens</span>
-                </a>
-
-                <div class="px-3 pt-6 pb-2 text-[10px] font-bold uppercase tracking-widest text-[#565674] font-heading">Rapports & Suivi</div>
-
-                <a href="{{ route('formulaires.index') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('formulaires.*') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    <span>Formulaires</span>
-                </a>
-
-                <a href="{{ route('rapports.index') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('rapports.*') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 01-2-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    <span>Rapports Validation</span>
-                </a>
-
-                <a href="{{ route('planning.index') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('planning.*') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    <span>Planning Général</span>
-                </a>
-
-                <a href="{{ route('gps.index') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('gps.*') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
-                    <span>Tracking GPS Live</span>
-                </a>
-
-                <a href="{{ route('materiaux.index') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('materiaux.*') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-                    <span>Stock & Matériaux</span>
-                </a>
+                <!-- Rapports & Suivi -->
+                <p class="sidebar-section-label">Rapports & Suivi</p>
+                <ul style="list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:2px;">
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('formulaires.index') }}" class="{{ request()->routeIs('formulaires.*') ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-file-alt" style="color:#60a5fa;"></i></div>
+                            <span>Formulaires Dynamiques</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('rapports.index') }}" class="{{ request()->routeIs('rapports.*') ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-file-pdf" style="color:#f87171;"></i></div>
+                            <span>Rapports Validation</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('planning.index') }}" class="{{ request()->routeIs('planning.*') ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-calendar-alt" style="color:#34d399;"></i></div>
+                            <span>Planning Général</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('gps.index') }}" class="{{ request()->routeIs('gps.*') ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-map-marker-alt" style="color:var(--ds-violet-400);"></i></div>
+                            <span>Tracking GPS Live</span>
+                        </a>
+                    </li>
+                    <li class="sidebar-nav-item">
+                        <a href="{{ route('materiaux.index') }}" class="{{ request()->routeIs('materiaux.*') ? 'active' : '' }}">
+                            <div class="nav-icon-box"><i class="fas fa-boxes" style="color:#fbbf24;"></i></div>
+                            <span>Stock & Matériaux</span>
+                        </a>
+                    </li>
+                </ul>
             </nav>
 
-            <div class="p-4 border-t border-[#2B2B40]">
-                <div class="p-3 rounded-lg bg-[#1B1B28] flex items-center justify-between text-xs">
-                    <span class="text-white font-bold">Espace Administrateur</span>
-                    <span class="px-2 py-0.5 text-[10px] font-bold text-blue-400 bg-blue-500/10 rounded">ACTIF</span>
+            <!-- Sidebar Footer -->
+            <div style="padding:0.75rem 0.625rem 1.25rem;">
+                <div style="background-image:var(--g-primary); border-radius:0.875rem; padding:1rem; position:relative; overflow:hidden;">
+                    <div style="position:absolute; top:-15px; right:-15px; width:70px; height:70px; border-radius:50%; background:rgba(255,255,255,0.06);"></div>
+                    <div style="display:flex; align-items:center; gap:0.75rem; position:relative;">
+                        <div style="width:2rem; height:2rem; border-radius:0.5rem; background:rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center; font-size:0.75rem; color:#fff; flex-shrink:0;">
+                            <i class="fas fa-headset"></i>
+                        </div>
+                        <div>
+                            <p style="font-size:0.7rem; font-weight:900; color:#fff; margin:0 0 0.1rem;">TechniTrack Pro</p>
+                            <p style="font-size:0.6rem; color:rgba(255,255,255,0.65); margin:0;">Support & Administration</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </aside>
 
-        <!-- MAIN METRONIC CONTENT -->
-        <div class="flex-1 flex flex-col min-w-0">
-            <header class="h-20 bg-white border-b border-[#EFF2F5] flex items-center justify-between px-8 sticky top-0 z-40 shadow-sm">
-                <div class="flex items-center gap-4">
-                    <button class="md:hidden p-2 text-slate-600 hover:text-slate-900" @click="sidebarOpen = true">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+        <!-- ══════════════════════════════
+             MAIN CONTENT
+        ══════════════════════════════ -->
+        <div style="flex:1; display:flex; flex-direction:column; min-width:0; padding:1rem 1.25rem 2rem;">
+
+            <!-- NAVBAR FLOTTANTE DARK VIOLET -->
+            <nav id="app-navbar">
+                <!-- Gauche -->
+                <div style="display:flex; align-items:center; gap:0.875rem;">
+                    <button @click="sidebarOpen=!sidebarOpen"
+                            style="width:2rem; height:2rem; border-radius:0.5rem; background:var(--ds-bg-3);
+                                   border:1px solid var(--ds-border); color:var(--ds-text-secondary);
+                                   cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:0.8rem;"
+                            class="md:hidden">
+                        <i class="fas fa-bars"></i>
                     </button>
                     <div>
-                        <h1 class="text-lg font-bold text-[#181C32] font-heading">Administration Métier</h1>
-                        <span class="text-xs text-[#A1A5B7]">Metronic 8.2 • Dashboard de Gestion Terrain</span>
+                        <p style="font-size:0.6rem; color:var(--ds-text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.08em; margin:0;">
+                            <a href="{{ route('dashboard') }}" style="color:var(--ds-violet-400); text-decoration:none;">TechniTrack</a>
+                            <span style="margin:0 0.25rem;">›</span>
+                            <span style="color:var(--ds-text-secondary);">
+                                {{ ucwords(str_replace(['.', '-', '_'], ' ', Route::currentRouteName() ?? 'Console')) }}
+                            </span>
+                        </p>
+                        <h6 style="font-size:0.85rem; font-weight:800; color:var(--ds-text-primary); margin:0; line-height:1.2; text-transform:capitalize;">
+                            {{ ucwords(str_replace(['.', '-', '_'], ' ', Route::currentRouteName() ?? 'Administration')) }}
+                        </h6>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-5">
-                    <span class="hidden sm:inline-block px-3 py-1 bg-blue-50 text-blue-600 border border-blue-100 text-xs font-bold rounded-lg font-mono">
-                        Admin Espace
+                <!-- Droite -->
+                <div style="display:flex; align-items:center; gap:0.75rem;">
+                    @php
+                        $roleStyle = [
+                            'Admin'       => 'background-image:var(--g-primary);',
+                            'Super Admin' => 'background-image:var(--g-dark); border:1px solid rgba(139,92,246,0.3);',
+                            'Commercial'  => 'background-image:var(--g-info);',
+                            'Technicien'  => 'background-image:var(--g-success);',
+                            'Client'      => 'background-image:var(--g-warning);',
+                        ];
+                        $userRole = auth()->user()->getRoleNames()->first() ?? '';
+                        $rs = $roleStyle[$userRole] ?? 'background-image:var(--g-dark);';
+                    @endphp
+                    <span style="{{ $rs }} font-size:0.62rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em;
+                                 padding:0.25rem 0.75rem; border-radius:9999px; color:#fff; display:none;"
+                          class="sm:inline-block">
+                        {{ $userRole }}
                     </span>
 
-                    <div class="flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-lg bg-blue-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
-                            {{ strtoupper(substr(Auth::user()->name, 0, 2)) }}
+                    <!-- Avatar -->
+                    <div style="display:flex; align-items:center; gap:0.625rem;">
+                        <div style="width:2rem; height:2rem; border-radius:0.625rem; background-image:var(--g-primary);
+                                    display:flex; align-items:center; justify-content:center; color:#fff;
+                                    font-size:0.65rem; font-weight:900; flex-shrink:0;
+                                    box-shadow:0 0 12px rgba(124,58,237,0.4);">
+                            {{ strtoupper(substr(auth()->user()->name ?? 'AD', 0, 2)) }}
                         </div>
-                        <div class="hidden md:block">
-                            <span class="text-xs font-bold text-[#181C32] block leading-tight">{{ Auth::user()->name }}</span>
-                            <span class="text-[11px] text-[#A1A5B7]">{{ Auth::user()->email }}</span>
+                        <div style="display:none;" class="md:block">
+                            <p style="font-size:0.75rem; font-weight:700; color:var(--ds-text-primary); margin:0; line-height:1.2;">{{ auth()->user()->name }}</p>
+                            <p style="font-size:0.62rem; color:var(--ds-text-muted); margin:0;">{{ auth()->user()->email }}</p>
                         </div>
                     </div>
 
+                    <!-- Déconnexion -->
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="px-3.5 py-2 bg-[#F5F8FA] hover:bg-[#EEF0F8] text-[#5E6278] text-xs font-semibold rounded-lg transition">
-                            Déconnexion
+                        <button type="submit" class="ds-btn ds-btn-ghost" style="padding:0.45rem 0.875rem; font-size:0.68rem;">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span style="display:none;" class="sm:inline">Déconnexion</span>
                         </button>
                     </form>
                 </div>
-            </header>
+            </nav>
 
-            <main class="flex-1 p-6 md:p-8">
+            <!-- Flash Messages -->
+            @if(session('success'))
+                <div class="ds-alert ds-alert-success">
+                    <i class="fas fa-check-circle" style="margin-top:1px; flex-shrink:0;"></i>
+                    <span>{{ session('success') }}</span>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="ds-alert ds-alert-danger">
+                    <i class="fas fa-exclamation-circle" style="margin-top:1px; flex-shrink:0;"></i>
+                    <span>{{ session('error') }}</span>
+                </div>
+            @endif
+            @if(session('warning'))
+                <div class="ds-alert ds-alert-warning">
+                    <i class="fas fa-exclamation-triangle" style="margin-top:1px; flex-shrink:0;"></i>
+                    <span>{{ session('warning') }}</span>
+                </div>
+            @endif
+
+            <!-- Page Content -->
+            <main style="flex:1;">
                 {{ $slot }}
             </main>
         </div>
     </div>
+
+    @stack('scripts')
 </body>
 </html>

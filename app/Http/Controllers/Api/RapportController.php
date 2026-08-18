@@ -9,6 +9,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Http\Requests\StoreRapportRequest;
 use Illuminate\Support\Facades\Validator;
 
 class RapportController extends BaseApiController
@@ -55,14 +56,7 @@ class RapportController extends BaseApiController
      */
     public function showByIntervention(Request $request, Intervention $intervention): JsonResponse
     {
-        $user = $request->user();
-
-        if (
-            $intervention->technicien_id !== $user->id
-            && !$user->hasAnyRole(['Admin', 'admin', 'Super Admin', 'superadmin'])
-        ) {
-            return $this->errorResponse('Non autorisé à consulter ce rapport.', null, 403);
-        }
+        $this->authorize('view', $intervention);
 
         $rapport = $intervention->rapport;
 
@@ -94,9 +88,9 @@ class RapportController extends BaseApiController
      */
     public function show(Request $request, Rapport $rapport): JsonResponse
     {
-        $user = $request->user();
+        $this->authorize('view', $rapport);
 
-        if (!$this->rapportService->canClientView($rapport, $user)) {
+        if (!$this->rapportService->canClientView($rapport, $request->user())) {
             return $this->errorResponse('Ce rapport est en cours de validation.', null, 403);
         }
 
@@ -118,32 +112,76 @@ class RapportController extends BaseApiController
     /**
      * Créer ou mettre à jour le rapport d'intervention.
      */
-    public function storeOrUpdate(Request $request, Intervention $intervention): JsonResponse
+    public function storeOrUpdate(StoreRapportRequest $request, Intervention $intervention): JsonResponse
     {
-        if ($intervention->technicien_id !== $request->user()->id && !$request->user()->hasAnyRole(['Admin', 'admin', 'Super Admin', 'superadmin'])) {
-            return $this->errorResponse('Non autorisé à gérer ce rapport.', null, 403);
+        // Authorization handled by FormRequest
+
+        if (in_array($intervention->statut, ['Terminee', 'Validee', 'Annulee'])) {
+            return $this->errorResponse('Cette intervention est clôturée et ne peut plus être modifiée.', null, 400);
         }
 
-        $validator = Validator::make($request->all(), [
-            'travaux_effectues' => 'nullable|string',
-            'observations'      => 'nullable|string',
-            'recommandations'   => 'nullable|string',
-            'statut_equipement' => 'nullable|string',
-            'qrcode_scanne'     => 'nullable|string',
-            'commentaire'       => 'nullable|string',
-            'date_debut'        => 'nullable|date',
-            'date_fin'          => 'nullable|date',
-            'photos.*'          => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
-            'videos.*'          => 'nullable|file|mimes:mp4,mov,avi,webm|max:51200',
-        ]);
+        // ── Idempotence : éviter les doublons sur retry réseau ──
+        $idempotencyKey = $request->header('X-Idempotency-Key');
+        if ($idempotencyKey) {
+            $cacheKey = 'rapport_idempotency_' . $idempotencyKey;
+            $cached   = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            if ($cached) {
+                return $this->successResponse($cached, 'Rapport déjà enregistré (idempotent).');
+            }
+        }
 
-        if ($validator->fails()) {
-            return $this->errorResponse('Données du rapport invalides.', $validator->errors(), 422);
+        /** @var \App\Services\SecureFileUploadService $uploader */
+        $uploader = app(\App\Services\SecureFileUploadService::class);
+        $userId   = $request->user()->id;
+
+        // ── Validation sécurisée des fichiers (MIME réel + extension + taille) ──
+        try {
+            if ($request->hasFile('photos')) {
+                $uploader->validateBatch($request->file('photos'), 'image', $userId);
+            }
+            if ($request->hasFile('videos')) {
+                $uploader->validateBatch($request->file('videos'), 'video', $userId);
+            }
+            if ($request->hasFile('documents')) {
+                $uploader->validateBatch($request->file('documents'), 'document', $userId);
+            }
+            if ($request->hasFile('signature_technicien_file')) {
+                $uploader->validate($request->file('signature_technicien_file'), 'signature', $userId);
+            }
+            if ($request->hasFile('signature_client_file')) {
+                $uploader->validate($request->file('signature_client_file'), 'signature', $userId);
+            }
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), null, 422);
         }
 
         try {
-            $data = $validator->validated();
-            unset($data['photos'], $data['videos']);
+            $data = $request->validated();
+            unset($data['photos'], $data['photos_types'], $data['videos'], $data['documents'],
+                  $data['signature_technicien_file'], $data['signature_client_file']);
+
+            // Traitement des signatures Base64 (canvas numérique)
+            foreach (['signature_technicien', 'signature_client'] as $sigKey) {
+                if (!empty($data[$sigKey]) && str_starts_with($data[$sigKey], 'data:image')) {
+                    $imageParts   = explode(';base64,', $data[$sigKey]);
+                    $imageTypeAux = explode('image/', $imageParts[0]);
+                    $imageType    = $imageTypeAux[1] ?? 'png';
+                    $imageBase64  = base64_decode($imageParts[1]);
+                    $fileName     = 'signatures/' . $sigKey . '_' . $intervention->id . '_' . time() . '.' . $imageType;
+                    \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $imageBase64);
+                    $data[$sigKey] = $fileName;
+                }
+            }
+
+            // Gestion de la photo papier de signature si uploadée
+            if ($request->hasFile('signature_technicien_file')) {
+                $path = $request->file('signature_technicien_file')->store('signatures', 'public');
+                $data['signature_technicien'] = $path;
+            }
+            if ($request->hasFile('signature_client_file')) {
+                $path = $request->file('signature_client_file')->store('signatures', 'public');
+                $data['signature_client'] = $path;
+            }
 
             $data['intervention_id'] = $intervention->id;
             if (empty($data['date_debut'])) {
@@ -163,15 +201,21 @@ class RapportController extends BaseApiController
                 $message = 'Rapport d\'intervention créé avec succès.';
             }
 
-            // Gestion de l'upload des photos du rapport
+            // Upload des photos avec type (avant, apres, probleme)
             if ($request->hasFile('photos')) {
-                foreach ($request->file('photos') as $file) {
+                $types = $request->input('photos_types', []);
+                foreach ($request->file('photos') as $index => $file) {
                     $path = $file->store('photos/rapports', 'public');
-                    $rapport->photos()->create(['chemin' => $path]);
+                    $type = $types[$index] ?? 'avant';
+                    $rapport->photos()->create([
+                        'chemin'     => $path,
+                        'type_photo' => $type,
+                        'date_prise' => now(),
+                    ]);
                 }
             }
 
-            // Gestion de l'upload des vidéos du rapport
+            // Upload des vidéos
             if ($request->hasFile('videos')) {
                 foreach ($request->file('videos') as $file) {
                     $path = $file->store('videos/rapports', 'public');
@@ -179,15 +223,47 @@ class RapportController extends BaseApiController
                 }
             }
 
-            return $this->successResponse($rapport->fresh([
-                'intervention',
-                'photos',
-                'videos',
-                'documents',
-            ]), $message);
+            // Upload des documents justificatifs
+            if ($request->hasFile('documents')) {
+                foreach ($request->file('documents') as $file) {
+                    $path = $file->store('documents/rapports', 'public');
+                    $rapport->documents()->create([
+                        'nom_original' => $file->getClientOriginalName(),
+                        'chemin'       => $path,
+                        'type'         => $file->getClientMimeType(),
+                        'taille'       => $file->getSize(),
+                    ]);
+                }
+            }
+
+            // Traçabilité dans l'historique de l'intervention
+            app(\App\Services\InterventionService::class)->enregistrerHistorique(
+                $intervention,
+                statut_avant: $intervention->statut,
+                statut_apres: $intervention->statut,
+                commentaire: 'Saisie / Mise à jour du compte-rendu & preuves terrain par le technicien'
+            );
+
+            $result = $rapport->fresh(['intervention', 'photos', 'videos', 'documents', 'reponses.question']);
+
+            // Stocker en cache pour idempotence (5 min)
+            if ($idempotencyKey) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, $result, now()->addMinutes(5));
+            }
+
+            return $this->successResponse($result, $message);
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), null, 400);
         }
+    }
+
+    /**
+     * Obtenir la checklist de complétude des preuves de l'intervention (Admin/Tech).
+     */
+    public function checkCompletude(Request $request, Intervention $intervention): JsonResponse
+    {
+        $completude = app(\App\Services\InterventionService::class)->verifierCompletudePreuves($intervention);
+        return $this->successResponse($completude, 'Checklist de complétude des preuves calculée.');
     }
 
     /**

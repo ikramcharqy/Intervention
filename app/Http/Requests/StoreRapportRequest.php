@@ -7,63 +7,34 @@ use Illuminate\Validation\Rule;
 
 class StoreRapportRequest extends FormRequest
 {
-    /**
-     * Détermine si l'utilisateur est autorisé à effectuer cette requête.
-     */
     public function authorize(): bool
     {
-        return true;
+        $intervention = $this->route('intervention');
+        return $this->user()->can('submitForm', $intervention) || $this->user()->hasAnyRole(['Admin', 'Super Admin']);
     }
 
-    /**
-     * Règles de validation pour la création d'un rapport d'intervention.
-     */
     public function rules(): array
     {
         return [
-            'intervention_id' => [
-                'required',
-                'integer',
-                Rule::exists('interventions', 'id'),
-                Rule::unique('rapports', 'intervention_id'), // 1 rapport unique par intervention
-            ],
-            'date_debut'           => ['required', 'date'],
-            'date_fin'             => ['required', 'date', 'after:date_debut'],
-            'commentaire'          => ['nullable', 'string', 'max:5000'],
-            'signature_client'     => ['nullable', 'string', 'max:255'], // Stocke le chemin de la signature ou base64
-            'signature_technicien' => ['nullable', 'string', 'max:255'],
-            'pdf_path'             => ['nullable', 'string', 'max:255'],
-        ];
-    }
-
-    /**
-     * Messages d'erreur personnalisés en français.
-     */
-    public function messages(): array
-    {
-        return [
-            'intervention_id.required' => 'L\'intervention associée est obligatoire.',
-            'intervention_id.exists'   => 'L\'intervention sélectionnée n\'existe pas.',
-            'intervention_id.unique'   => 'Un rapport a déjà été rédigé pour cette intervention.',
-            'date_debut.required'      => 'La date et heure de début de rédaction sont obligatoires.',
-            'date_fin.required'        => 'La date et heure de fin de rédaction sont obligatoires.',
-            'date_fin.after'           => 'La date de fin doit être postérieure à la date de début.',
-        ];
-    }
-
-    /**
-     * Noms des attributs traduits en français.
-     */
-    public function attributes(): array
-    {
-        return [
-            'intervention_id'      => 'intervention',
-            'date_debut'           => 'date de début',
-            'date_fin'             => 'date de fin',
-            'commentaire'          => 'commentaire/observations du technicien',
-            'signature_client'     => 'signature du client',
-            'signature_technicien' => 'signature du technicien',
-            'pdf_path'             => 'chemin du fichier PDF',
+            'travaux_effectues'    => 'nullable|string',
+            'observations'         => 'nullable|string',
+            'recommandations'      => 'nullable|string',
+            'statut_equipement'    => 'nullable|string',
+            'qrcode_scanne'        => 'nullable|string',
+            'commentaire'          => 'nullable|string',
+            'gps_latitude'         => 'nullable|numeric',
+            'gps_longitude'        => 'nullable|numeric',
+            'gps_adresse'          => 'nullable|string',
+            'date_debut'           => 'nullable|date',
+            'date_fin'             => 'nullable|date',
+            'signature_technicien' => 'nullable|string',
+            'signature_client'     => 'nullable|string',
+            'photos.*'             => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'photos_types.*'       => 'nullable|string',
+            'videos.*'             => 'nullable|file|mimes:mp4,mov,avi,webm|max:51200',
+            'documents.*'          => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,txt|max:20480',
+            'signature_technicien_file' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
+            'signature_client_file'     => 'nullable|image|mimes:jpeg,png,jpg,webp|max:5120',
         ];
     }
 }

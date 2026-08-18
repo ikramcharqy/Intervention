@@ -77,7 +77,7 @@
                     </a>
 
                     <!-- Section Chantiers -->
-                    @if(auth()->user()->hasRole('Admin') || auth()->user()->hasRole('Conducteur') || auth()->user()->hasRole('Client'))
+                    @if(auth()->user()->hasAnyRole(['admin', 'Admin', 'Super Admin', 'superadmin', 'Conducteur', 'Client']))
                         <a href="{{ auth()->user()->hasRole('Client') ? route('client.chantiers.index') : route('chantiers.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('chantiers.*') || request()->routeIs('client.chantiers.*') ? 'bg-indigo-600 text-white shadow-lg font-extrabold' : 'text-slate-400 hover:bg-slate-900 hover:text-white' }}">
                             <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -87,7 +87,7 @@
                     @endif
 
                     <!-- Section Clients (Admin/Commercial) -->
-                    @if(auth()->user()->hasRole('Admin') || auth()->user()->hasRole('Commercial'))
+                    @if(auth()->user()->hasAnyRole(['admin', 'Admin', 'Super Admin', 'superadmin', 'Commercial']))
                         <a href="{{ route('clients.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('clients.*') ? 'bg-indigo-600 text-white shadow-lg font-extrabold' : 'text-slate-400 hover:bg-slate-900 hover:text-white' }}">
                             <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -97,7 +97,7 @@
                     @endif
 
                     <!-- CRM Commercial (Commercial / Admin) -->
-                    @if(auth()->user()->hasRole('Commercial') || auth()->user()->hasRole('Admin'))
+                    @if(auth()->user()->hasAnyRole(['admin', 'Admin', 'Super Admin', 'superadmin', 'Commercial']))
                         <div class="space-y-1" x-data="{ open: {{ request()->routeIs('prospects.*') || request()->routeIs('commercial.devis.*') ? 'true' : 'false' }} }">
                             <button @click="open = !open" class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:bg-slate-900 hover:text-white text-left">
                                 <span class="flex items-center gap-3">
@@ -131,8 +131,59 @@
                         </a>
                     @endif
 
-                    <!-- Interventions -->
-                    <a href="{{ auth()->user()->hasRole('Client') ? route('client.interventions.index') : route('interventions.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('interventions.*') || request()->routeIs('client.interventions.*') ? 'bg-indigo-600 text-white shadow-lg font-extrabold' : 'text-slate-400 hover:bg-slate-900 hover:text-white' }}">
+                    <!-- Demandes Clients (Commercial / Admin) -->
+                    @if(auth()->user()->hasAnyRole(['admin', 'Admin', 'Super Admin', 'superadmin', 'Commercial']))
+                        @php
+                            $countDemandesClient = \App\Models\DemandeIntervention::where('statut', 'En attente')->count();
+                        @endphp
+                        <a href="{{ route('demande-interventions.index') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('demande-interventions.*') ? 'bg-cyan-600 text-white shadow-lg font-extrabold' : 'text-slate-400 hover:bg-slate-900 hover:text-white' }}">
+                            <div class="flex items-center gap-3">
+                                <svg class="h-4 w-4 shrink-0 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <span>Demandes Clients</span>
+                            </div>
+                            @if($countDemandesClient > 0)
+                                <span class="bg-cyan-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{{ $countDemandesClient }}</span>
+                            @endif
+                        </a>
+                    @endif
+
+                    <!-- Interventions à Planifier (Admin / Super Admin / Conducteur) -->
+                    @if(auth()->user()->hasAnyRole(['admin', 'Admin', 'Super Admin', 'superadmin', 'Conducteur']))
+                        @php
+                            $countAPlanifier = \App\Models\Intervention::whereIn('statut', [\App\Models\Intervention::STATUT_PLANIFIEE, \App\Models\Intervention::STATUT_DEMANDE])->whereNull('technicien_id')->count();
+                        @endphp
+                        <a href="{{ route('interventions.a-planifier') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('interventions.a-planifier') ? 'bg-amber-600 text-white shadow-lg font-extrabold' : 'text-amber-400 hover:bg-slate-900 hover:text-amber-300' }}">
+                            <div class="flex items-center gap-3">
+                                <svg class="h-4 w-4 shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <span>Interventions à Planifier</span>
+                            </div>
+                            @if($countAPlanifier > 0)
+                                <span class="bg-amber-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">{{ $countAPlanifier }}</span>
+                            @endif
+                        </a>
+
+                        @php
+                            $countReaffectation = \App\Models\DemandeReaffectation::where('statut', 'En attente')->count();
+                        @endphp
+                        <a href="{{ route('demandes-reaffectation.index') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('demandes-reaffectation.*') ? 'bg-rose-600 text-white shadow-lg font-extrabold' : 'text-rose-400 hover:bg-slate-900 hover:text-rose-300' }}">
+                            <div class="flex items-center gap-3">
+                                <svg class="h-4 w-4 shrink-0 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                </svg>
+                                <span>Refus Techniciens</span>
+                            </div>
+                            @if($countReaffectation > 0)
+                                <span class="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">{{ $countReaffectation }}</span>
+                            @endif
+                        </a>
+                    @endif
+
+                    <!-- Toutes les Interventions -->
+                    <a href="{{ auth()->user()->hasRole('Client') ? route('client.interventions.index') : route('interventions.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition {{ request()->routeIs('interventions.index') || request()->routeIs('client.interventions.*') ? 'bg-indigo-600 text-white shadow-lg font-extrabold' : 'text-slate-400 hover:bg-slate-900 hover:text-white' }}">
                         <svg class="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>

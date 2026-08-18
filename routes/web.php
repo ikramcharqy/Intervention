@@ -66,6 +66,8 @@ Route::middleware('auth')->group(function () {
     Route::post('prospects/{prospect}/notes', [\App\Http\Controllers\ProspectController::class, 'addNote'])->name('prospects.notes.store');
     Route::resource('prospects', \App\Http\Controllers\ProspectController::class);
     
+    Route::post('demande-interventions/{demandeIntervention}/valider-convertir', [\App\Http\Controllers\DemandeInterventionController::class, 'validerEtConvertir'])->name('demande-interventions.validerConvertir');
+    Route::post('demande-interventions/{demandeIntervention}/refuser', [\App\Http\Controllers\DemandeInterventionController::class, 'refuser'])->name('demande-interventions.refuser');
     Route::resource('demande-interventions', \App\Http\Controllers\DemandeInterventionController::class);
     
     // Contacts liés au client
@@ -96,11 +98,34 @@ Route::middleware('auth')->group(function () {
 
     // Routes Interventions — Transitions de statut
     Route::post('interventions/{intervention}/accept', [InterventionController::class, 'accept'])->name('interventions.accept');
+    Route::post('interventions/{intervention}/refuse', [InterventionController::class, 'refuse'])->name('interventions.refuse');
     Route::post('interventions/{intervention}/start', [InterventionController::class, 'start'])->name('interventions.start');
     Route::post('interventions/{intervention}/suspend', [InterventionController::class, 'suspend'])->name('interventions.suspend');
     Route::post('interventions/{intervention}/resume', [InterventionController::class, 'resume'])->name('interventions.resume');
+    Route::post('interventions/{intervention}/reschedule', [InterventionController::class, 'reschedule'])->name('interventions.reschedule');
     Route::post('interventions/{intervention}/validate', [InterventionController::class, 'validateIntervention'])->name('interventions.validate');
     Route::post('interventions/{intervention}/reject-validation', [InterventionController::class, 'rejectValidation'])->name('interventions.rejectValidation');
+    Route::post('interventions/{intervention}/reopen', [InterventionController::class, 'reopen'])->name('interventions.reopen');
+
+    // Nouvelles actions de statut terrain et deuxième visite
+    Route::post('interventions/{intervention}/client-absent', [InterventionController::class, 'marquerClientAbsent'])->name('interventions.client-absent');
+    Route::post('interventions/{intervention}/materiel-manquant', [InterventionController::class, 'marquerMaterielManquant'])->name('interventions.materiel-manquant');
+    Route::post('interventions/{intervention}/partiellement-realisee', [InterventionController::class, 'marquerPartiellementRealisee'])->name('interventions.partiellement-realisee');
+    Route::post('interventions/{intervention}/creer-deuxieme-visite', [InterventionController::class, 'creerDeuxiemeVisite'])->name('interventions.creer-deuxieme-visite');
+
+    // Gestion des Tâches d'intervention & progression
+    Route::post('interventions/{intervention}/taches/{tachePivot}/progress', [InterventionController::class, 'updateTacheProgress'])->name('interventions.taches.progress');
+    Route::post('interventions/{intervention}/taches/{tachePivot}/start', [InterventionController::class, 'startTache'])->name('interventions.taches.start');
+    Route::post('interventions/{intervention}/taches/{tachePivot}/finish', [InterventionController::class, 'finishTache'])->name('interventions.taches.finish');
+
+    // ——— Admin : Planification & Affectation ———
+    Route::get('interventions/a-planifier', [InterventionController::class, 'aPlanifier'])->name('interventions.a-planifier');
+    Route::get('interventions/{intervention}/planifier', [InterventionController::class, 'planifier'])->name('interventions.planifier');
+    Route::post('interventions/{intervention}/planifier', [InterventionController::class, 'savePlanification'])->name('interventions.savePlanification');
+    
+    // Demandes de réaffectation (Arbitrage Admin)
+    Route::get('demandes-reaffectation', [\App\Http\Controllers\DemandeReaffectationController::class, 'index'])->name('demandes-reaffectation.index');
+    Route::post('demandes-reaffectation/{demande}/traiter', [\App\Http\Controllers\DemandeReaffectationController::class, 'traiter'])->name('demandes-reaffectation.traiter');
     
     // Remplissage Formulaire Dynamique
     Route::get('interventions/{intervention}/formulaire', [InterventionFormulaireController::class, 'create'])->name('interventions.formulaire.create');
@@ -311,6 +336,10 @@ Route::middleware(['auth', 'verified', 'role:Client'])
 
         Route::get('/interventions', [\App\Http\Controllers\ClientModule\InterventionController::class, 'index'])
             ->name('interventions.index');
+        Route::get('/demandes/creer', [\App\Http\Controllers\ClientModule\InterventionController::class, 'createDemande'])
+            ->name('demandes.create');
+        Route::post('/demandes/creer', [\App\Http\Controllers\ClientModule\InterventionController::class, 'storeDemande'])
+            ->name('demandes.store');
         Route::get('/interventions/{intervention}', [\App\Http\Controllers\ClientModule\InterventionController::class, 'show'])
             ->name('interventions.show');
 

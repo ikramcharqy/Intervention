@@ -22,10 +22,16 @@
 
     <!-- Table Card -->
     <div class="kt-card">
-        <div class="kt-card-header">
+        <div class="kt-card-header" style="display:flex; justify-content:space-between; align-items:center;">
             <div>
                 <div class="kt-card-title">Interventions</div>
-                <div style="font-size:12px; color:#a1a5b7; margin-top:3px;">Consultation en lecture seule</div>
+                <div style="font-size:12px; color:#a1a5b7; margin-top:3px;">Consultation et suivi de vos interventions</div>
+            </div>
+            <div>
+                <a href="{{ route('client.demandes.create') }}" class="kt-btn kt-btn-primary" style="display:inline-flex; align-items:center; gap:6px;">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Demander une Intervention</span>
+                </a>
             </div>
         </div>
 

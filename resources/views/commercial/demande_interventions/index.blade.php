@@ -48,9 +48,15 @@
                                         </span>
                                     </td>
                                     <td class="border-b py-2 px-4 text-right space-x-2">
-                                        <a href="{{ route('demande-interventions.show', $demande) }}" class="text-indigo-600 hover:underline text-sm">Détails</a>
+                                        <a href="{{ route('demande-interventions.show', $demande) }}" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-bold transition">
+                                            @if($demande->statut == 'En attente')
+                                                Qualifier / Traiter
+                                            @else
+                                                Consulter
+                                            @endif
+                                        </a>
                                         @if($demande->statut == 'En attente')
-                                            <a href="{{ route('demande-interventions.edit', $demande) }}" class="text-blue-600 hover:underline text-sm">Modifier</a>
+                                            <a href="{{ route('demande-interventions.edit', $demande) }}" class="text-blue-600 hover:underline text-xs">Modifier</a>
                                         @endif
                                     </td>
                                 </tr>

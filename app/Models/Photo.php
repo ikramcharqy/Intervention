@@ -17,6 +17,7 @@ class Photo extends Model
         'chemin',
 
         'description',
+        'type_photo', // 'avant', 'apres', 'probleme'
 
         // Nouveau
         'latitude',

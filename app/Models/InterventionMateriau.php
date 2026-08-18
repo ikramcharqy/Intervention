@@ -12,30 +12,15 @@ class InterventionMateriau extends Model{
     protected $fillable = [
         'intervention_id',
         'materiau_id',
-
-        'statut',
-
-        'date_debut',
-        'date_fin',
-
-        'duree',
-
-        'pourcentage',
-
+        'quantite',
+        'unite',
         'commentaire',
-
-        'ordre_execution',
-        'is_validee',
+        'is_valide',
     ];
 
     protected $casts = [
-        'date_debut' => 'datetime',
-        'date_fin' => 'datetime',
-
-        'duree' => 'integer',
-        'pourcentage' => 'integer',
-
-        'is_validee' => 'boolean',
+        'quantite'  => 'decimal:2',
+        'is_valide' => 'boolean',
     ];
 
     /*
@@ -50,9 +35,9 @@ class InterventionMateriau extends Model{
         return $this->belongsTo(Intervention::class);
     }
 
-    // Tâche concernée
-    public function tache()
+    // Matériau concerné
+    public function materiau()
     {
-        return $this->belongsTo(Tache::class);
+        return $this->belongsTo(Materiau::class);
     }
 }

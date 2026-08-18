@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Client extends Model
 {
-    use HasFactory;//pour utiliser les factories 
+    use HasFactory, SoftDeletes;//pour utiliser les factories 
     //pour générer des données de test
          protected $fillable = [
         'code_client',

@@ -3,59 +3,86 @@
 <head>
     <meta charset="utf-8">
     <title>Rapport d'Intervention - {{ $rapport->intervention->code_intervention ?? 'N/A' }}</title>
+    @php
+        $cName    = \App\Models\Setting::get('company_name', 'TechInterv Solutions');
+        $cTagline = \App\Models\Setting::get('company_tagline', 'Excellence en Maintenance & Interventions Techniques');
+        $cAddress = \App\Models\Setting::get('company_address', '12, Boulevard Hassan II – Casablanca, Maroc 20250');
+        $cPhone   = \App\Models\Setting::get('company_phone', '+212 5 22 45 88 99');
+        $cFax     = \App\Models\Setting::get('company_fax', '+212 5 22 45 88 00');
+        $cEmail   = \App\Models\Setting::get('company_email', 'contact@techinterv.ma');
+        $cWebsite = \App\Models\Setting::get('company_website', 'www.techinterv.ma');
+        $cIce     = \App\Models\Setting::get('company_ice', '002847593000088');
+        $cRc      = \App\Models\Setting::get('company_rc', 'RC 485920 – Casablanca');
+        $cLogo    = \App\Models\Setting::get('company_logo', '');
+        $cColor   = \App\Models\Setting::get('company_color', '#4338CA');
+
+        $logoBase64 = null;
+        if ($cLogo) {
+            $logoPath = storage_path('app/public/' . $cLogo);
+            if (file_exists($logoPath)) {
+                $logoBase64 = 'data:image/' . pathinfo($logoPath, PATHINFO_EXTENSION) . ';base64,' . base64_encode(file_get_contents($logoPath));
+            }
+        }
+    @endphp
     <style>
         @page {
-            margin: 25px 30px;
+            margin: 25px 30px 45px 30px;
         }
         body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             color: #1e293b;
-            font-size: 10px;
-            line-height: 1.5;
+            font-size: 9.5px;
+            line-height: 1.45;
             background-color: #ffffff;
         }
-        
+
         /* Header Corporate */
         .brand-header {
             width: 100%;
-            border-bottom: 3px solid #4338ca;
-            padding-bottom: 12px;
-            margin-bottom: 18px;
+            border-bottom: 3px solid {{ $cColor }};
+            padding-bottom: 10px;
+            margin-bottom: 15px;
         }
         .brand-header table {
             width: 100%;
+            border-collapse: collapse;
         }
-        .brand-logo {
-            font-size: 22px;
+        .brand-logo-text {
+            font-size: 20px;
             font-weight: 900;
-            color: #1e1b4b;
+            color: #0f172a;
             letter-spacing: -0.5px;
             text-transform: uppercase;
         }
-        .brand-logo span {
-            color: #4f46e5;
+        .brand-tagline {
+            font-size: 8.5px;
+            color: #64748b;
+            font-weight: 600;
+            margin-top: 1px;
         }
         .doc-title {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 800;
-            color: #4338ca;
+            color: {{ $cColor }};
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-top: 4px;
         }
         .doc-badge {
             display: inline-block;
-            padding: 3px 8px;
+            padding: 2px 7px;
             background-color: #e0e7ff;
             color: #3730a3;
             font-size: 9px;
             font-weight: bold;
             border-radius: 4px;
-            margin-top: 4px;
+            margin-top: 3px;
         }
         .meta-right {
             text-align: right;
-            font-size: 9.5px;
+            font-size: 9px;
             color: #64748b;
+            vertical-align: top;
         }
         .meta-right strong {
             color: #0f172a;
@@ -63,47 +90,48 @@
 
         /* Sections */
         .section {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
             page-break-inside: avoid;
         }
         .section-header {
-            font-size: 11px;
+            font-size: 10.5px;
             font-weight: 800;
-            color: #1e1b4b;
+            color: #0f172a;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             background-color: #f1f5f9;
-            padding: 6px 10px;
-            border-left: 4px solid #4338ca;
-            margin-bottom: 10px;
+            padding: 5px 9px;
+            border-left: 4px solid {{ $cColor }};
+            margin-bottom: 8px;
             border-radius: 0 4px 4px 0;
         }
 
         /* Metric Cards Grid */
         .grid-cards {
             width: 100%;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
+            border-collapse: collapse;
         }
         .grid-cards td {
             width: 25%;
-            padding: 4px;
+            padding: 3px;
             vertical-align: top;
         }
         .card-box {
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 8px;
+            border-radius: 5px;
+            padding: 6px;
         }
         .card-label {
-            font-size: 8.5px;
+            font-size: 8px;
             font-weight: bold;
             color: #64748b;
             text-transform: uppercase;
             margin-bottom: 2px;
         }
         .card-value {
-            font-size: 10.5px;
+            font-size: 10px;
             font-weight: 700;
             color: #0f172a;
         }
@@ -112,116 +140,145 @@
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 6px;
+            margin-top: 4px;
         }
         .data-table th {
             background-color: #0f172a;
             color: #ffffff;
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: 700;
             text-transform: uppercase;
-            padding: 6px 8px;
+            padding: 5px 7px;
             text-align: left;
         }
         .data-table td {
             border-bottom: 1px solid #e2e8f0;
-            padding: 7px 8px;
+            padding: 6px 7px;
             vertical-align: top;
-            font-size: 9.5px;
+            font-size: 9px;
         }
         .data-table tr:nth-child(even) td {
             background-color: #f8fafc;
         }
 
-        /* Photo Grid */
-        .photo-grid {
-            width: 100%;
+        /* Photo Grid Categorized */
+        .photo-category-title {
+            font-size: 9.5px;
+            font-weight: 800;
+            color: #334155;
+            text-transform: uppercase;
             margin-top: 8px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #cbd5e1;
+            padding-bottom: 2px;
         }
         .photo-card {
-            width: 48%;
+            width: 31%;
             display: inline-block;
             vertical-align: top;
-            margin-bottom: 10px;
+            margin-right: 2%;
+            margin-bottom: 8px;
             border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            padding: 4px;
+            border-radius: 5px;
+            padding: 3px;
             box-sizing: border-box;
+            background-color: #f8fafc;
         }
         .photo-card img {
             width: 100%;
-            max-height: 160px;
-            border-radius: 4px;
+            height: 110px;
+            border-radius: 3px;
             object-fit: cover;
+        }
+        .photo-caption {
+            font-size: 8px;
+            color: #475569;
+            margin-top: 2px;
+            text-align: center;
+            font-weight: 600;
         }
 
         /* Signatures */
         .signatures-table {
             width: 100%;
-            margin-top: 25px;
+            margin-top: 15px;
             page-break-inside: avoid;
+            border-collapse: collapse;
         }
         .sig-cell {
             width: 48%;
             border: 1.5px dashed #cbd5e1;
             background-color: #f8fafc;
-            border-radius: 8px;
-            padding: 12px;
+            border-radius: 6px;
+            padding: 10px;
             vertical-align: top;
-            height: 110px;
+            height: 100px;
         }
         .sig-title {
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: 800;
             color: #334155;
             text-transform: uppercase;
             border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 4px;
-            margin-bottom: 8px;
+            padding-bottom: 3px;
+            margin-bottom: 6px;
         }
         .sig-img {
             max-width: 100%;
-            max-height: 70px;
+            max-height: 65px;
         }
 
-        /* Footer */
+        /* Footer Fixed */
         .pdf-footer {
             position: fixed;
-            bottom: 0;
+            bottom: -35px;
             left: 0;
             right: 0;
-            height: 20px;
-            font-size: 8px;
-            color: #94a3b8;
-            border-top: 1px solid #e2e8f0;
+            height: 35px;
+            font-size: 7.5px;
+            color: #64748b;
+            border-top: 1px solid #cbd5e1;
             padding-top: 4px;
             text-align: center;
+            line-height: 1.3;
+        }
+        .pdf-footer strong {
+            color: #1e293b;
         }
     </style>
 </head>
 <body>
 
-    <!-- Header corporate -->
+    <!-- Header Corporate -->
     <div class="brand-header">
         <table>
             <tr>
-                <td>
-                    <div class="brand-logo">INTERVENTION<span>PRO</span></div>
-                    <div class="doc-title">Rapport d'Intervention Technique</div>
+                <td style="width: 60%;">
+                    @if($logoBase64)
+                        <img src="{{ $logoBase64 }}" style="max-height: 45px; max-width: 180px; margin-bottom: 3px;">
+                    @else
+                        <div class="brand-logo-text">{{ $cName }}</div>
+                    @endif
+                    <div class="brand-tagline">{{ $cTagline }}</div>
+                    <div class="doc-title">Rapport Officiel d'Intervention Technique</div>
                     <div class="doc-badge">Réf: {{ $rapport->intervention->code_intervention ?? 'INT-0000' }}</div>
                 </td>
                 <td class="meta-right">
-                    <strong>Statut Officiel :</strong> <span style="color:#059669; font-weight:bold;">{{ strtoupper($rapport->intervention->statut ?? 'TERMINÉ') }}</span><br>
-                    <strong>Date d'Édition :</strong> {{ now()->format('d/m/Y H:i') }}<br>
-                    <strong>Client :</strong> {{ $rapport->intervention->chantier->client->nom ?? 'N/A' }}
+                    <strong>Statut Clôture :</strong>
+                    <span style="color:#059669; font-weight:bold; font-size:10px;">
+                        {{ strtoupper($rapport->intervention->statut ?? 'TERMINÉ') }}
+                    </span><br>
+                    <strong>Édité le :</strong> {{ now()->format('d/m/Y H:i') }}<br>
+                    <strong>Client :</strong> {{ $rapport->intervention->chantier->client->nom ?? 'N/A' }}<br>
+                    <strong>Technicien :</strong> {{ $rapport->intervention->technicien->name ?? 'N/A' }}
                 </td>
             </tr>
         </table>
     </div>
 
-    <!-- 1. Synthèse de l'Intervention -->
+    <!-- 1. Synthèse Générale & Intervenants -->
     <div class="section">
-        <div class="section-header">1. Informations Générales & Intervention</div>
+        <div class="section-header">1. Informations Générales & Intervenants</div>
         <table class="grid-cards">
             <tr>
                 <td>
@@ -232,14 +289,14 @@
                 </td>
                 <td>
                     <div class="card-box">
-                        <div class="card-label">Chantier</div>
+                        <div class="card-label">Chantier / Site</div>
                         <div class="card-value">{{ $rapport->intervention->chantier->nom ?? '-' }}</div>
                     </div>
                 </td>
                 <td>
                     <div class="card-box">
-                        <div class="card-label">Technicien Référent</div>
-                        <div class="card-value">{{ $rapport->intervention->technicien->name ?? '-' }}</div>
+                        <div class="card-label">Emplacement</div>
+                        <div class="card-value">{{ $rapport->intervention->emplacement->nom ?? 'Standard' }}</div>
                     </div>
                 </td>
                 <td>
@@ -270,18 +327,58 @@
                 </td>
                 <td>
                     <div class="card-box">
-                        <div class="card-label">Emplacement</div>
-                        <div class="card-value">{{ $rapport->intervention->emplacement->nom ?? 'Standard' }}</div>
+                        <div class="card-label">Priorité & Mode</div>
+                        <div class="card-value">{{ $rapport->intervention->priorite ?? 'Normale' }} ({{ $rapport->intervention->mode_suivi ?? 'GPS' }})</div>
                     </div>
                 </td>
             </tr>
         </table>
     </div>
 
-    <!-- 2. Formulaire Technique & Constats -->
+    <!-- 2. Travaux Réalisés, Observations & Recommandations -->
+    <div class="section">
+        <div class="section-header">2. Compte-Rendu Technique & Constats</div>
+        @if($rapport->travaux_effectues)
+            <div style="margin-bottom: 6px;">
+                <strong style="color: #334155;">Travaux Réalisés :</strong>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; font-size: 9px; margin-top: 2px;">
+                    {!! nl2br(e($rapport->travaux_effectues)) !!}
+                </div>
+            </div>
+        @endif
+
+        @if($rapport->observations)
+            <div style="margin-bottom: 6px;">
+                <strong style="color: #334155;">Observations :</strong>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; font-size: 9px; margin-top: 2px;">
+                    {!! nl2br(e($rapport->observations)) !!}
+                </div>
+            </div>
+        @endif
+
+        @if($rapport->recommandations)
+            <div style="margin-bottom: 6px;">
+                <strong style="color: #334155;">Recommandations du Technicien :</strong>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; font-size: 9px; margin-top: 2px;">
+                    {!! nl2br(e($rapport->recommandations)) !!}
+                </div>
+            </div>
+        @endif
+
+        @if($rapport->commentaire && !$rapport->travaux_effectues)
+            <div style="margin-bottom: 6px;">
+                <strong style="color: #334155;">Commentaires Globaux :</strong>
+                <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; font-size: 9px; margin-top: 2px;">
+                    {!! nl2br(e($rapport->commentaire)) !!}
+                </div>
+            </div>
+        @endif
+    </div>
+
+    <!-- 3. Formulaire Technique Terrain -->
     @if($rapport->reponses && $rapport->reponses->isNotEmpty())
         <div class="section">
-            <div class="section-header">2. Questions & Formulaire de Validation Terrain</div>
+            <div class="section-header">3. Réponses au Formulaire Dynamique Terrain</div>
             <table class="data-table">
                 <thead>
                     <tr>
@@ -291,7 +388,7 @@
                 </thead>
                 <tbody>
                     @foreach($rapport->reponses as $reponse)
-                        @php $q = $reponse->question; if(!$q) continue; @endphp
+                        @php $q = $reponse->question; if(!$q || $q->type_reponse === 'Materiaux') continue; @endphp
                         <tr>
                             <td><strong>{{ $q->question }}</strong></td>
                             <td>
@@ -302,16 +399,16 @@
                                             $exists = file_exists($filePath);
                                         @endphp
                                         @if($exists)
-                                            <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents($filePath)) }}" style="max-height: 120px; border-radius: 4px; border: 1px solid #cbd5e1;">
+                                            <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents($filePath)) }}" style="max-height: 90px; border-radius: 3px; border: 1px solid #cbd5e1;">
                                         @else
-                                            [Image enregistrée : {{ basename($reponse->reponse_fichier) }}]
+                                            [Fichier enregistré : {{ basename($reponse->reponse_fichier) }}]
                                         @endif
                                     @else
                                         <span style="color:#94a3b8;">Non fournie</span>
                                     @endif
-                                @elseif($q->type_reponse === 'OuiNon')
-                                    <span style="font-weight: bold; color: {{ $reponse->reponse_texte === '1' ? '#059669' : '#dc2626' }};">
-                                        {{ $reponse->reponse_texte === '1' ? '✔ OUI / VALIDÉ' : '✖ NON / CONFORME PAS' }}
+                                @elseif(in_array($q->type_reponse, ['OuiNon', 'Oui_Non']))
+                                    <span style="font-weight: bold; color: {{ in_array(strtolower($reponse->reponse_texte), ['1','oui','true']) ? '#059669' : '#dc2626' }};">
+                                        {{ in_array(strtolower($reponse->reponse_texte), ['1','oui','true']) ? '✔ OUI / CONFORME' : '✖ NON / ANOMALIE' }}
                                     </span>
                                 @else
                                     {{ $reponse->reponse_texte ?? $reponse->reponse_nombre ?? '-' }}
@@ -324,10 +421,109 @@
         </div>
     @endif
 
-    <!-- 3. Matériaux & Fournitures -->
+    <!-- 4. Photos Terrain (Avant / Après / Problèmes Détectés) -->
+    @if($rapport->photos && $rapport->photos->isNotEmpty())
+        <div class="section">
+            <div class="section-header">4. Galerie Photos Terrain Labellisées</div>
+
+            @php
+                $photosAvant = $rapport->photos->filter(fn($p) => $p->type_photo === 'avant');
+                $photosApres = $rapport->photos->filter(fn($p) => $p->type_photo === 'apres');
+                $photosProbleme = $rapport->photos->filter(fn($p) => $p->type_photo === 'probleme' || (empty($p->type_photo) && !in_array($p->type_photo, ['avant','apres'])));
+            @endphp
+
+            @if($photosAvant->isNotEmpty())
+                <div class="photo-category-title">📷 Photos AVANT Intervention</div>
+                <div>
+                    @foreach($photosAvant as $photo)
+                        @php
+                            $path = storage_path('app/public/' . $photo->chemin);
+                            $b64 = file_exists($path) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($path)) : null;
+                        @endphp
+                        @if($b64)
+                            <div class="photo-card">
+                                <img src="{{ $b64 }}">
+                                <div class="photo-caption">{{ $photo->description ?? 'Vue Avant' }}</div>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+
+            @if($photosApres->isNotEmpty())
+                <div class="photo-category-title">📸 Photos APRÈS Intervention (Travaux Finalisés)</div>
+                <div>
+                    @foreach($photosApres as $photo)
+                        @php
+                            $path = storage_path('app/public/' . $photo->chemin);
+                            $b64 = file_exists($path) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($path)) : null;
+                        @endphp
+                        @if($b64)
+                            <div class="photo-card">
+                                <img src="{{ $b64 }}">
+                                <div class="photo-caption">{{ $photo->description ?? 'Vue Après' }}</div>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+
+            @if($photosProbleme->isNotEmpty())
+                <div class="photo-category-title">⚠️ Photos Problèmes & Constats Spécifiques</div>
+                <div>
+                    @foreach($photosProbleme as $photo)
+                        @php
+                            $path = storage_path('app/public/' . $photo->chemin);
+                            $b64 = file_exists($path) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($path)) : null;
+                        @endphp
+                        @if($b64)
+                            <div class="photo-card">
+                                <img src="{{ $b64 }}">
+                                <div class="photo-caption">{{ $photo->description ?? 'Constat Terrain' }}</div>
+                            </div>
+                        @endif
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    @endif
+
+    <!-- 5. QR Code Équipement & Localisation GPS -->
+    <div class="section">
+        <div class="section-header">5. Géolocalisation GPS & Traçabilité Équipement</div>
+        <table class="grid-cards">
+            <tr>
+                <td style="width: 50%;">
+                    <div class="card-box">
+                        <div class="card-label">QR Code / Identifiant Équipement Scanné</div>
+                        <div class="card-value" style="font-family: monospace; color: #4338ca;">
+                            {{ $rapport->qrcode_scanne ?: ($rapport->intervention->emplacement->qr_code ?? 'Non scanné / Saisie directe') }}
+                        </div>
+                    </div>
+                </td>
+                <td style="width: 50%;">
+                    <div class="card-box">
+                        <div class="card-label">Coordonnées GPS d'Intervention</div>
+                        <div class="card-value">
+                            @if($rapport->gps_latitude && $rapport->gps_longitude)
+                                Lat: {{ number_format($rapport->gps_latitude, 5) }}, Long: {{ number_format($rapport->gps_longitude, 5) }}
+                                @if($rapport->gps_adresse)
+                                    <br><span style="font-size: 8px; font-weight: normal; color: #475569;">{{ $rapport->gps_adresse }}</span>
+                                @endif
+                            @else
+                                Position enregistrée via session de suivi mobile
+                            @endif
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- 6. Matériaux Consommés -->
     @if($rapport->intervention->materiaux && $rapport->intervention->materiaux->isNotEmpty())
         <div class="section">
-            <div class="section-header">3. Matériaux & Pièces Consommées</div>
+            <div class="section-header">6. Matériaux & Pièces Consommées sur le Terrain</div>
             <table class="data-table">
                 <thead>
                     <tr>
@@ -335,7 +531,7 @@
                         <th>Désignation du Matériau</th>
                         <th style="text-align: center;">Quantité</th>
                         <th style="text-align: right;">Prix Unitaire HT</th>
-                        <th style="text-align: right;">Montant Total HT</th>
+                        <th style="text-align: right;">Total HT</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -349,7 +545,7 @@
                         <tr>
                             <td style="font-family: monospace;">{{ $item->materiau->reference ?? 'REF-STD' }}</td>
                             <td><strong>{{ $item->materiau->nom ?? 'Matériau' }}</strong></td>
-                            <td style="text-align: center; font-weight: bold;">{{ $item->quantite }}</td>
+                            <td style="text-align: center; font-weight: bold;">{{ $item->quantite }} {{ $item->unite }}</td>
                             <td style="text-align: right;">{{ number_format($pu, 2, ',', ' ') }} MAD</td>
                             <td style="text-align: right; font-weight: bold;">{{ number_format($st, 2, ',', ' ') }} MAD</td>
                         </tr>
@@ -357,62 +553,63 @@
                 </tbody>
                 <tfoot>
                     <tr style="background-color: #f1f5f9; font-weight: bold;">
-                        <td colspan="4" style="text-align: right; padding: 8px;">TOTAL MATÉRIAUX HT :</td>
-                        <td style="text-align: right; color: #4338ca; font-size: 11px; padding: 8px;">{{ number_format($totalGeneral, 2, ',', ' ') }} MAD</td>
+                        <td colspan="4" style="text-align: right; padding: 6px;">TOTAL MATÉRIAUX HT :</td>
+                        <td style="text-align: right; color: {{ $cColor }}; font-size: 10px; padding: 6px;">{{ number_format($totalGeneral, 2, ',', ' ') }} MAD</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
     @endif
 
-    <!-- 4. Commentaires & Remarques -->
-    @if($rapport->commentaire)
-        <div class="section">
-            <div class="section-header">4. Conclusions & Observations du Technicien</div>
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 10px; border-radius: 6px; font-size: 9.5px; color: #334155;">
-                {!! nl2br(e($rapport->commentaire)) !!}
-            </div>
-        </div>
-    @endif
-
-    <!-- 5. Valider & Signatures -->
+    <!-- 7. Visas & Signatures Réciproques -->
     <table class="signatures-table">
         <tr>
             <td class="sig-cell" style="margin-right: 4%;">
-                <div class="sig-title">Visa / Signature du Technicien</div>
+                <div class="sig-title">Visa & Signature du Technicien</div>
                 @if($rapport->signature_technicien)
                     @php
                         $techPath = storage_path('app/public/' . $rapport->signature_technicien);
+                        $techB64 = file_exists($techPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($techPath)) : null;
                     @endphp
-                    @if(file_exists($techPath))
-                        <img src="data:image/png;base64,{{ base64_encode(file_get_contents($techPath)) }}" class="sig-img">
+                    @if($techB64)
+                        <img src="{{ $techB64 }}" class="sig-img">
                     @else
                         <div style="font-family: monospace; color: #4338ca; font-weight: bold;">{{ $rapport->signature_technicien }}</div>
                     @endif
                 @else
-                    <div style="color: #94a3b8; font-style: italic; margin-top: 20px;">Signature numérique validée à la clôture</div>
+                    <div style="color: #dc2626; font-style: italic; margin-top: 15px; font-weight: bold;">Signature non renseignée</div>
                 @endif
+                <div style="font-size: 7.5px; color: #64748b; margin-top: 4px;">
+                    Technicien : {{ $rapport->intervention->technicien->name ?? 'N/A' }}
+                </div>
             </td>
             <td class="sig-cell">
-                <div class="sig-title">Visa / Signature du Client</div>
+                <div class="sig-title">Visa & Signature du Client</div>
                 @if($rapport->signature_client)
                     @php
                         $clientPath = storage_path('app/public/' . $rapport->signature_client);
+                        $clientB64 = file_exists($clientPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($clientPath)) : null;
                     @endphp
-                    @if(file_exists($clientPath))
-                        <img src="data:image/png;base64,{{ base64_encode(file_get_contents($clientPath)) }}" class="sig-img">
+                    @if($clientB64)
+                        <img src="{{ $clientB64 }}" class="sig-img">
                     @else
                         <div style="font-family: monospace; color: #4338ca; font-weight: bold;">{{ $rapport->signature_client }}</div>
                     @endif
                 @else
-                    <div style="color: #94a3b8; font-style: italic; margin-top: 20px;">Accusé de réception client enregistré</div>
+                    <div style="color: #94a3b8; font-style: italic; margin-top: 15px;">Accusé de réception client digital</div>
                 @endif
+                <div style="font-size: 7.5px; color: #64748b; margin-top: 4px;">
+                    Représentant Client : {{ $rapport->intervention->chantier->client->nom ?? 'Client' }}
+                </div>
             </td>
         </tr>
     </table>
 
+    <!-- Footer Fixe sur toutes les pages -->
     <div class="pdf-footer">
-        Document généré automatiquement par la plateforme d'Intervention Technique • Tous droits réservés
+        <strong>{{ $cName }}</strong> — {{ $cAddress }}<br>
+        Tél : {{ $cPhone }} • Fax : {{ $cFax }} • Email : {{ $cEmail }} • Web : {{ $cWebsite }}<br>
+        ICE : {{ $cIce }} • RC : {{ $cRc }} • Document généré automatiquement par la plateforme d'Intervention Technique
     </div>
 
 </body>

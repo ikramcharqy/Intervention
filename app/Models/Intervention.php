@@ -16,15 +16,27 @@ class Intervention extends Model
     |--------------------------------------------------------------------------
     */
 
-    // Statuts possibles (ordre du workflow)
-    const STATUT_PLANIFIEE            = 'Planifiee';
-    const STATUT_ACCEPTEE             = 'Acceptee';
-    const STATUT_EN_COURS             = 'En cours';
-    const STATUT_FORM_REMPLI          = 'Formulaire rempli';
-    const STATUT_SUSPENDUE            = 'Suspendue';
-    const STATUT_EN_ATTENTE_VALID     = 'En attente validation'; // Obsolète mais gardé pour rétrocompatibilité
-    const STATUT_TERMINEE             = 'Terminee';
-    const STATUT_ANNULEE              = 'Annulee';
+    // Statuts possibles (Ordre complet du workflow)
+    const STATUT_DEMANDE                = 'Demande';
+    const STATUT_PLANIFIEE              = 'Planifiee';
+    const STATUT_AFFECTEE               = 'Affectee';
+    const STATUT_EN_ATTENTE_REAFFECTATION = 'En attente reafectation';
+    const STATUT_ACCEPTEE               = 'Acceptee';
+    const STATUT_REFUSEE                = 'Refusee';
+    const STATUT_EN_COURS               = 'En cours';
+    const STATUT_SUSPENDUE              = 'Suspendue';
+    const STATUT_REPORTEE               = 'Reportee';
+    const STATUT_PARTIELLEMENT_REALISEE = 'Partiellement realisee';
+    const STATUT_CLIENT_ABSENT          = 'Client absent';
+    const STATUT_MATERIEL_MANQUANT      = 'Materiel manquant';
+    const STATUT_DEUXIEME_VISITE        = 'Deuxieme visite requise';
+    const STATUT_FORM_REMPLI            = 'Formulaire rempli';
+    const STATUT_EN_ATTENTE_VALID       = 'En attente validation'; // Rétrocompatibilité
+    const STATUT_REJETEE                = 'Rejetee';
+    const STATUT_TERMINEE               = 'Terminee';
+    const STATUT_VALIDEE                = 'Validee';
+    const STATUT_ANNULEE                = 'Annulee';
+    const STATUT_ROUVERTE               = 'Rouverte';
 
     // Priorités (ordre croissant d'urgence)
     const PRIORITE_FAIBLE   = 'Faible';
@@ -72,6 +84,10 @@ class Intervention extends Model
         'description',
         'observations',
         'motif_annulation',
+        'motif_suspension',
+        'motif_report',
+        'resultat_intervention',
+        'intervention_parente_id',
     ];
 
     protected $casts = [
@@ -184,6 +200,18 @@ class Intervention extends Model
         return $this->hasMany(InterventionHistorique::class);
     }
 
+    // Intervention parente (dans le cas d'une 2ème visite / revisite)
+    public function interventionParente()
+    {
+        return $this->belongsTo(Intervention::class, 'intervention_parente_id');
+    }
+
+    // Interventions enfants (revisites générées)
+    public function interventionsEnfants()
+    {
+        return $this->hasMany(Intervention::class, 'intervention_parente_id');
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Scopes de filtrage
@@ -239,63 +267,200 @@ class Intervention extends Model
     */
 
     /**
-     * Retourne true si l'intervention peut être acceptée par le technicien.
+     * Matrice des transitions de statut autorisées dans le workflow.
      */
+    public const ALLOWED_TRANSITIONS = [
+        self::STATUT_DEMANDE => [
+            self::STATUT_PLANIFIEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_PLANIFIEE => [
+            self::STATUT_AFFECTEE,
+            self::STATUT_ACCEPTEE,
+            self::STATUT_REPORTEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_AFFECTEE => [
+            self::STATUT_ACCEPTEE,
+            self::STATUT_EN_ATTENTE_REAFFECTATION,
+            self::STATUT_REFUSEE,
+            self::STATUT_REPORTEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_EN_ATTENTE_REAFFECTATION => [
+            self::STATUT_PLANIFIEE, // Demande acceptée par Admin -> remise en planification
+            self::STATUT_ACCEPTEE,  // Demande refusée par Admin -> technicien forcé à l'effectuer
+            self::STATUT_AFFECTEE,  // Réaffectation directe
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_REFUSEE => [
+            self::STATUT_PLANIFIEE,
+            self::STATUT_AFFECTEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_ACCEPTEE => [
+            self::STATUT_EN_COURS,
+            self::STATUT_REPORTEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_EN_COURS => [
+            self::STATUT_SUSPENDUE,
+            self::STATUT_REPORTEE,
+            self::STATUT_PARTIELLEMENT_REALISEE,
+            self::STATUT_CLIENT_ABSENT,
+            self::STATUT_MATERIEL_MANQUANT,
+            self::STATUT_DEUXIEME_VISITE,
+            self::STATUT_FORM_REMPLI,
+            self::STATUT_TERMINEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_SUSPENDUE => [
+            self::STATUT_EN_COURS,
+            self::STATUT_REPORTEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_REPORTEE => [
+            self::STATUT_PLANIFIEE,
+            self::STATUT_AFFECTEE,
+            self::STATUT_EN_COURS,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_PARTIELLEMENT_REALISEE => [
+            self::STATUT_DEUXIEME_VISITE,
+            self::STATUT_PLANIFIEE,
+            self::STATUT_REPORTEE,
+            self::STATUT_FORM_REMPLI,
+            self::STATUT_TERMINEE,
+            self::STATUT_VALIDEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_CLIENT_ABSENT => [
+            self::STATUT_DEUXIEME_VISITE,
+            self::STATUT_REPORTEE,
+            self::STATUT_PLANIFIEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_MATERIEL_MANQUANT => [
+            self::STATUT_DEUXIEME_VISITE,
+            self::STATUT_REPORTEE,
+            self::STATUT_PLANIFIEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_DEUXIEME_VISITE => [
+            self::STATUT_PLANIFIEE,
+            self::STATUT_AFFECTEE,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_FORM_REMPLI => [
+            self::STATUT_REJETEE,
+            self::STATUT_TERMINEE,
+            self::STATUT_VALIDEE,
+        ],
+        self::STATUT_EN_ATTENTE_VALID => [ // Rétrocompatibilité
+            self::STATUT_REJETEE,
+            self::STATUT_TERMINEE,
+            self::STATUT_VALIDEE,
+        ],
+        self::STATUT_REJETEE => [
+            self::STATUT_EN_COURS,
+            self::STATUT_FORM_REMPLI,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_TERMINEE => [
+            self::STATUT_VALIDEE,
+            self::STATUT_ROUVERTE,
+        ],
+        self::STATUT_VALIDEE => [
+            self::STATUT_ROUVERTE,
+        ],
+        self::STATUT_ROUVERTE => [
+            self::STATUT_EN_COURS,
+            self::STATUT_ANNULEE,
+        ],
+        self::STATUT_ANNULEE => [],
+    ];
+
+    /**
+     * Vérifie si le passage du statut actuel vers le nouveau statut est valide.
+     */
+    public function transitionPossibleVers(string $nouveauStatut): bool
+    {
+        $statutActuel = $this->statut;
+
+        if ($statutActuel === $nouveauStatut) {
+            return true;
+        }
+
+        return in_array($nouveauStatut, self::ALLOWED_TRANSITIONS[$statutActuel] ?? [], true);
+    }
+
     public function peutEtreAcceptee(): bool
     {
-        return $this->statut === self::STATUT_PLANIFIEE;
+        return in_array($this->statut, [self::STATUT_PLANIFIEE, self::STATUT_AFFECTEE], true);
     }
 
-    /**
-     * Retourne true si l'intervention peut être démarrée.
-     */
+    public function peutEtreRefusee(): bool
+    {
+        return in_array($this->statut, [self::STATUT_PLANIFIEE, self::STATUT_AFFECTEE], true);
+    }
+
     public function peutEtreDemarree(): bool
     {
-        return $this->statut === self::STATUT_ACCEPTEE;
+        return in_array($this->statut, [
+            self::STATUT_ACCEPTEE,
+            self::STATUT_SUSPENDUE,
+            self::STATUT_REPORTEE,
+            self::STATUT_REJETEE,
+            self::STATUT_ROUVERTE,
+        ], true);
     }
 
-    /**
-     * Retourne true si le formulaire peut être soumis.
-     */
     public function peutEtreSoumise(): bool
     {
-        return $this->statut === self::STATUT_EN_COURS || $this->statut === self::STATUT_FORM_REMPLI;
+        return in_array($this->statut, [
+            self::STATUT_EN_COURS,
+            self::STATUT_FORM_REMPLI,
+            self::STATUT_REJETEE,
+        ], true);
     }
 
-    /**
-     * Retourne true si l'intervention peut être validée par l'admin.
-     */
     public function peutEtreValidee(): bool
     {
-        return $this->statut === self::STATUT_FORM_REMPLI;
+        return in_array($this->statut, [
+            self::STATUT_FORM_REMPLI,
+            self::STATUT_EN_ATTENTE_VALID,
+            self::STATUT_TERMINEE,
+        ], true);
     }
 
-    /**
-     * Retourne true si l'intervention peut être mise en pause.
-     */
     public function peutEtreSuspendue(): bool
     {
         return $this->statut === self::STATUT_EN_COURS;
     }
 
-    /**
-     * Retourne true si l'intervention peut être reprise.
-     */
     public function peutEtreReprise(): bool
     {
         return $this->statut === self::STATUT_SUSPENDUE;
     }
 
-    /**
-     * Retourne true si l'intervention peut être annulée.
-     */
-    public function peutEtreAnnulee(): bool
+    public function peutEtreReportee(): bool
     {
         return in_array($this->statut, [
             self::STATUT_PLANIFIEE,
+            self::STATUT_AFFECTEE,
             self::STATUT_ACCEPTEE,
             self::STATUT_EN_COURS,
             self::STATUT_SUSPENDUE,
-        ]);
+        ], true);
+    }
+
+    public function peutEtreRouverte(): bool
+    {
+        return in_array($this->statut, [self::STATUT_TERMINEE, self::STATUT_VALIDEE], true);
+    }
+
+    public function peutEtreAnnulee(): bool
+    {
+        return !in_array($this->statut, [self::STATUT_VALIDEE, self::STATUT_ANNULEE], true);
     }
 }

@@ -89,18 +89,30 @@ class InterventionController extends Controller
             'typeIntervention',
             'taches.tache',
             'materiaux.materiau',
-            'rapport',
+            'rapport.reponses.question.choix',
+            'rapport.reponses.choixQuestion',
+            'rapport.photos',
+            'rapport.videos',
+            'rapport.documents',
             'trackingSessions',
             'gpsTrackingSessions.points',
             'historiques.user',
             'createur',
             'validateur',
+            'interventionParente',
+            'interventionsEnfants',
         ]);
+
+        // Formulaire dynamique associé
+        $formulaire = \App\Models\Formulaire::with(['questions.choix'])
+            ->where('type_intervention_id', $intervention->type_intervention_id)
+            ->where('is_active', true)
+            ->first();
 
         $materiaux = \App\Models\Materiau::where('is_active', true)->orderBy('nom')->get();
         $taches = \App\Models\Tache::where('is_active', true)->orderBy('nom')->get();
 
-        return view('interventions.show', compact('intervention', 'materiaux', 'taches'));
+        return view('interventions.show', compact('intervention', 'formulaire', 'materiaux', 'taches'));
     }
 
     public function edit(Intervention $intervention): View
@@ -124,6 +136,83 @@ class InterventionController extends Controller
             ->route('interventions.show', $intervention)
             ->with('success', "L'intervention **{$intervention->code_intervention}** a été mise à jour.");
     }
+
+    /**
+     * Admin — Liste des interventions créées en attente de planification/affectation.
+     */
+    public function aPlanifier(Request $request): View
+    {
+        $search   = $request->input('search');
+        $priorite = $request->input('priorite');
+
+        $interventions = Intervention::with(['chantier.client', 'typeIntervention', 'createur'])
+            ->whereIn('statut', [Intervention::STATUT_PLANIFIEE, Intervention::STATUT_DEMANDE])
+            ->whereNull('technicien_id')
+            ->when($search, function ($q, $search) {
+                $q->where('code_intervention', 'like', "%{$search}%")
+                  ->orWhereHas('chantier', function ($qc) use ($search) {
+                      $qc->where('nom', 'like', "%{$search}%")
+                         ->orWhereHas('client', fn($qcc) => $qcc->where('nom', 'like', "%{$search}%"));
+                  });
+            })
+            ->when($priorite, fn($q, $p) => $q->where('priorite', $p))
+            ->orderByRaw("FIELD(priorite, 'Urgente', 'Haute', 'Normale', 'Faible')")
+            ->orderBy('created_at', 'asc')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('interventions.a_planifier', compact('interventions', 'search', 'priorite'));
+    }
+
+    /**
+     * Admin — Formulaire de planification et d'affectation d'une intervention.
+     */
+    public function planifier(Intervention $intervention): View
+    {
+        $techniciens = User::role('Technicien')
+            ->where('is_active', true)
+            ->orderBy('name')
+            ->get(['id', 'name', 'prenom']);
+
+        $intervention->load(['chantier.client', 'typeIntervention', 'createur']);
+
+        return view('interventions.planifier', compact('intervention', 'techniciens'));
+    }
+
+    /**
+     * Admin — Sauvegarde la planification (date + technicien) et passe le statut à Affectée.
+     */
+    public function savePlanification(Request $request, Intervention $intervention): RedirectResponse
+    {
+        $data = $request->validate([
+            'technicien_id'     => 'required|exists:users,id',
+            'date_prevue_debut' => 'required|date',
+            'date_prevue_fin'   => 'nullable|date|after_or_equal:date_prevue_debut',
+            'priorite'          => 'nullable|in:Faible,Normale,Haute,Urgente',
+            'commentaire'       => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $this->interventionService->planifierEtAffecter(
+                $intervention,
+                (int) $data['technicien_id'],
+                $data['date_prevue_debut'],
+                $data['date_prevue_fin'] ?? null,
+                $data['priorite'] ?? null,
+                $data['commentaire'] ?? null
+            );
+
+            return redirect()
+                ->route('interventions.a-planifier')
+                ->with('success', "L'intervention {$intervention->code_intervention} a été planifiée et affectée avec succès.");
+        } catch (Exception $e) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+    }
+
 
     public function destroy(Request $request, Intervention $intervention): RedirectResponse
     {
@@ -173,14 +262,14 @@ class InterventionController extends Controller
 
     public function suspend(Request $request, Intervention $intervention): RedirectResponse
     {
-        $motif = $request->input('motif', '');
+        $motif = $request->input('motif', $request->input('motif_suspension', ''));
 
         try {
             $this->interventionService->suspendreIntervention($intervention, $motif);
 
             return redirect()
                 ->route('interventions.show', $intervention)
-                ->with('success', "L'intervention a été mise en pause.");
+                ->with('success', "L'intervention a été suspendue.");
         } catch (Exception $e) {
             return redirect()
                 ->route('interventions.show', $intervention)
@@ -195,10 +284,129 @@ class InterventionController extends Controller
 
             return redirect()
                 ->route('interventions.show', $intervention)
-                ->with('success', "L'intervention a repris.");
+                ->with('success', "L'intervention a repris avec succès.");
         } catch (Exception $e) {
             return redirect()
                 ->route('interventions.show', $intervention)
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Action : Marquer le client absent.
+     */
+    public function marquerClientAbsent(Request $request, Intervention $intervention): RedirectResponse
+    {
+        $request->validate([
+            'motif'          => 'required|string|max:1000',
+            'date_revisite'  => 'nullable|date|after:now',
+            'technicien_id'  => 'nullable|exists:users,id',
+        ]);
+
+        try {
+            $this->interventionService->marquerClientAbsent(
+                $intervention,
+                $request->input('motif'),
+                $request->input('date_revisite'),
+                $request->input('technicien_id') ? (int) $request->input('technicien_id') : null
+            );
+
+            return redirect()
+                ->route('interventions.show', $intervention)
+                ->with('success', "L'intervention a été enregistrée avec le statut 'Client absent'.");
+        } catch (Exception $e) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Action : Marquer matériel manquant.
+     */
+    public function marquerMaterielManquant(Request $request, Intervention $intervention): RedirectResponse
+    {
+        $request->validate([
+            'motif'          => 'required|string|max:1000',
+            'date_revisite'  => 'nullable|date|after:now',
+            'technicien_id'  => 'nullable|exists:users,id',
+        ]);
+
+        try {
+            $this->interventionService->marquerMaterielManquant(
+                $intervention,
+                $request->input('motif'),
+                $request->input('date_revisite'),
+                $request->input('technicien_id') ? (int) $request->input('technicien_id') : null
+            );
+
+            return redirect()
+                ->route('interventions.show', $intervention)
+                ->with('success', "L'intervention a été enregistrée avec le statut 'Matériel manquant'.");
+        } catch (Exception $e) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Action : Marquer intervention partiellement réalisée.
+     */
+    public function marquerPartiellementRealisee(Request $request, Intervention $intervention): RedirectResponse
+    {
+        $request->validate([
+            'observations'   => 'required|string|max:1000',
+            'date_revisite'  => 'nullable|date|after:now',
+            'technicien_id'  => 'nullable|exists:users,id',
+        ]);
+
+        try {
+            $this->interventionService->marquerPartiellementRealisee(
+                $intervention,
+                $request->input('observations'),
+                $request->input('date_revisite'),
+                $request->input('technicien_id') ? (int) $request->input('technicien_id') : null
+            );
+
+            return redirect()
+                ->route('interventions.show', $intervention)
+                ->with('success', "L'intervention a été marquée comme 'Partiellement réalisée'.");
+        } catch (Exception $e) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Action : Créer une 2ème visite / revisite liée.
+     */
+    public function creerDeuxiemeVisite(Request $request, Intervention $intervention): RedirectResponse
+    {
+        $request->validate([
+            'date_prevue_debut' => 'required|date',
+            'technicien_id'     => 'nullable|exists:users,id',
+            'motif'             => 'nullable|string|max:500',
+        ]);
+
+        try {
+            $revisite = $this->interventionService->creerDeuxiemeVisite($intervention, [
+                'date_prevue_debut' => $request->input('date_prevue_debut'),
+                'technicien_id'     => $request->input('technicien_id') ? (int) $request->input('technicien_id') : null,
+                'motif'             => $request->input('motif', 'Deuxième visite programmée'),
+            ]);
+
+            return redirect()
+                ->route('interventions.show', $revisite)
+                ->with('success', "La deuxième visite (#{$revisite->code_intervention}) a été créée avec succès et liée à l'intervention d'origine.");
+        } catch (Exception $e) {
+            return redirect()
+                ->back()
+                ->withInput()
                 ->with('error', $e->getMessage());
         }
     }
@@ -341,5 +549,166 @@ class InterventionController extends Controller
         return redirect()
             ->route('gps.index')
             ->with('success', "Intervention GPS Live #{$intervention->code_intervention} planifiée avec succès depuis votre position actuelle !");
+    }
+
+    /**
+     * Refuser une intervention et émettre une demande de réaffectation.
+     */
+    public function refuse(Request $request, Intervention $intervention)
+    {
+        $request->validate([
+            'motif' => 'required|string|min:5',
+        ], [
+            'motif.required' => 'Le motif de refus est obligatoire pour transmettre la demande de réaffectation.',
+        ]);
+
+        try {
+            $this->interventionService->refuserEtDemanderReaffectation(
+                $intervention,
+                $request->input('motif'),
+                $request->user()
+            );
+
+            return redirect()->back()->with('success', 'Votre demande de réaffectation a été transmise à l\'administrateur.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Reporter l'intervention à une date ultérieure.
+     */
+    public function reschedule(Request $request, Intervention $intervention)
+    {
+        $request->validate([
+            'motif'              => 'required|string|min:5',
+            'date_prevue_debut' => 'nullable|date',
+            'date_prevue_fin'   => 'nullable|date|after_or_equal:date_prevue_debut',
+        ]);
+
+        try {
+            $this->interventionService->reporter(
+                $intervention,
+                $request->input('motif'),
+                $request->input('date_prevue_debut'),
+                $request->input('date_prevue_fin')
+            );
+
+            return redirect()->back()->with('success', 'L\'intervention a été reportée avec succès.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Rouvrir une intervention terminée ou validée.
+     */
+    public function reopen(Request $request, Intervention $intervention)
+    {
+        $request->validate([
+            'motif' => 'nullable|string',
+        ]);
+
+        try {
+            $this->interventionService->rouvrir($intervention, $request->input('motif', ''));
+            return redirect()->back()->with('success', 'L\'intervention a été rouverte avec succès.');
+        } catch (Exception $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Mettre à jour l'avancement/progression d'une tâche d'intervention.
+     */
+    public function updateTacheProgress(Request $request, Intervention $intervention, int $tachePivotId)
+    {
+        $request->validate([
+            'pourcentage' => 'required|integer|min:0|max:100',
+            'statut'      => 'nullable|string',
+            'commentaire' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $this->interventionService->updateTacheProgress(
+                $intervention,
+                $tachePivotId,
+                (int) $request->input('pourcentage'),
+                $request->input('statut'),
+                $request->input('commentaire')
+            );
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Progression de la tâche enregistrée. Pourcentage global recalculé.',
+                    'pourcentage_global' => $intervention->fresh()->pourcentage_global,
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Progression de la tâche enregistrée avec succès.');
+        } catch (Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $e->getMessage()], 400);
+            }
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Démarrer une tâche d'intervention.
+     */
+    public function startTache(Request $request, Intervention $intervention, int $tachePivotId)
+    {
+        try {
+            $this->interventionService->demarrerTache(
+                $intervention,
+                $tachePivotId,
+                $request->input('commentaire')
+            );
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tâche démarrée.',
+                    'pourcentage_global' => $intervention->fresh()->pourcentage_global,
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Tâche démarrée.');
+        } catch (Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $e->getMessage()], 400);
+            }
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Terminer une tâche d'intervention.
+     */
+    public function finishTache(Request $request, Intervention $intervention, int $tachePivotId)
+    {
+        try {
+            $this->interventionService->terminerTache(
+                $intervention,
+                $tachePivotId,
+                $request->input('commentaire')
+            );
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tâche marquée comme terminée.',
+                    'pourcentage_global' => $intervention->fresh()->pourcentage_global,
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Tâche marquée comme terminée.');
+        } catch (Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => $e->getMessage()], 400);
+            }
+            return redirect()->back()->with('error', $e->getMessage());
+        }
     }
 }

@@ -36,6 +36,8 @@ class AuthController extends BaseApiController
 
         $token = $user->createToken('mobile-technician-token')->plainTextToken;
 
+        \Illuminate\Support\Facades\Log::info("Connexion réussie", ['user_id' => $user->id, 'ip' => $request->ip()]);
+
         return $this->successResponse([
             'token' => $token,
             'user'  => [
@@ -53,6 +55,8 @@ class AuthController extends BaseApiController
      */
     public function logout(Request $request): JsonResponse
     {
+        \Illuminate\Support\Facades\Log::info("Déconnexion de l'utilisateur", ['user_id' => $request->user()->id, 'ip' => $request->ip()]);
+        
         $request->user()->currentAccessToken()->delete();
 
         return $this->successResponse(null, 'Déconnexion réussie.');
