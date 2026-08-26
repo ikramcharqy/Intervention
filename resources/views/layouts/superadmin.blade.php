@@ -1,192 +1,153 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="h-full bg-slate-50">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>Metronic SuperAdmin - {{ config('app.name', 'FieldFlow') }}</title>
+    <title>Super Admin Infrastructure — {{ config('app.name', 'TechniTrack') }}</title>
 
-    <!-- Google Fonts Inter & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
 
-    <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <style>
-        :root {
-            --kt-body-bg: #F9F9FB;
-            --kt-sidebar-bg: #1E1E2D;
-            --kt-sidebar-border: #2B2B40;
-            --kt-sidebar-hover: #1B1B28;
-            --kt-card-bg: #FFFFFF;
-            --kt-card-border: #EFF2F5;
-            --kt-text-dark: #181C32;
-            --kt-text-muted: #A1A5B7;
-            --kt-danger: #F1416C;
-            --kt-danger-light: #FFF5F8;
-            --kt-primary: #3E97FF;
-            --kt-success: #50CD89;
-        }
-        body { font-family: 'Inter', sans-serif; background-color: var(--kt-body-bg); color: var(--kt-text-dark); }
-        h1, h2, h3, .font-heading { font-family: 'Outfit', sans-serif; }
-        .metronic-card {
-            background-color: #FFFFFF;
-            border: 1px solid var(--kt-card-border);
-            box-shadow: 0px 0px 20px 0px rgba(76, 87, 125, 0.03);
-            border-radius: 0.85rem;
-        }
-        .metronic-sidebar {
-            background-color: var(--kt-sidebar-bg);
-        }
-        .metronic-nav-link {
-            color: #9899AC;
-            transition: all 0.2s ease;
-        }
-        .metronic-nav-link:hover {
-            color: #FFFFFF;
-            background-color: var(--kt-sidebar-hover);
-        }
-        .metronic-nav-link.active {
-            color: #FFFFFF;
-            background-color: #1B1B28;
-            border-left: 4px solid var(--kt-danger);
-        }
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; color: #0f172a; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
     </style>
 </head>
-<body class="h-full antialiased" x-data="{ sidebarOpen: false }">
-    <div class="min-h-full flex flex-col md:flex-row">
+<body class="h-full antialiased text-slate-900 bg-slate-50" x-data="{ sidebarOpen: false }">
+    <div class="min-h-screen flex bg-slate-50">
 
-        <!-- SIDEBAR METRONIC SUPER ADMIN -->
-        <aside class="fixed inset-y-0 left-0 z-50 w-72 metronic-sidebar text-slate-300 transform -translate-x-full md:translate-x-0 md:static md:flex md:flex-col transition-transform duration-300 ease-in-out shrink-0 border-r border-[#2B2B40]"
+        <!-- OVERLAY MOBILE -->
+        <div x-show="sidebarOpen" x-cloak @click="sidebarOpen = false" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden"></div>
+
+        <!-- SIDEBAR SUPERADMIN EXECUTIVE -->
+        <aside class="fixed inset-y-0 left-0 z-50 w-64 bg-[#0f172a] text-slate-300 flex flex-col transition-transform duration-300 transform md:translate-x-0 md:static md:z-auto shadow-xl border-r border-slate-800 shrink-0"
                :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
 
-            <!-- Logo Header -->
-            <div class="h-20 flex items-center justify-between px-6 border-b border-[#2B2B40]">
+            <!-- Brand -->
+            <div class="h-16 flex items-center justify-between px-5 border-b border-slate-800 bg-[#0f172a]">
                 <a href="{{ route('superadmin.dashboard') }}" class="flex items-center gap-3 group">
-                    <div class="h-10 w-10 bg-gradient-to-tr from-rose-600 to-red-500 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md">
-                        SA
+                    <div class="w-9 h-9 rounded-xl bg-rose-600 flex items-center justify-center text-white font-bold shadow-sm">
+                        <i class="fas fa-shield-alt text-sm"></i>
                     </div>
-                    <div>
-                        <span class="text-base font-extrabold text-white tracking-tight block font-heading">METRONIC</span>
-                        <span class="text-[10px] text-rose-400 font-bold uppercase tracking-wider">Super Admin v8.2</span>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-sm text-white tracking-tight">Techni<span class="text-rose-400">Track</span></span>
+                        <span class="text-[9px] text-slate-400 font-semibold tracking-wider uppercase">Super Admin</span>
                     </div>
                 </a>
-                <button class="md:hidden text-slate-400 hover:text-white" @click="sidebarOpen = false">
-                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                <button @click="sidebarOpen = false" class="md:hidden text-slate-400 hover:text-white">
+                    <i class="fas fa-times text-base"></i>
                 </button>
             </div>
 
-            <!-- Navigation Menu -->
-            <nav class="flex-1 overflow-y-auto px-4 py-6 space-y-1">
-                <!-- Section Header -->
-                <div class="px-3 pt-2 pb-2 text-[10px] font-bold uppercase tracking-widest text-[#565674] font-heading">Infrastructure</div>
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+                <div class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Infrastructure & Core</div>
 
-                <a href="{{ route('superadmin.dashboard') }}" class="metronic-nav-link flex items-center justify-between px-3.5 py-3 rounded-lg text-xs font-semibold {{ request()->routeIs('superadmin.dashboard') ? 'active' : '' }}">
-                    <div class="flex items-center gap-3">
-                        <svg class="h-5 w-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
-                        <span>Dashboard Système</span>
-                    </div>
-                    <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+                <a href="{{ route('superadmin.dashboard') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition {{ request()->routeIs('superadmin.dashboard') ? 'bg-rose-600 text-white font-bold shadow-xs' : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-100' }}">
+                    <i class="fas fa-server w-4 text-center {{ request()->routeIs('superadmin.dashboard') ? 'text-white' : 'text-rose-400' }}"></i>
+                    <span>Dashboard Système</span>
                 </a>
 
-                <!-- Section Header -->
-                <div class="px-3 pt-6 pb-2 text-[10px] font-bold uppercase tracking-widest text-[#565674] font-heading">Gestion des Utilisateurs</div>
+                <div class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-4 mb-2">Comptes & Sécurité</div>
 
-                <a href="{{ route('superadmin.admins') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('superadmin.admins') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                <a href="{{ route('superadmin.admins') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition {{ request()->routeIs('superadmin.admins') ? 'bg-rose-600 text-white font-bold shadow-xs' : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-100' }}">
+                    <i class="fas fa-user-shield w-4 text-center {{ request()->routeIs('superadmin.admins') ? 'text-white' : 'text-slate-400' }}"></i>
                     <span>Administrateurs</span>
                 </a>
 
-                <a href="{{ route('superadmin.roles') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('superadmin.roles') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
+                <a href="{{ route('superadmin.roles') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition {{ request()->routeIs('superadmin.roles') ? 'bg-rose-600 text-white font-bold shadow-xs' : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-100' }}">
+                    <i class="fas fa-key w-4 text-center {{ request()->routeIs('superadmin.roles') ? 'text-white' : 'text-slate-400' }}"></i>
                     <span>Rôles & Permissions</span>
                 </a>
 
-                <a href="{{ route('superadmin.users') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('superadmin.users') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                <a href="{{ route('superadmin.users') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition {{ request()->routeIs('superadmin.users') ? 'bg-rose-600 text-white font-bold shadow-xs' : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-100' }}">
+                    <i class="fas fa-users-cog w-4 text-center {{ request()->routeIs('superadmin.users') ? 'text-white' : 'text-slate-400' }}"></i>
                     <span>Tous les Comptes</span>
                 </a>
 
-                <!-- Section Header -->
-                <div class="px-3 pt-6 pb-2 text-[10px] font-bold uppercase tracking-widest text-[#565674] font-heading">Configuration & Monitoring</div>
+                <div class="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-4 mb-2">Monitoring & Backup</div>
 
-                <a href="{{ route('superadmin.settings') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('superadmin.settings') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /></svg>
-                    <span>APIs (Maps, Caméras)</span>
+                <a href="{{ route('superadmin.settings') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition {{ request()->routeIs('superadmin.settings') ? 'bg-rose-600 text-white font-bold shadow-xs' : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-100' }}">
+                    <i class="fas fa-sliders-h w-4 text-center {{ request()->routeIs('superadmin.settings') ? 'text-white' : 'text-slate-400' }}"></i>
+                    <span>Configuration APIs</span>
                 </a>
 
-                <a href="{{ route('superadmin.logs') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('superadmin.logs') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                <a href="{{ route('superadmin.logs') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition {{ request()->routeIs('superadmin.logs') ? 'bg-rose-600 text-white font-bold shadow-xs' : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-100' }}">
+                    <i class="fas fa-list-alt w-4 text-center {{ request()->routeIs('superadmin.logs') ? 'text-white' : 'text-slate-400' }}"></i>
                     <span>Journaux d'Audit</span>
                 </a>
 
-                <a href="{{ route('superadmin.backups') }}" class="metronic-nav-link flex items-center gap-3 px-3.5 py-3 rounded-lg text-xs font-medium {{ request()->routeIs('superadmin.backups') ? 'active' : '' }}">
-                    <svg class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
-                    <span>Sauvegardes Base SQL</span>
+                <a href="{{ route('superadmin.backups') }}" class="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition {{ request()->routeIs('superadmin.backups') ? 'bg-rose-600 text-white font-bold shadow-xs' : 'text-slate-400 hover:bg-slate-800/80 hover:text-slate-100' }}">
+                    <i class="fas fa-database w-4 text-center {{ request()->routeIs('superadmin.backups') ? 'text-white' : 'text-slate-400' }}"></i>
+                    <span>Sauvegardes SQL</span>
                 </a>
             </nav>
 
-            <div class="p-4 border-t border-[#2B2B40]">
-                <div class="p-3 rounded-lg bg-[#1B1B28] flex items-center justify-between text-xs">
+            <!-- Footer Server Status -->
+            <div class="p-3 border-t border-slate-800 bg-[#0a0f1d]">
+                <div class="flex items-center justify-between gap-3 p-2 rounded-lg bg-slate-900 border border-slate-800">
                     <div>
-                        <span class="text-white font-bold block">Status Serveur</span>
-                        <span class="text-[#A1A5B7] text-[11px]">PHP {{ PHP_VERSION }}</span>
+                        <span class="text-xs font-bold text-white block">PHP {{ PHP_VERSION }}</span>
+                        <span class="text-[10px] text-emerald-400 font-semibold flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> MySQL Online</span>
                     </div>
-                    <span class="px-2 py-0.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 rounded">ONLINE</span>
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" title="Déconnexion" class="p-1.5 text-slate-400 hover:text-rose-400 rounded transition">
+                            <i class="fas fa-sign-out-alt text-xs"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </aside>
 
-        <!-- MAIN METRONIC CONTENT -->
-        <div class="flex-1 flex flex-col min-w-0">
-            <!-- TOPBAR WHITE METRONIC -->
-            <header class="h-20 bg-white border-b border-[#EFF2F5] flex items-center justify-between px-8 sticky top-0 z-40 shadow-sm">
+        <!-- Main Content Light -->
+        <div class="flex-1 flex flex-col min-w-0 bg-slate-50">
+            <header class="h-16 flex items-center justify-between px-6 bg-white border-b border-slate-200 sticky top-0 z-30 shadow-2xs">
                 <div class="flex items-center gap-4">
-                    <button class="md:hidden p-2 text-slate-600 hover:text-slate-900" @click="sidebarOpen = true">
-                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    <button class="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 focus:outline-none" @click="sidebarOpen = true">
+                        <i class="fas fa-bars text-base"></i>
                     </button>
-                    <div>
-                        <h1 class="text-lg font-bold text-[#181C32] font-heading">Super Admin Console</h1>
-                        <span class="text-xs text-[#A1A5B7]">Metronic 8.2 • Système de Gestion d'Infrastructure</span>
+                    <div class="hidden sm:flex flex-col">
+                        <div class="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5 uppercase tracking-wider">
+                            <span>Infrastructure</span>
+                            <i class="fas fa-chevron-right text-[8px] text-slate-400"></i>
+                            <span class="text-rose-600 font-bold">Root Console</span>
+                        </div>
+                        <h1 class="text-sm font-bold text-slate-900 leading-tight mt-0.5">Super Admin Platform</h1>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-5">
-                    <span class="hidden sm:inline-block px-3 py-1 bg-rose-50 text-rose-600 border border-rose-100 text-xs font-bold rounded-lg font-mono">
-                        Super Admin Mode
-                    </span>
-
-                    <div class="flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-lg bg-rose-600 text-white font-bold flex items-center justify-center text-sm shadow-sm">
-                            SA
-                        </div>
-                        <div class="hidden md:block">
-                            <span class="text-xs font-bold text-[#181C32] block leading-tight">{{ Auth::user()->name }}</span>
-                            <span class="text-[11px] text-[#A1A5B7]">{{ Auth::user()->email }}</span>
-                        </div>
+                <div class="flex items-center gap-3">
+                    <div class="hidden sm:flex items-center gap-2 px-3 py-1 bg-rose-50 border border-rose-200 rounded-full text-rose-700 text-xs font-semibold">
+                        <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                        <span>Privilèges Root</span>
                     </div>
 
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="px-3.5 py-2 bg-[#F5F8FA] hover:bg-[#EEF0F8] text-[#5E6278] text-xs font-semibold rounded-lg transition">
-                            Déconnexion
+                        <button type="submit" class="ui-btn ui-btn-secondary text-xs py-1.5 px-3">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span class="hidden sm:inline">Déconnexion</span>
                         </button>
                     </form>
                 </div>
             </header>
 
-            <!-- Notifications Flash -->
             @if(session('success'))
-                <div class="mx-8 mt-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-semibold flex items-center gap-3 shadow-sm">
-                    <svg class="h-5 w-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                    <span>{{ session('success') }}</span>
+                <div class="mx-6 mt-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-3 shadow-xs">
+                    <i class="fas fa-check-circle text-emerald-600 text-sm shrink-0"></i>
+                    <span>{!! session('success') !!}</span>
                 </div>
             @endif
 
-            <main class="flex-1 p-6 md:p-8">
+            <main class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
                 {{ $slot }}
             </main>
         </div>
