@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             AdminSeeder::class,
+            CommercialSeeder::class,
             TypeInterventionSeeder::class,
             TacheSeeder::class,
             MateriauSeeder::class,
@@ -21,6 +22,7 @@ class DatabaseSeeder extends Seeder
             TechnicienSeeder::class,
             ChantierSeeder::class,
             EmplacementSeeder::class,
+            DemoDataSeeder::class,
             FormulaireSeeder::class,
             ]);
         //when run php artisan db:seed, it will call the run method of each seeder class in the order specified in the array.

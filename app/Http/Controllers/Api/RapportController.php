@@ -58,6 +58,8 @@ class RapportController extends BaseApiController
     {
         $this->authorize('view', $intervention);
 
+        $user = $request->user();
+
         $rapport = $intervention->rapport;
 
         if (!$rapport) {
