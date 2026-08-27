@@ -23,11 +23,11 @@ return new class extends Migration
 
             $table->text('description')->nullable();
 
-            $table->decimal('quantite',10,2);
+            $table->decimal('quantite', 10, 2)->default(1.00);
 
-            $table->decimal('prix_unitaire',12,2);
+            $table->decimal('prix_unitaire', 15, 2)->default(0.00);
 
-            $table->decimal('montant_ht',12,2);
+            $table->decimal('montant_ht', 15, 2)->default(0.00);
 
             $table->timestamps();
 

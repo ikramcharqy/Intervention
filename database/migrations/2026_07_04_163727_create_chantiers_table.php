@@ -13,9 +13,7 @@ return new class extends Migration
     {
         Schema::create('chantiers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('client_id')->
-            constrainted()->
-            cascadeOnDelete();
+            $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->string('code_chantier')->unique();
             $table->string('nom');
             $table->enum('type_local',['Maison',

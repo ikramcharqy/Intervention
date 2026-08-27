@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -37,6 +39,13 @@ return new class extends Migration
                     'Materiaux'
                 ) NOT NULL
             ");
+        } else {
+            // SQLite (et autres) : un enum est émulé par une contrainte CHECK
+            // qui ne peut pas être étendue in place. On bascule sur une
+            // colonne string pour rester portable, comme pour interventions.statut.
+            Schema::table('questions', function (Blueprint $table) {
+                $table->string('type_reponse', 50)->change();
+            });
         }
     }
 

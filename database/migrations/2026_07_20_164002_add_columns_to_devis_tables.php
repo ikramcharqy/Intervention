@@ -25,15 +25,6 @@ return new class extends Migration
             $table->decimal('montant_ttc', 15, 2)->default(0.00);
             $table->text('observations')->nullable();
         });
-
-        Schema::table('devis_lignes', function (Blueprint $table) {
-            $table->foreignId('devis_id')->constrained('devis')->cascadeOnDelete();
-            $table->string('designation');
-            $table->text('description')->nullable();
-            $table->decimal('quantite', 10, 2)->default(1.00);
-            $table->decimal('prix_unitaire', 15, 2)->default(0.00);
-            $table->decimal('montant_ht', 15, 2)->default(0.00);
-        });
     }
 
     /**
@@ -41,17 +32,24 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('devis_lignes', function (Blueprint $table) {
-            $table->dropForeign(['devis_id']);
-        });
-
         Schema::table('devis', function (Blueprint $table) {
             $table->dropForeign(['prospect_id']);
             $table->dropForeign(['client_id']);
             $table->dropForeign(['commercial_id']);
+            $table->dropColumn([
+                'reference',
+                'prospect_id',
+                'client_id',
+                'commercial_id',
+                'statut',
+                'date_emission',
+                'date_expiration',
+                'taux_tva',
+                'montant_ht',
+                'montant_tva',
+                'montant_ttc',
+                'observations',
+            ]);
         });
-
-        Schema::dropIfExists('devis_lignes');
-        Schema::dropIfExists('devis');
     }
 };

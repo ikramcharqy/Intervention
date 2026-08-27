@@ -21,7 +21,7 @@ class Chantier extends Model
         'responsable',
         'telephone_responsable',
         'email_responsable',
-        'Description',
+        'description',
         'is_active',
     ];
 

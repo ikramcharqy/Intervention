@@ -21,6 +21,24 @@ return new class extends Migration
     }
 
     /**
+     * Deletes duplicate rows keeping the most recent one, using a portable
+     * subquery (works on both SQLite and MySQL) instead of a MySQL-only
+     * DELETE ... JOIN statement.
+     */
+    private function deleteDuplicateRows(string $tableName, array $groupByColumns): void
+    {
+        $columns = implode(', ', $groupByColumns);
+
+        DB::table($tableName)
+            ->whereNotIn('id', function ($query) use ($tableName, $columns) {
+                $query->selectRaw('MAX(id)')
+                    ->from($tableName)
+                    ->groupByRaw($columns);
+            })
+            ->delete();
+    }
+
+    /**
      * Run the migrations.
      * Solidification de la base de données : SoftDeletes, Index, Contraintes Unique composites et traçabilité.
      */
@@ -92,65 +110,35 @@ return new class extends Migration
 
         // 5. CONTRAINTES UNIQUE COMPOSITES
         if (Schema::hasTable('intervention_materiaus')) {
-            DB::statement("
-                DELETE t1 FROM intervention_materiaus t1
-                INNER JOIN intervention_materiaus t2 
-                WHERE t1.id < t2.id 
-                  AND t1.intervention_id = t2.intervention_id 
-                  AND t1.materiau_id = t2.materiau_id
-            ");
+            $this->deleteDuplicateRows('intervention_materiaus', ['intervention_id', 'materiau_id']);
             $this->safeSchemaTable('intervention_materiaus', function (Blueprint $table) {
                 $table->unique(['intervention_id', 'materiau_id'], 'int_mat_unique');
             });
         }
 
         if (Schema::hasTable('intervention_taches')) {
-            DB::statement("
-                DELETE t1 FROM intervention_taches t1
-                INNER JOIN intervention_taches t2 
-                WHERE t1.id < t2.id 
-                  AND t1.intervention_id = t2.intervention_id 
-                  AND t1.tache_id = t2.tache_id
-            ");
+            $this->deleteDuplicateRows('intervention_taches', ['intervention_id', 'tache_id']);
             $this->safeSchemaTable('intervention_taches', function (Blueprint $table) {
                 $table->unique(['intervention_id', 'tache_id'], 'int_tache_unique');
             });
         }
 
         if (Schema::hasTable('reponses')) {
-            DB::statement("
-                DELETE t1 FROM reponses t1
-                INNER JOIN reponses t2 
-                WHERE t1.id < t2.id 
-                  AND t1.rapport_id = t2.rapport_id 
-                  AND t1.question_id = t2.question_id
-            ");
+            $this->deleteDuplicateRows('reponses', ['rapport_id', 'question_id']);
             $this->safeSchemaTable('reponses', function (Blueprint $table) {
                 $table->unique(['rapport_id', 'question_id'], 'rap_quest_unique');
             });
         }
 
         if (Schema::hasTable('zone_techniciens')) {
-            DB::statement("
-                DELETE t1 FROM zone_techniciens t1
-                INNER JOIN zone_techniciens t2 
-                WHERE t1.id < t2.id 
-                  AND t1.zone_id = t2.zone_id 
-                  AND t1.technicien_id = t2.technicien_id
-            ");
+            $this->deleteDuplicateRows('zone_techniciens', ['zone_id', 'technicien_id']);
             $this->safeSchemaTable('zone_techniciens', function (Blueprint $table) {
                 $table->unique(['zone_id', 'technicien_id'], 'zone_tech_unique');
             });
         }
 
         if (Schema::hasTable('emplacement_techniciens')) {
-            DB::statement("
-                DELETE t1 FROM emplacement_techniciens t1
-                INNER JOIN emplacement_techniciens t2 
-                WHERE t1.id < t2.id 
-                  AND t1.emplacement_id = t2.emplacement_id 
-                  AND t1.technicien_id = t2.technicien_id
-            ");
+            $this->deleteDuplicateRows('emplacement_techniciens', ['emplacement_id', 'technicien_id']);
             $this->safeSchemaTable('emplacement_techniciens', function (Blueprint $table) {
                 $table->unique(['emplacement_id', 'technicien_id'], 'empl_tech_unique');
             });
