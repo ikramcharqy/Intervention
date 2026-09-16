@@ -53,7 +53,7 @@
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
                         <dt class="text-gray-500 font-medium">Référence</dt>
-                        <dd class="font-mono text-gray-900 dark:text-gray-100">{{ $demandeIntervention->reference }}</dd>
+                        <dd class="text-gray-900 dark:text-gray-100">{{ $demandeIntervention->reference }}</dd>
                     </div>
                     <div>
                         <dt class="text-gray-500 font-medium">Commercial</dt>
@@ -86,6 +86,17 @@
                         <dt class="text-gray-500 font-medium">Objet</dt>
                         <dd class="text-gray-900 dark:text-gray-100 font-semibold text-base">{{ $demandeIntervention->objet }}</dd>
                     </div>
+                    @if($demandeIntervention->devis->isNotEmpty())
+                        <div class="sm:col-span-2">
+                            <dt class="text-gray-500 font-medium">Devis d'origine</dt>
+                            <dd>
+                                <a href="{{ route('commercial-suivi.devis.show', $demandeIntervention->devis->first()) }}" class="inline-flex items-center gap-1.5 text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
+                                    <i class="fas fa-file-invoice-dollar text-xs"></i>
+                                    Voir le devis {{ $demandeIntervention->devis->first()->reference }}
+                                </a>
+                            </dd>
+                        </div>
+                    @endif
                     @if($demandeIntervention->description)
                     <div class="sm:col-span-2">
                         <dt class="text-gray-500 font-medium">Description</dt>

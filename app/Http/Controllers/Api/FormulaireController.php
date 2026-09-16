@@ -86,15 +86,30 @@ class FormulaireController extends BaseApiController
         }
 
         // ── Validation sécurisée des fichiers joints au formulaire ──
+        // Chaque fichier est validé selon le VRAI type de sa Question
+        // (Photo/Signature → image, Document → document) — pas 'document'
+        // pour tous, ce qui rejetait à tort toute Photo/Signature (image/png,
+        // image/jpeg) puisque cette catégorie n'autorise que PDF/Word/Excel/texte.
         $files = $request->allFiles()['fichiers'] ?? [];
         if (!empty($files)) {
             $uploader = app(\App\Services\SecureFileUploadService::class);
-            foreach ($files as $file) {
-                if ($file instanceof \Illuminate\Http\UploadedFile) {
-                    try {
-                        $uploader->validate($file, 'document', $request->user()->id);
-                    } catch (\InvalidArgumentException $e) {
-                        return $this->errorResponse($e->getMessage(), null, 422);
+            $questionsById = $formulaire->questions->keyBy('id');
+
+            foreach ($files as $questionId => $fileOrFiles) {
+                $type = match ($questionsById->get($questionId)?->type_reponse) {
+                    'Photo' => 'image',
+                    'Signature' => 'signature',
+                    default => 'document',
+                };
+
+                $fileList = is_array($fileOrFiles) ? $fileOrFiles : [$fileOrFiles];
+                foreach ($fileList as $file) {
+                    if ($file instanceof \Illuminate\Http\UploadedFile) {
+                        try {
+                            $uploader->validate($file, $type, $request->user()->id);
+                        } catch (\InvalidArgumentException $e) {
+                            return $this->errorResponse($e->getMessage(), null, 422);
+                        }
                     }
                 }
             }

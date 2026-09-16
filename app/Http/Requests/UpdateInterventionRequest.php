@@ -30,7 +30,7 @@ class UpdateInterventionRequest extends FormRequest
                 Rule::exists('chantiers', 'id')->where('is_active', true),
             ],
             'emplacement_id' => [
-                'required',
+                'nullable',
                 'integer',
                 // L'emplacement doit être actif ET appartenir au chantier sélectionné
                 Rule::exists('emplacements', 'id')
@@ -79,7 +79,6 @@ class UpdateInterventionRequest extends FormRequest
             'code_intervention.regex'       => 'Le code ne peut contenir que des lettres majuscules, des chiffres et des tirets.',
             'chantier_id.required'          => 'Veuillez sélectionner un chantier.',
             'chantier_id.exists'            => 'Le chantier sélectionné n\'existe pas ou est inactif.',
-            'emplacement_id.required'       => 'Veuillez sélectionner un emplacement.',
             'emplacement_id.exists'         => 'L\'emplacement sélectionné n\'existe pas, est inactif ou n\'appartient pas au chantier sélectionné.',
             'technicien_id.required'        => 'Veuillez sélectionner un technicien.',
             'technicien_id.exists'          => 'Le technicien sélectionné n\'existe pas ou est inactif.',

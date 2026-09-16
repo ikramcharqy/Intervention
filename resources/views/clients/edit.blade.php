@@ -1,173 +1,184 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            Modifier le Client : {{ $client->nom }}
-        </h2>
+        {{ __('Modifier le Client : ') }} {{ $client->nom }}
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 text-gray-900 dark:text-gray-100">
-                <form method="POST" action="{{ route('clients.update', $client) }}" class="space-y-6" x-data="{ typeClient: '{{ old('type_client', $client->type_client) }}' }">
-                    @csrf
-                    @method('PUT')
+    <form method="POST" action="{{ route('clients.update', $client) }}" enctype="multipart/form-data" x-data="{ typeClient: '{{ old('type_client', $client->type_client) }}' }">
+        @csrf
+        @method('PUT')
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {{-- Code Client --}}
-                        <div>
-                            <label for="code_client" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Code Client <span class="text-red-500">*</span></label>
-                            <input type="text" name="code_client" id="code_client" required value="{{ old('code_client', $client->code_client) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('code_client') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
+        <div class="flex items-center justify-between mb-5">
+            <a href="{{ route('clients.show', $client) }}" class="text-xs font-semibold inline-flex items-center gap-1.5" style="color:#5A607F;">
+                <i class="ti ti-arrow-left"></i> Retour
+            </a>
+            <div class="flex gap-2">
+                <a href="{{ route('clients.show', $client) }}" class="ds-btn ds-btn-white ds-btn-sm">Annuler</a>
+                <button type="submit" class="ds-btn ds-btn-primary ds-btn-sm">Enregistrer</button>
+            </div>
+        </div>
 
-                        {{-- Type Client --}}
-                        <div>
-                            <label for="type_client" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Type de Client <span class="text-red-500">*</span></label>
-                            <select name="type_client" id="type_client" required x-model="typeClient"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="Entreprise">Entreprise</option>
-                                <option value="Particulier">Particulier</option>
-                                <option value="Administration">Administration</option>
-                            </select>
-                            @error('type_client') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
+        <div class="ds-card-elevated">
+            <!-- Section : Informations client -->
+            <div class="p-7 border-b" style="border-color:#E6E9F4;">
+                <h3 class="text-[16px] font-bold text-[#131523]">Informations client</h3>
+                <p class="text-xs text-[#A1A7C4] mt-0.5">Identité principale et coordonnées du client.</p>
 
-                        {{-- Commercial --}}
-                        @if(!auth()->user()->hasRole('Commercial'))
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+                    <div>
+                        <label for="code_client" class="ds-label">Code Client <span style="color:#F0142F;">*</span></label>
+                        <input type="text" name="code_client" id="code_client" required value="{{ old('code_client', $client->code_client) }}" class="ds-input">
+                        @error('code_client') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="type_client" class="ds-label">Type de Client <span style="color:#F0142F;">*</span></label>
+                        <select name="type_client" id="type_client" required x-model="typeClient" class="ds-input">
+                            <option value="Entreprise">Entreprise</option>
+                            <option value="Particulier">Particulier</option>
+                            <option value="Administration">Administration</option>
+                        </select>
+                        @error('type_client') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="nom" class="ds-label"><span x-text="typeClient === 'Particulier' ? 'Nom complet' : 'Nom ou Raison Sociale'"></span> <span style="color:#F0142F;">*</span></label>
+                        <input type="text" name="nom" id="nom" required value="{{ old('nom', $client->nom) }}" class="ds-input">
+                        @error('nom') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="nom_contact" class="ds-label">Nom du Contact</label>
+                        <input type="text" name="nom_contact" id="nom_contact" value="{{ old('nom_contact', $client->nom_contact) }}" class="ds-input">
+                        @error('nom_contact') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    @if(!auth()->user()->hasRole('Commercial'))
                         <div>
-                            <label for="commercial_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Commercial Responsable</label>
-                            <select name="commercial_id" id="commercial_id"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                                <option value="">Aucun</option>
+                            <label for="commercial_id" class="ds-label">Commercial Responsable</label>
+                            <select name="commercial_id" id="commercial_id" class="ds-input">
+                                <option value="">Aucun (à assigner plus tard)</option>
                                 @foreach($commerciaux as $com)
                                     <option value="{{ $com->id }}" @selected(old('commercial_id', $client->commercial_id) == $com->id)>
                                         {{ $com->prenom }} {{ $com->name }}
                                     </option>
                                 @endforeach
                             </select>
-                            @error('commercial_id') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            <p class="text-[11px] text-[#A1A7C4] mt-1">Pour une réassignation tracée avec commentaire, utilisez plutôt le formulaire "Réassigner" sur la fiche client.</p>
+                            @error('commercial_id') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
                         </div>
-                        @endif
-
-                        {{-- Nom / Raison sociale --}}
-                        <div class="col-span-1 md:col-span-2">
-                            <label for="nom" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom ou Raison Sociale <span class="text-red-500">*</span></label>
-                            <input type="text" name="nom" id="nom" required value="{{ old('nom', $client->nom) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('nom') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-
-                        {{-- Nom Contact --}}
-                        <div>
-                            <label for="nom_contact" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom du Contact</label>
-                            <input type="text" name="nom_contact" id="nom_contact" value="{{ old('nom_contact', $client->nom_contact) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('nom_contact') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-
-                        {{-- E-mail --}}
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">E-mail</label>
-                            <input type="email" name="email" id="email" value="{{ old('email', $client->email) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('email') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-
-                        {{-- Téléphone principal --}}
-                        <div>
-                            <label for="telephone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Téléphone principal <span class="text-red-500">*</span></label>
-                            <input type="text" name="telephone" id="telephone" required value="{{ old('telephone', $client->telephone) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('telephone') <span class="text-red-500 text-sm text-red-600 dark:text-red-400">{{ $message }}</span> @enderror
-                        </div>
-
-                        {{-- Téléphone secondaire --}}
-                        <div>
-                            <label for="telephone_secondaire" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Téléphone secondaire</label>
-                            <input type="text" name="telephone_secondaire" id="telephone_secondaire" value="{{ old('telephone_secondaire', $client->telephone_secondaire) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('telephone_secondaire') <span class="text-red-500 text-sm text-red-600 dark:text-red-400">{{ $message }}</span> @enderror
-                        </div>
-
-                        {{-- Adresse Facturation --}}
-                        <div class="col-span-1 md:col-span-2">
-                            <label for="adresse_facturation" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Adresse de Facturation</label>
-                            <textarea name="adresse_facturation" id="adresse_facturation" rows="3"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">{{ old('adresse_facturation', $client->adresse_facturation) }}</textarea>
-                            @error('adresse_facturation') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-
-                        {{-- Ville --}}
-                        <div>
-                            <label for="ville" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ville <span class="text-red-500">*</span></label>
-                            <input type="text" name="ville" id="ville" required value="{{ old('ville', $client->ville) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('ville') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-
-                        {{-- Pays --}}
-                        <div>
-                            <label for="pays" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Pays</label>
-                            <input type="text" name="pays" id="pays" value="{{ old('pays', $client->pays) }}"
-                                class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                            @error('pays') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                        </div>
-                    </div>
-
-                    {{-- Infos Entreprise (Conditionnelles selon type_client) --}}
-                    <div x-show="typeClient === 'Entreprise'" class="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4">
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Informations de l'Entreprise</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                                <label for="ice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ICE</label>
-                                <input type="text" name="ice" id="ice" value="{{ old('ice', $client->clientEntreprise->ice ?? '') }}"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                                @error('ice') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                            </div>
-
-                            <div>
-                                <label for="if" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Identifiant Fiscal (IF)</label>
-                                <input type="text" name="if" id="if" value="{{ old('if', $client->clientEntreprise->if ?? '') }}"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                                @error('if') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                            </div>
-
-                            <div>
-                                <label for="rc" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Registre du Commerce (RC)</label>
-                                <input type="text" name="rc" id="rc" value="{{ old('rc', $client->clientEntreprise->rc ?? '') }}"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                                @error('rc') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                            </div>
-
-                            <div>
-                                <label for="patente" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Patente</label>
-                                <input type="text" name="patente" id="patente" value="{{ old('patente', $client->clientEntreprise->patente ?? '') }}"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
-                                @error('patente') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Observations --}}
+                    @endif
                     <div>
-                        <label for="observations" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Observations</label>
-                        <textarea name="observations" id="observations" rows="3"
-                            class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">{{ old('observations', $client->observations) }}</textarea>
-                        @error('observations') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                        <label for="email" class="ds-label">E-mail</label>
+                        <input type="email" name="email" id="email" value="{{ old('email', $client->email) }}" class="ds-input">
+                        @error('email') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
                     </div>
+                    <div>
+                        <label for="telephone" class="ds-label">Téléphone principal <span style="color:#F0142F;">*</span></label>
+                        <input type="text" name="telephone" id="telephone" required value="{{ old('telephone', $client->telephone) }}" class="ds-input">
+                        @error('telephone') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="telephone_secondaire" class="ds-label">Téléphone secondaire</label>
+                        <input type="text" name="telephone_secondaire" id="telephone_secondaire" value="{{ old('telephone_secondaire', $client->telephone_secondaire) }}" class="ds-input">
+                        @error('telephone_secondaire') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+            </div>
 
-                    {{-- Boutons d'action --}}
-                    <div class="flex justify-end gap-3">
-                        <a href="{{ route('clients.show', $client) }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md transition duration-150">
-                            Annuler
-                        </a>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-150">
-                            Enregistrer les modifications
-                        </button>
+            <!-- Section : Adresse -->
+            <div class="p-7 border-b" style="border-color:#E6E9F4;">
+                <h3 class="text-[16px] font-bold text-[#131523]">Adresse</h3>
+                <p class="text-xs text-[#A1A7C4] mt-0.5">Informations de facturation et de localisation.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+                    <div class="md:col-span-2">
+                        <label for="adresse_facturation" class="ds-label">Adresse de Facturation</label>
+                        <textarea name="adresse_facturation" id="adresse_facturation" rows="3" class="ds-input" style="height:auto; padding-top:0.75rem;">{{ old('adresse_facturation', $client->adresse_facturation) }}</textarea>
+                        @error('adresse_facturation') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
                     </div>
-                </form>
+                    <div>
+                        <label for="ville" class="ds-label">Ville <span style="color:#F0142F;">*</span></label>
+                        <input type="text" name="ville" id="ville" required value="{{ old('ville', $client->ville) }}" class="ds-input">
+                        @error('ville') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="pays" class="ds-label">Pays</label>
+                        <input type="text" name="pays" id="pays" value="{{ old('pays', $client->pays) }}" class="ds-input">
+                        @error('pays') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section : Entreprise (conditionnelle) -->
+            <div class="p-7 border-b" style="border-color:#E6E9F4;" x-show="typeClient === 'Entreprise'">
+                <h3 class="text-[16px] font-bold text-[#131523]">Informations de l'Entreprise</h3>
+                <p class="text-xs text-[#A1A7C4] mt-0.5">Identifiants légaux (visibles uniquement pour un client de type Entreprise).</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+                    <div>
+                        <label for="ice" class="ds-label">ICE <span style="color:#F0142F;">*</span></label>
+                        <input type="text" name="ice" id="ice" :required="typeClient === 'Entreprise'" value="{{ old('ice', $client->clientEntreprise->ice ?? '') }}" class="ds-input">
+                        @error('ice') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="if" class="ds-label">Identifiant Fiscal (IF)</label>
+                        <input type="text" name="if" id="if" value="{{ old('if', $client->clientEntreprise->if ?? '') }}" class="ds-input">
+                        @error('if') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="rc" class="ds-label">Registre du Commerce (RC)</label>
+                        <input type="text" name="rc" id="rc" value="{{ old('rc', $client->clientEntreprise->rc ?? '') }}" class="ds-input">
+                        @error('rc') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="patente" class="ds-label">Patente</label>
+                        <input type="text" name="patente" id="patente" value="{{ old('patente', $client->clientEntreprise->patente ?? '') }}" class="ds-input">
+                        @error('patente') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section : Identité (conditionnelle, client Particulier) -->
+            <div class="p-7 border-b" style="border-color:#E6E9F4;" x-show="typeClient === 'Particulier'">
+                <h3 class="text-[16px] font-bold text-[#131523]">Identité du Client</h3>
+                <p class="text-xs text-[#A1A7C4] mt-0.5">Donnée personnelle sensible (loi 09-08) : visible uniquement par l'Admin et le Commercial assigné.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-5">
+                    <div>
+                        <label for="numero_cin" class="ds-label">Numéro CIN <span style="color:#F0142F;">*</span></label>
+                        <input type="text" name="numero_cin" id="numero_cin" :required="typeClient === 'Particulier'" value="{{ old('numero_cin', $client->clientParticulier->numero_cin ?? '') }}" placeholder="Ex: AB123456" class="ds-input">
+                        @error('numero_cin') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="date_naissance" class="ds-label">Date de Naissance</label>
+                        <input type="date" name="date_naissance" id="date_naissance" value="{{ old('date_naissance', optional($client->clientParticulier->date_naissance ?? null)->format('Y-m-d')) }}" class="ds-input">
+                        @error('date_naissance') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="cin_recto" class="ds-label">Scan CIN Recto (remplacer)</label>
+                        <input type="file" name="cin_recto" id="cin_recto" accept=".pdf,.jpg,.jpeg,.png" class="ds-input">
+                        @error('cin_recto') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label for="cin_verso" class="ds-label">Scan CIN Verso (remplacer)</label>
+                        <input type="file" name="cin_verso" id="cin_verso" accept=".pdf,.jpg,.jpeg,.png" class="ds-input">
+                        @error('cin_verso') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section : Observations -->
+            <div class="p-7">
+                <h3 class="text-[16px] font-bold text-[#131523]">Observations</h3>
+                <p class="text-xs text-[#A1A7C4] mt-0.5">Notes ou précisions complémentaires sur ce client.</p>
+
+                <div class="mt-5">
+                    <label for="observations" class="ds-label">Observations</label>
+                    <textarea name="observations" id="observations" rows="4" class="ds-input" style="height:auto; padding-top:0.75rem;">{{ old('observations', $client->observations) }}</textarea>
+                    @error('observations') <span class="text-xs" style="color:#F0142F;">{{ $message }}</span> @enderror
+                </div>
             </div>
         </div>
-    </div>
+
+        <div class="flex justify-end gap-2 mt-5">
+            <a href="{{ route('clients.show', $client) }}" class="ds-btn ds-btn-white ds-btn-md">Annuler</a>
+            <button type="submit" class="ds-btn ds-btn-primary ds-btn-md">Enregistrer</button>
+        </div>
+    </form>
 </x-app-layout>

@@ -17,6 +17,7 @@ class TypeInterventionSeeder extends Seeder
             ['nom' => 'Réparation', 'description' => 'Réparation des équipements'],
             ['nom' => 'Configuration Routeur', 'description' => 'Configuration des routeurs'],
             ['nom' => 'Configuration Switch', 'description' => 'Configuration des switchs'],
+            ['nom' => 'Maintenance GPS Live', 'description' => 'Maintenance préventive et corrective des dispositifs GPS/télématique embarqués'],
         ];
 
         foreach ($types as $type) {

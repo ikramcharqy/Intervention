@@ -34,12 +34,16 @@ class CommercialSeeder extends Seeder
 
         // Créer un compte Commercial de démonstration
         $user = User::firstOrCreate(
-            ['email' => 'commercial@fieldflow.test'],
+            ['email' => 'commercial@intervention.ma'],
             [
                 'name'      => 'Dupont',
                 'prenom'    => 'Jean',
                 'telephone' => '0600000002',
-                'adresse'   => 'Agence FieldFlow, Casablanca',
+                'adresse'   => '12 Rue des Orangers, Bourgogne, Casablanca',
+                'poste'     => 'Commercial Senior',
+                'departement' => 'Ventes Télécom',
+                'zone_geographique' => 'Casablanca-Settat',
+                'date_entree' => '2023-03-01',
                 'password'  => Hash::make('password'),
                 'is_active' => true,
             ]
@@ -51,6 +55,6 @@ class CommercialSeeder extends Seeder
         }
 
         $this->command->info('✅ Rôle Commercial créé avec les permissions manage-clients et manage-chantiers.');
-        $this->command->info('✅ Compte commercial@fieldflow.test créé (mot de passe : password).');
+        $this->command->info('✅ Compte commercial@intervention.ma créé (mot de passe : password).');
     }
 }

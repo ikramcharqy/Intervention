@@ -25,6 +25,7 @@ class StoreDevisRequest extends FormRequest
         return [
             'prospect_id' => 'nullable|exists:prospects,id',
             'client_id' => 'nullable|exists:clients,id',
+            'demande_intervention_id' => 'nullable|exists:demande_interventions,id',
             'statut' => 'required|in:Brouillon,Envoyé,Accepté,Refusé',
             'date_emission' => 'required|date',
             'date_expiration' => 'nullable|date|after_or_equal:date_emission',

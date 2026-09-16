@@ -9,6 +9,11 @@ use Illuminate\Support\Facades\Hash;
 
 class ClientService
 {
+    public function __construct(
+        private DocumentService $documentService,
+    ) {
+    }
+
     /**
      * Enregistre un nouveau client avec ses informations optionnelles d'entreprise.
      */
@@ -46,6 +51,16 @@ class ClientService
             ]);
         }
 
+        // Identité du client Particulier (CIN chiffré + date de naissance)
+        if ($client->type_client === 'Particulier') {
+            $client->clientParticulier()->create([
+                'numero_cin'     => $data['numero_cin'] ?? null,
+                'date_naissance' => $data['date_naissance'] ?? null,
+            ]);
+
+            $this->attachIdentityScans($client, $data);
+        }
+
         return $client;
     });
 }
@@ -72,8 +87,41 @@ class ClientService
                 $client->clientEntreprise()?->delete();
             }
 
+            if ($client->type_client === 'Particulier') {
+                $client->clientParticulier()->updateOrCreate(
+                    ['client_id' => $client->id],
+                    [
+                        'numero_cin'     => $data['numero_cin'] ?? null,
+                        'date_naissance' => $data['date_naissance'] ?? null,
+                    ]
+                );
+
+                $this->attachIdentityScans($client, $data);
+            } else {
+                $client->clientParticulier()?->delete();
+            }
+
             return $client;
         });
+    }
+
+    /**
+     * Verse les scans CIN recto/verso (si fournis) dans le module Documents
+     * existant, plutôt que de dupliquer un mécanisme de stockage de fichiers :
+     * chaque scan devient une entrée "Mes Documents" (Type=Pièce d'identité)
+     * liée à ce client.
+     */
+    private function attachIdentityScans(Client $client, array $data): void
+    {
+        foreach (['cin_recto', 'cin_verso'] as $field) {
+            if (!empty($data[$field])) {
+                $this->documentService->store(
+                    ['type_document' => "Pièce d'identité", 'client_id' => $client->id],
+                    $data[$field],
+                    auth()->id(),
+                );
+            }
+        }
     }
 
     /**
@@ -90,5 +138,21 @@ class ClientService
     public function activate(Client $client): void
     {
         $client->update(['is_active' => true]);
+    }
+
+    /**
+     * Réassigne un client à un autre commercial, en conservant la trace
+     * du changement (ClientObserver, déclenché par l'update du client).
+     */
+    public function reassignerCommercial(Client $client, User $nouveauCommercial, ?string $commentaire): Client
+    {
+        if (! $nouveauCommercial->hasRole('Commercial')) {
+            throw new \InvalidArgumentException("Cet utilisateur n'a pas le rôle Commercial.");
+        }
+
+        $client->reassignment_comment = $commentaire;
+        $client->update(['commercial_id' => $nouveauCommercial->id]);
+
+        return $client->fresh();
     }
 }

@@ -30,11 +30,11 @@
                     },
                     colors: {
                         brand: {
-                            50: '#fcf4fd',
-                            100: '#f8e4fa',
-                            500: '#cb0c9f',
-                            600: '#b00a8a',
-                            700: '#940874',
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
                         }
                     }
                 }
@@ -43,8 +43,8 @@
     </script>
     <style>
         :root {
-            --soft-primary-start: #7928ca;
-            --soft-primary-end: #cb0c9f;
+            --soft-primary-start: #6366f1;
+            --soft-primary-end: #4f46e5;
         }
         body { font-family: 'Open Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
         .soft-card {
@@ -1589,7 +1589,7 @@
                         <span class="text-xs font-bold text-slate-900 block">${item.code_intervention}</span>
                         <span class="text-[11px] text-slate-500 block">${item.chantier ? item.chantier.nom : 'Chantier'}</span>
                     </div>
-                    <span class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${getStatusClass(item.statut)}">${item.statut}</span>
+                    <span class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${getStatusClass(item.statut)}">${getStatusLabel(item.statut)}</span>
                 </div>
             `).join('');
         }
@@ -1654,7 +1654,7 @@
                             <span class="text-[10px] font-bold text-brand-600 uppercase tracking-wider">${item.type_intervention ? item.type_intervention.nom : 'Intervention'}</span>
                             <h3 class="text-xs font-bold text-slate-900 mt-0.5">${item.code_intervention} — ${item.chantier ? item.chantier.nom : 'N/A'}</h3>
                         </div>
-                        <span class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${getStatusClass(item.statut)}">${item.statut}</span>
+                        <span class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase ${getStatusClass(item.statut)}">${getStatusLabel(item.statut)}</span>
                     </div>
 
                     <div class="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100">
@@ -1688,7 +1688,7 @@
             document.getElementById('detail-emplacement-name').innerText = `Emplacement : ${item.emplacement ? item.emplacement.nom : 'N/A'}`;
             
             const statusPill = document.getElementById('detail-status-pill');
-            statusPill.innerText = item.statut;
+            statusPill.innerText = getStatusLabel(item.statut);
             statusPill.className = `px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase ${getStatusClass(item.statut)}`;
 
             document.getElementById('detail-priorite-badge').innerText = item.priorite || 'Normale';
@@ -2232,6 +2232,7 @@
             try {
                 const res = await apiFetch(`/interventions/${selectedIntervention.id}/finish`, 'POST');
                 if (res.success || res.data) {
+                    stopGpsTracking();
                     showToast('Intervention terminée avec succès ! transmise à l\'administration.', 'success');
                     openInterventionDetails(selectedIntervention.id);
                 } else {
@@ -2356,8 +2357,8 @@
                     const secs = String(trackingSecondsCounter % 60).padStart(2, '0');
                     document.getElementById('tracking-timer').innerText = `${mins}:${secs}`;
 
-                    // Send position point every 30s
-                    if (trackingSecondsCounter % 30 === 0 && activeGpsSessionId) {
+                    // Send position point every 8s (standard field-service tracking interval)
+                    if (trackingSecondsCounter % 8 === 0 && activeGpsSessionId) {
                         sendGpsPositionPoint(activeGpsSessionId);
                     }
                 }, 1000);
@@ -2438,7 +2439,19 @@
                         break;
 
                     case 'Nombre':
-                        inputHtml = `<input type="number" step="any" name="q_${q.id}" ${req} placeholder="${ph || '0'}" value="${def}" class="${BASE}">`;
+                        const numMinAttr = (q.nombre_min !== null && q.nombre_min !== undefined) ? `min="${q.nombre_min}"` : '';
+                        const numMaxAttr = (q.nombre_max !== null && q.nombre_max !== undefined) ? `max="${q.nombre_max}"` : '';
+                        const numInput = `<input type="number" step="any" name="q_${q.id}" ${req} ${numMinAttr} ${numMaxAttr} placeholder="${ph || '0'}" value="${def}" class="${BASE}">`;
+                        inputHtml = q.nombre_unite
+                            ? `<div class="flex items-center space-x-2">${numInput}<span class="shrink-0 px-2.5 py-2 rounded-lg bg-slate-100 border border-slate-200 text-xs font-bold text-slate-600">${q.nombre_unite}</span></div>`
+                            : numInput;
+                        if (q.nombre_min !== null && q.nombre_min !== undefined || q.nombre_max !== null && q.nombre_max !== undefined) {
+                            const bounds = [
+                                (q.nombre_min !== null && q.nombre_min !== undefined) ? `min ${q.nombre_min}` : null,
+                                (q.nombre_max !== null && q.nombre_max !== undefined) ? `max ${q.nombre_max}` : null,
+                            ].filter(Boolean).join(' — ');
+                            inputHtml += `<p class="text-[10px] text-slate-400 mt-1">${bounds}</p>`;
+                        }
                         break;
 
                     case 'Date':
@@ -2507,8 +2520,9 @@
                                     <label for="q_photo_gal_${q.id}" class="flex-1 flex items-center justify-center space-x-1.5 py-2.5 bg-slate-100 border border-slate-300 text-slate-700 rounded-xl text-xs font-bold cursor-pointer hover:bg-slate-200 transition shadow-sm">
                                         <i class="fa-solid fa-images text-xs"></i><span>Galerie</span>
                                     </label>
-                                    <input type="file" id="q_photo_gal_${q.id}" name="q_${q.id}" accept="image/*" multiple class="hidden" onchange="previewFormPhoto(event, ${q.id})">
+                                    <input type="file" id="q_photo_gal_${q.id}" name="q_${q.id}" accept="image/*" multiple class="hidden" ${q.fichiers_max ? `data-max="${q.fichiers_max}"` : ''} onchange="previewFormPhoto(event, ${q.id})">
                                 </div>
+                                ${q.fichiers_max ? `<p class="text-[10px] text-slate-400">Maximum ${q.fichiers_max} photo(s)</p>` : ''}
                             </div>`;
                         break;
 
@@ -2590,8 +2604,16 @@
                         inputHtml = `<input type="text" name="q_${q.id}" ${req} placeholder="${ph}" value="${def}" class="${BASE}">`;
                 }
 
+                // Affichage conditionnel : ce champ ne s'affiche que si une réponse
+                // précise a été donnée à une question précédente (ex: "Autre" coché).
+                const cond = q.condition_affichage;
+                const condAttr = cond && cond.depends_on
+                    ? `data-depends-on="q_${cond.depends_on}" data-depends-on-value="${cond.choix_valeur}"`
+                    : '';
+                const condStyle = cond && cond.depends_on ? 'display:none;' : '';
+
                 return `
-                    <div class="glass-panel p-4 rounded-xl flex flex-col space-y-2 border border-slate-200 bg-white shadow-sm">
+                    <div class="glass-panel p-4 rounded-xl flex flex-col space-y-2 border border-slate-200 bg-white shadow-sm" id="field-card-q_${q.id}" ${condAttr} style="${condStyle}">
                         <!-- Structuration verticale du label -->
                         <div class="flex flex-col space-y-1">
                             <label class="flex items-center space-x-2 text-xs font-bold text-slate-800">
@@ -2602,7 +2624,7 @@
                             </label>
                             ${ph && type !== 'Photo' && type !== 'Video' && type !== 'QRCode' && type !== 'GPS' && type !== 'Signature' && type !== 'Document' && type !== 'Materiaux' ? `<p class="text-[11px] text-slate-500 font-normal pl-8">${ph}</p>` : ''}
                         </div>
-                        
+
                         <!-- Input Control Verticalement structuré -->
                         <div class="w-full pt-1">${inputHtml}</div>
                     </div>
@@ -2611,6 +2633,30 @@
 
             // Init signature canvases after render
             formulaire.questions.filter(q => (q.type_reponse || q.type_champ) === 'Signature').forEach(q => initSignatureCanvas(q.id));
+
+            initConditionalFields();
+        }
+
+        // Affiche/masque les champs à condition d'affichage selon la valeur cochée/sélectionnée
+        // du champ parent (Checkbox, Radio ou Liste). Générique, basé sur condition_affichage.
+        function initConditionalFields() {
+            document.querySelectorAll('[data-depends-on]').forEach(card => {
+                const parentName = card.dataset.dependsOn;
+                const triggerValue = card.dataset.dependsOnValue;
+
+                const evaluate = () => {
+                    const checked = document.querySelectorAll(`input[name="${parentName}[]"]:checked, input[name="${parentName}"]:checked`);
+                    const select = document.querySelector(`select[name="${parentName}"]`);
+                    let show = Array.from(checked).some(el => el.value === triggerValue);
+                    if (!show && select) show = select.value === triggerValue;
+                    card.style.display = show ? '' : 'none';
+                };
+
+                document.querySelectorAll(`[name="${parentName}[]"], [name="${parentName}"]`).forEach(el => {
+                    el.addEventListener('change', evaluate);
+                });
+                evaluate();
+            });
         }
 
         function selectOuiNon(btn, questionId, val) {
@@ -3235,8 +3281,18 @@
 
         // Photo preview in dynamic form
         function previewFormPhoto(e, qId) {
-            const files = Array.from(e.target.files);
+            let files = Array.from(e.target.files);
+            const max = e.target.dataset.max ? parseInt(e.target.dataset.max, 10) : null;
+            if (max && files.length > max) {
+                showToast(`Maximum ${max} photo(s) autorisée(s) pour ce champ.`, 'error');
+                files = files.slice(0, max);
+                // Tronque réellement le FileList soumis (pas seulement l'aperçu)
+                const dt = new DataTransfer();
+                files.forEach(f => dt.items.add(f));
+                e.target.files = dt.files;
+            }
             const preview = document.getElementById(`photo-preview-${qId}`);
+            preview.innerHTML = '';
             files.forEach(file => {
                 const reader = new FileReader();
                 reader.onload = ev => {
@@ -3439,6 +3495,31 @@
                 case 'Annulee': return 'bg-red-100 text-red-800 border border-red-300';
                 default: return 'bg-slate-200 text-slate-700 border border-slate-300';
             }
+        }
+
+        // Libellé accentué affiché à l'écran — les clés techniques ci-dessus (getStatusClass)
+        // ne changent jamais de valeur, seul ce libellé change (même mapping que
+        // App\Models\Intervention::statutLabel() côté serveur).
+        function getStatusLabel(statut) {
+            const labels = {
+                'Demande': 'Demande reçue',
+                'Planifiee': 'Planifiée',
+                'Affectee': 'Affectée',
+                'En attente reafectation': 'Refus Technicien',
+                'Acceptee': 'Acceptée',
+                'Refusee': 'Refusée',
+                'En cours': 'En cours',
+                'Suspendue': 'Suspendue',
+                'Reportee': 'Reportée',
+                'Formulaire rempli': 'Formulaire rempli',
+                'En attente validation': 'En validation',
+                'Rejetee': 'Rejetée',
+                'Terminee': 'Terminée',
+                'Validee': 'Validée',
+                'Rouverte': 'Rouverte',
+                'Annulee': 'Annulée',
+            };
+            return labels[statut] || statut;
         }
 
         function getPrioriteClass(priorite) {

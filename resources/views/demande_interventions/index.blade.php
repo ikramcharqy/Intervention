@@ -52,7 +52,7 @@
                             <tr>
                                 <!-- Référence -->
                                 <td>
-                                    <span class="font-mono text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100 inline-block">
+                                    <span class="text-xs font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100 inline-block">
                                         {{ $demande->reference }}
                                     </span>
                                 </td>
@@ -107,6 +107,11 @@
                                         @if($demande->statut == 'En attente')
                                             <a href="{{ route('demande-interventions.edit', $demande) }}" class="ui-btn ui-btn-ghost text-xs py-1 px-2 text-slate-500 hover:text-slate-800" title="Modifier">
                                                 <i class="fas fa-edit"></i>
+                                            </a>
+                                        @endif
+                                        @if($demande->devis->isNotEmpty())
+                                            <a href="{{ route('commercial-suivi.devis.show', $demande->devis->first()) }}" class="ui-btn ui-btn-ghost text-xs py-1 px-2 text-slate-500 hover:text-slate-800" title="Voir le devis d'origine">
+                                                <i class="fas fa-file-invoice-dollar"></i>
                                             </a>
                                         @endif
                                     </div>

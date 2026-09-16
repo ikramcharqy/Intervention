@@ -55,8 +55,16 @@ class RemplissageFormulaireRequest extends FormRequest
                     $ruleList[] = 'array';
                     break;
                 case 'Photo':
-                case 'Signature':
                     $ruleList[] = 'image';
+                    $ruleList[] = 'mimes:' . \App\Models\Setting::get('allowed_photo_formats', 'jpg,jpeg,png,webp');
+                    $ruleList[] = 'max:5120'; // 5MB max
+                    break;
+                case 'Signature':
+                    // Capture canvas (toujours PNG/JPEG) — pas soumise au réglage
+                    // "formats photo autorisés" de la page Paramètres, qui concerne les
+                    // photos prises par l'appareil du technicien, pas les signatures.
+                    $ruleList[] = 'image';
+                    $ruleList[] = 'mimes:jpeg,png,jpg,webp';
                     $ruleList[] = 'max:5120'; // 5MB max
                     break;
                 case 'Document':

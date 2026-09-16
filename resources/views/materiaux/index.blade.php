@@ -1,93 +1,158 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-250 leading-tight">
-            {{ __('Catalogue des Matériaux') }}
-        </h2>
+        {{ __('Catalogue des Matériaux') }}
     </x-slot>
+
+    @php
+        $categorieIcons = [
+            'Câblage'            => 'ti-plug-connected',
+            'Équipement réseau'  => 'ti-router',
+            'Vidéosurveillance'  => 'ti-camera',
+            'Connectique'        => 'ti-plug',
+            'Outillage'          => 'ti-tool',
+        ];
+    @endphp
 
     <div class="space-y-6">
         <!-- Outils et filtres -->
-        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+        <div class="ds-card-elevated p-6">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <form method="GET" action="{{ route('materiaux.index') }}" class="flex gap-2 w-full md:w-auto">
-                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Rechercher par nom ou description..."
-                        class="w-full md:w-80 rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 text-sm focus:ring-2 focus:ring-indigo-500">
-                    <button type="submit" class="bg-indigo-650 text-white font-medium py-2 px-4 rounded-xl hover:bg-indigo-700 transition text-sm shadow-sm">
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Rechercher par nom, référence ou description..."
+                        class="ds-input w-full md:w-80" style="height:40px;">
+                    <button type="submit" class="ds-btn ds-btn-primary ds-btn-sm">
                         Rechercher
                     </button>
                     @if($search)
-                        <a href="{{ route('materiaux.index') }}" class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium py-2 px-4 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-750 transition text-sm">
+                        <a href="{{ route('materiaux.index') }}" class="ds-btn ds-btn-white ds-btn-sm">
                             Réinitialiser
                         </a>
                     @endif
                 </form>
-                <a href="{{ route('materiaux.create') }}" class="w-full md:w-auto inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm shadow-sm">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                    Nouveau Matériau
-                </a>
+                @if($canSeePrix)
+                    <a href="{{ route('materiaux.create') }}" class="ds-btn ds-btn-primary ds-btn-sm w-full md:w-auto">
+                        <i class="ti ti-plus"></i>
+                        Nouveau Matériau
+                    </a>
+                @endif
             </div>
         </div>
 
         <!-- Table des matériaux -->
-        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
+        <div class="ds-card-elevated overflow-hidden">
             <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                    <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-800">
+                <table class="ds-table">
+                    <thead>
                         <tr>
-                            <th class="px-6 py-4">Référence</th>
-                            <th class="px-6 py-4">Nom</th>
-                            <th class="px-6 py-4">Unité</th>
-                            <th class="px-6 py-4">Prix unitaire</th>
-                            <th class="px-6 py-4">Statut</th>
-                            <th class="px-6 py-4 text-right">Actions</th>
+                            @if($canSeePrix)
+                                <th class="w-10"><input type="checkbox" class="rounded" onclick="document.querySelectorAll('.materiau-row-check').forEach(c => c.checked = this.checked)"></th>
+                            @endif
+                            <th>Matériau</th>
+                            <th>Référence</th>
+                            <th>Catégorie</th>
+                            <th>Unité</th>
+                            @if($canSeePrix)
+                                <th>Prix unitaire</th>
+                                <th>Stock</th>
+                            @else
+                                <th>Disponibilité</th>
+                            @endif
+                            <th>Statut</th>
+                            <th class="text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-855">
+                    <tbody>
                         @forelse ($materiaux as $materiau)
-                            <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition {{ !$materiau->is_active ? 'opacity-60' : '' }}">
-                                <td class="px-6 py-4 font-mono font-semibold text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 w-32">
+                            <tr class="{{ !$materiau->is_active ? 'opacity-60' : '' }}">
+                                @if($canSeePrix)
+                                    <td><input type="checkbox" class="materiau-row-check rounded" value="{{ $materiau->id }}"></td>
+                                @endif
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        @if($materiau->image_path)
+                                            <img src="{{ Storage::url($materiau->image_path) }}" alt="{{ $materiau->nom }}" class="w-10 h-10 rounded-lg object-cover border" style="border-color:#E6E9F4;">
+                                        @else
+                                            <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style="background-color:#F1F4FA;">
+                                                <i class="ti {{ $categorieIcons[$materiau->categorie] ?? 'ti-package' }}" style="color:#1E5EFF; font-size:18px;"></i>
+                                            </div>
+                                        @endif
+                                        <span class="font-semibold text-[#131523]">{{ $materiau->nom }}</span>
+                                    </div>
+                                </td>
+                                <td class="font-mono text-xs text-[#5A607F]">
                                     {{ $materiau->reference ?? '-' }}
                                 </td>
-                                <td class="px-6 py-4 font-semibold text-gray-900 dark:text-white">
-                                    {{ $materiau->nom }}
+                                <td class="text-xs text-[#5A607F]">
+                                    {{ $materiau->categorie ?? '-' }}
                                 </td>
-                                <td class="px-6 py-4">
+                                <td class="text-xs text-[#5A607F]">
                                     {{ $materiau->unite }}
                                 </td>
-                                <td class="px-6 py-4 font-medium text-gray-900 dark:text-white">
-                                    @if ($materiau->prix_unitaire !== null && $materiau->prix_unitaire > 0)
-                                        {{ number_format($materiau->prix_unitaire, 2, ',', ' ') }} €
-                                    @else
-                                        <span class="text-gray-400">-</span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4">
-                                    <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $materiau->is_active ? 'bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400' }}">
+                                @if($canSeePrix)
+                                    <td class="font-medium text-[#131523]">
+                                        @if ($materiau->prix_unitaire !== null && $materiau->prix_unitaire > 0)
+                                            {{ number_format($materiau->prix_unitaire, 2, ',', ' ') }} DH
+                                        @else
+                                            <span class="text-[#A1A7C4]">À renseigner</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-semibold text-[#131523]">{{ number_format($materiau->stock, 2) }}</span>
+                                            @if($materiau->estEnStockBas())
+                                                <span class="ds-badge ds-badge-sm ds-badge-light-danger">Stock bas</span>
+                                            @else
+                                                <span class="ds-badge ds-badge-sm ds-badge-light-success">En stock</span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                @else
+                                    <td>
+                                        @if($materiau->estEnStockBas())
+                                            <span class="ds-badge ds-badge-sm ds-badge-light-danger">Stock bas</span>
+                                        @elseif($materiau->stock > 0)
+                                            <span class="ds-badge ds-badge-sm ds-badge-light-success">Disponible</span>
+                                        @else
+                                            <span class="ds-badge ds-badge-sm ds-badge-light-danger">Rupture</span>
+                                        @endif
+                                    </td>
+                                @endif
+                                <td>
+                                    <span class="ds-badge ds-badge-sm {{ $materiau->is_active ? 'ds-badge-light-success' : 'ds-badge-light-danger' }}">
                                         {{ $materiau->is_active ? 'Actif' : 'Inactif' }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 text-right whitespace-nowrap">
+                                <td class="text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-3">
-                                        <a href="{{ route('materiaux.show', $materiau) }}" class="text-indigo-650 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold text-sm">Voir</a>
-                                        <a href="{{ route('materiaux.edit', $materiau) }}" class="text-gray-500 hover:text-gray-900 dark:hover:text-white font-medium text-sm">Modifier</a>
-                                        <form method="POST" action="{{ route('materiaux.destroy', $materiau) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir désactiver ou supprimer ce matériau ?');" class="inline">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-500 hover:text-red-755 font-semibold text-sm">Supprimer</button>
-                                        </form>
+                                        <a href="{{ route('materiaux.show', $materiau) }}" class="text-xs font-semibold" style="color:#1E5EFF;">Voir</a>
+                                        @if($canSeePrix)
+                                            <a href="{{ route('materiaux.edit', $materiau) }}" class="text-xs font-semibold text-[#5A607F] hover:text-[#131523]">Modifier</a>
+                                        @endif
+                                        @if(auth()->user()?->hasRole('Super Admin'))
+                                            <form method="POST" action="{{ route('materiaux.destroy', $materiau) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir archiver ce matériau ?');" class="inline">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-xs font-semibold" style="color:#F0142F;">Supprimer</button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-10 text-center text-gray-500">Aucun matériau enregistré.</td>
+                                <td colspan="9">
+                                    <div class="text-center py-14">
+                                        <i class="ti ti-package text-3xl mb-3 block" style="color:#D7DBEC;"></i>
+                                        <p class="text-sm font-medium" style="color:#A1A7C4;">Aucun matériau enregistré.</p>
+                                    </div>
+                                </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
             @if($materiaux->hasPages())
-                <div class="px-6 py-4 border-t border-gray-150 dark:border-gray-800">
+                <div class="px-6 py-4 border-t" style="border-color:#E6E9F4;">
                     {{ $materiaux->links() }}
                 </div>
             @endif

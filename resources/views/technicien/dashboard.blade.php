@@ -37,7 +37,7 @@
                         Intervention Active sur le Terrain
                     </span>
                     <h3 class="text-base font-bold text-slate-900 mt-2 mb-1 flex items-center gap-2">
-                        <span class="font-mono text-amber-800 font-extrabold">{{ $enCours->code_intervention }}</span>
+                        <span class="text-amber-800 font-extrabold">{{ $enCours->code_intervention }}</span>
                         <span class="text-slate-700 font-semibold">— {{ $enCours->chantier?->nom }}</span>
                     </h3>
                     <p class="text-xs text-slate-600 line-clamp-1">{{ $enCours->description ?? 'Intervention en cours d\'exécution' }}</p>
@@ -107,7 +107,7 @@
                             </div>
                             <div class="min-w-0">
                                 <div class="flex items-center gap-2">
-                                    <span class="font-mono font-bold text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{{ $interv->code_intervention }}</span>
+                                    <span class="font-bold text-xs text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{{ $interv->code_intervention }}</span>
                                     <span class="text-xs font-bold text-slate-900 truncate">{{ $interv->chantier?->nom }}</span>
                                 </div>
                                 <p class="text-[11px] text-slate-500 mt-0.5">

@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Chantier;
 use App\Models\Client;
+use App\Models\DemandeIntervention;
 use App\Models\Devis;
 use App\Models\DevisLigne;
 use App\Models\Emplacement;
@@ -12,6 +13,7 @@ use App\Models\Prospect;
 use App\Models\Rapport;
 use App\Models\TypeIntervention;
 use App\Models\User;
+use App\Services\DemandeInterventionService;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
@@ -23,7 +25,7 @@ class DemoDataSeeder extends Seeder
      */
     public function run(): void
     {
-        $commercial = User::where('email', 'commercial@fieldflow.test')->first()
+        $commercial = User::where('email', 'commercial@intervention.ma')->first()
             ?? User::role('Commercial')->first();
 
         // 1. Prospects
@@ -140,6 +142,44 @@ class DemoDataSeeder extends Seeder
                 'montant_tva' => round($totalHt * 0.20, 2),
                 'montant_ttc' => round($totalHt * 1.20, 2),
             ]);
+
+            // Demande d'intervention générée depuis ce devis Accepté, via le même Service
+            // que le bouton "Créer la demande d'intervention" (cf. module Devis & Propositions) —
+            // démontre le flux réel plutôt que de dupliquer sa logique dans le seeder.
+            if (! $devisClient->demande_intervention_id) {
+                app(DemandeInterventionService::class)->createFromDevis($devisClient->fresh());
+            }
+        }
+
+        // 2bis. Demandes d'intervention manuelles (hors flux devis), pour peupler le
+        // module côté Admin/Commercial avec des statuts variés.
+        $client2 = Client::where('code_client', 'CL002')->first();
+        if ($client2 && $commercial) {
+            $demandeService = app(DemandeInterventionService::class);
+
+            DemandeIntervention::updateOrCreate(
+                ['objet' => 'Ajout d\'une caméra suite à tentative d\'effraction', 'client_id' => $client2->id],
+                [
+                    'reference' => DemandeIntervention::where('objet', 'Ajout d\'une caméra suite à tentative d\'effraction')
+                        ->value('reference') ?? $demandeService->generateUniqueReference(),
+                    'commercial_id' => $commercial->id,
+                    'priorite' => 'Haute',
+                    'statut' => 'En attente',
+                    'description' => "Le client signale une tentative d'effraction cette semaine et souhaite renforcer la vidéosurveillance de son entrée principale.",
+                ]
+            );
+
+            DemandeIntervention::updateOrCreate(
+                ['objet' => 'Diagnostic panne réseau Wi-Fi', 'client_id' => $client1?->id ?? $client2->id],
+                [
+                    'reference' => DemandeIntervention::where('objet', 'Diagnostic panne réseau Wi-Fi')
+                        ->value('reference') ?? $demandeService->generateUniqueReference(),
+                    'commercial_id' => $commercial->id,
+                    'priorite' => 'Normale',
+                    'statut' => 'Refusee',
+                    'description' => "[REFUS COMMERCIAL] Motif: Le client a finalement résolu le problème en interne (redémarrage des équipements réseau).",
+                ]
+            );
         }
 
         // 3. Intervention + Rapport pour le second client (Fatima Zahra), non couvert par ClientSeeder

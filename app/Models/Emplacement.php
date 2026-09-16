@@ -14,6 +14,7 @@ class Emplacement extends Model
         'chantier_id',
         'nom',
         'description',
+        'ordre_affichage',
         'latitude',
         'longitude',
         'qr_code',
@@ -23,6 +24,7 @@ class Emplacement extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'ordre_affichage' => 'integer',
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
     ];

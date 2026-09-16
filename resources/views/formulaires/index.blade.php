@@ -1,9 +1,18 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-250 leading-tight">Formulaires Dynamiques</h2>
-    </x-slot>
+<x-dynamic-component :component="$layoutComponent">
+    @php $isSuperAdmin = auth()->user()->hasRole('Super Admin'); @endphp
+    @unless($isSuperAdmin)
+        <x-slot name="header">
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-250 leading-tight">Formulaires Dynamiques</h2>
+        </x-slot>
+    @endunless
 
     <div class="space-y-6">
+        @if($isSuperAdmin)
+            <div>
+                <h1 class="text-xl sm:text-2xl font-bold text-[#131523] dark:text-slate-100 tracking-tight">Formulaires Dynamiques</h1>
+                <p class="text-[#5A607F] dark:text-slate-400 text-xs sm:text-sm mt-1">Protocoles de clôture terrain, un par Type d'Intervention.</p>
+            </div>
+        @endif
         <!-- Outils et filtres -->
         <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -19,10 +28,12 @@
                         </a>
                     @endif
                 </form>
-                <a href="{{ route('formulaires.create') }}" class="w-full md:w-auto inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 px-4 rounded-xl transition text-sm shadow-sm">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                    Créer un formulaire
-                </a>
+                @if($isSuperAdmin)
+                    <a href="{{ route('formulaires.create') }}" class="w-full md:w-auto inline-flex items-center justify-center gap-2 bg-[#1E5EFF] hover:bg-[#174ecc] text-white font-medium py-2.5 px-4 rounded-xl transition text-sm shadow-sm">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                        Créer un formulaire
+                    </a>
+                @endif
             </div>
         </div>
 
@@ -59,7 +70,9 @@
                                 <td class="px-6 py-4 text-right whitespace-nowrap">
                                     <div class="flex items-center justify-end gap-3">
                                         <a href="{{ route('formulaires.show', $formulaire) }}" class="text-indigo-650 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300 font-semibold text-sm">Gérer les champs</a>
-                                        <a href="{{ route('formulaires.edit', $formulaire) }}" class="text-gray-500 hover:text-gray-900 dark:hover:text-white font-medium text-sm">Modifier</a>
+                                        @if($isSuperAdmin)
+                                            <a href="{{ route('formulaires.edit', $formulaire) }}" class="text-gray-500 hover:text-gray-900 dark:hover:text-white font-medium text-sm">Modifier</a>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -78,4 +91,4 @@
             @endif
         </div>
     </div>
-</x-app-layout>
+</x-dynamic-component>

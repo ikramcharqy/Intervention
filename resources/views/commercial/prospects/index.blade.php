@@ -1,113 +1,121 @@
 <x-commercial-layout>
-    <x-slot name="header">Prospects</x-slot>
+    <x-slot name="header"></x-slot>
 
-    @if(session('success'))
-        <div class="kt-alert kt-alert-success" style="margin-bottom:20px;">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            {{ session('success') }}
-        </div>
-    @endif
-
-    <div class="kt-card">
-        <div class="kt-card-header">
-            <div>
-                <div class="kt-card-title">Liste des Prospects</div>
-                <div style="font-size:12px; color:#a1a5b7; margin-top:3px;">{{ $prospects->count() }} prospect(s) trouvé(s)</div>
+    <div class="space-y-6">
+        @if(session('success'))
+            <div class="metronic-card p-4 text-sm font-medium bg-emerald-50 text-emerald-700 border-emerald-100">
+                {{ session('success') }}
             </div>
-            <a href="{{ route('prospects.create') }}" class="kt-btn kt-btn-primary">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                Nouveau Prospect
-            </a>
-        </div>
+        @endif
 
-        <div style="overflow-x: auto;">
-            <table class="kt-table">
-                <thead>
-                    <tr>
-                        <th style="padding-left:24px;">Entreprise</th>
-                        <th>Contact</th>
-                        <th>Téléphone</th>
-                        <th>Commercial</th>
-                        <th>Statut</th>
-                        <th style="text-align:right; padding-right:24px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($prospects as $prospect)
-                        <tr>
-                            <td style="padding-left:24px;">
-                                <div style="display:flex; align-items:center; gap:12px;">
-                                    <div class="kt-avatar" style="background:rgba(62,151,255,0.12); color:#3e97ff; font-size:11px;">
-                                        {{ strtoupper(substr($prospect->nom_entreprise, 0, 2)) }}
+        <div class="metronic-card overflow-hidden">
+            <div class="flex items-center justify-between p-6 pb-0">
+                <div>
+                    <h1 class="text-base font-bold text-[#181C32] font-heading">Liste des Prospects</h1>
+                    <p class="text-xs text-[#A1A5B7] mt-1">{{ $prospects->count() }} prospect(s) trouvé(s)</p>
+                </div>
+                <a href="{{ route('prospects.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition">
+                    <i class="fas fa-plus text-[11px]"></i> Nouveau Prospect
+                </a>
+            </div>
+
+            <div class="overflow-x-auto mt-6">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="bg-[#F9F9FB] text-[#A1A5B7] uppercase font-bold text-[10px]">
+                            <th class="py-3 pl-6 pr-4">Entreprise</th>
+                            <th class="py-3 px-4">Contact</th>
+                            <th class="py-3 px-4">Téléphone</th>
+                            <th class="py-3 px-4">Commercial</th>
+                            <th class="py-3 px-4">Prochaine action</th>
+                            <th class="py-3 px-4">Statut</th>
+                            <th class="py-3 pr-6 pl-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#EFF2F5]">
+                        @forelse($prospects as $prospect)
+                            <tr class="hover:bg-[#F9F9FB] transition">
+                                <td class="py-3.5 pl-6 pr-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center text-[11px] font-bold shrink-0">
+                                            {{ strtoupper(substr($prospect->nom_entreprise, 0, 2)) }}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-[#181C32] truncate">{{ $prospect->nom_entreprise }}</p>
+                                            @if($prospect->typesIntervention->isNotEmpty())
+                                                <p class="text-[11px] text-[#A1A5B7] truncate">{{ $prospect->typesIntervention->pluck('nom')->join(', ') }}</p>
+                                            @elseif($prospect->adresse)
+                                                <p class="text-[11px] text-[#A1A5B7] truncate">{{ Str::limit($prospect->adresse, 40) }}</p>
+                                            @endif
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div style="font-weight:600; color:#181c32; font-size:13px;">{{ $prospect->nom_entreprise }}</div>
-                                        @if($prospect->adresse)
-                                            <div style="font-size:11px; color:#a1a5b7; margin-top:2px;">{{ Str::limit($prospect->adresse, 40) }}</div>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <p class="text-[#3F4254] font-medium">{{ $prospect->nom_contact ?? '—' }}</p>
+                                    @if($prospect->email)
+                                        <p class="text-[11px] text-[#A1A5B7] mt-0.5">{{ $prospect->email }}</p>
+                                    @endif
+                                </td>
+                                <td class="py-3.5 px-4 text-[#3F4254]">{{ $prospect->telephone ?? '—' }}</td>
+                                <td class="py-3.5 px-4 text-[#3F4254]">{{ $prospect->commercial?->name ?? '—' }}</td>
+                                <td class="py-3.5 px-4">
+                                    @if($prospect->prochaine_action_date)
+                                        @php
+                                            $paColor = $prospect->prochaine_action_en_retard ? 'bg-rose-50 text-rose-600'
+                                                : ($prospect->prochaine_action_imminente ? 'bg-amber-50 text-amber-600' : 'bg-[#F5F8FA] text-[#5E6278]');
+                                        @endphp
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full {{ $paColor }}">
+                                            @if($prospect->prochaine_action_en_retard)
+                                                <i class="fas fa-triangle-exclamation"></i>
+                                            @endif
+                                            {{ $prospect->prochaine_action_date->format('d/m/Y') }}
+                                        </span>
+                                    @else
+                                        <span class="text-[#A1A5B7]">—</span>
+                                    @endif
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    @php
+                                        $sColor = match($prospect->statut) {
+                                            'Nouveau' => 'bg-blue-50 text-blue-600',
+                                            'Qualifié' => 'bg-emerald-50 text-emerald-600',
+                                            'Négociation' => 'bg-amber-50 text-amber-600',
+                                            'Converti' => 'bg-emerald-600 text-white',
+                                            'Perdu' => 'bg-rose-50 text-rose-600',
+                                            default => 'bg-[#F5F8FA] text-[#5E6278]'
+                                        };
+                                    @endphp
+                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-full {{ $sColor }}">{{ $prospect->statut }}</span>
+                                </td>
+                                <td class="py-3.5 pr-6 pl-4">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{{ route('prospects.show', $prospect) }}" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-[#EFF2F5] text-[#5E6278] text-[11px] font-bold rounded-lg hover:bg-[#F9F9FB] transition" title="Voir le détail">
+                                            <i class="fas fa-eye text-[10px]"></i> Voir
+                                        </a>
+                                        <a href="{{ route('prospects.edit', $prospect) }}" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-[#EFF2F5] text-[#5E6278] text-[11px] font-bold rounded-lg hover:bg-[#F9F9FB] transition" title="Modifier">
+                                            <i class="fas fa-pen text-[10px]"></i> Modifier
+                                        </a>
+                                        @if($prospect->statut !== 'Converti')
+                                            <form action="{{ route('prospects.convert', $prospect) }}" method="POST" onsubmit="return confirm('Convertir ce prospect en client ?');">
+                                                @csrf
+                                                <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-lg hover:bg-emerald-100 transition">
+                                                    <i class="fas fa-check text-[10px]"></i> Convertir
+                                                </button>
+                                            </form>
                                         @endif
                                     </div>
-                                </div>
-                            </td>
-                            <td>
-                                <div style="font-size:13px; color:#3f4254; font-weight:500;">{{ $prospect->nom_contact ?? '—' }}</div>
-                                @if($prospect->email)
-                                    <div style="font-size:11px; color:#a1a5b7; margin-top:2px;">{{ $prospect->email }}</div>
-                                @endif
-                            </td>
-                            <td>
-                                <span style="font-size:13px; color:#3f4254;">{{ $prospect->telephone ?? '—' }}</span>
-                            </td>
-                            <td>
-                                <span style="font-size:13px; color:#3f4254;">{{ $prospect->commercial ? $prospect->commercial->name : '—' }}</span>
-                            </td>
-                            <td>
-                                @php
-                                    $sColor = match($prospect->statut) {
-                                        'Nouveau'     => 'kt-badge-primary',
-                                        'Qualifié'    => 'kt-badge-info',
-                                        'Négociation' => 'kt-badge-warning',
-                                        'Converti'    => 'kt-badge-success',
-                                        'Perdu'       => 'kt-badge-danger',
-                                        default       => 'kt-badge-gray'
-                                    };
-                                @endphp
-                                <span class="kt-badge {{ $sColor }}">{{ $prospect->statut }}</span>
-                            </td>
-                            <td style="padding-right:24px; text-align:right;">
-                                <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px;">
-                                    <a href="{{ route('prospects.show', $prospect) }}" class="kt-btn kt-btn-light kt-btn-sm" title="Voir le détail">
-                                        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        Voir
-                                    </a>
-                                    <a href="{{ route('prospects.edit', $prospect) }}" class="kt-btn kt-btn-light-primary kt-btn-sm" title="Modifier">
-                                        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                        Modifier
-                                    </a>
-                                    @if($prospect->statut !== 'Converti')
-                                        <form action="{{ route('prospects.convert', $prospect) }}" method="POST" class="inline" onsubmit="return confirm('Convertir ce prospect en client ?');">
-                                            @csrf
-                                            <button type="submit" class="kt-btn kt-btn-light-success kt-btn-sm">
-                                                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                                Convertir
-                                            </button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6">
-                                <div class="kt-empty-state">
-                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/></svg>
-                                    <p>Aucun prospect trouvé. <a href="{{ route('prospects.create') }}" style="color:#3e97ff; text-decoration:none; font-weight:600;">Créer votre premier prospect</a></p>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="py-12 text-center text-[#A1A5B7] italic">
+                                    Aucun prospect trouvé. <a href="{{ route('prospects.create') }}" class="text-emerald-600 font-bold hover:underline">Créer votre premier prospect</a>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-
 </x-commercial-layout>

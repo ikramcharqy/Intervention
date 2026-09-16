@@ -1,0 +1,73 @@
+name: mobile_technicien
+description: >
+  Application terrain Technicien (TechniTrack) — consomme l'API Laravel/Sanctum
+  existante (routes/api.php). Premier écran migré depuis la PWA Blade/JS
+  (resources/views/mobile/app.blade.php) : l'écran d'accueil. La PWA reste en
+  place et fonctionnelle en parallèle tant que ce projet ne couvre pas tous les
+  écrans (Missions, Notifs, Profil viendront ensuite).
+publish_to: 'none'
+version: 0.1.0
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management (Clean Architecture + BLoC, cf. cadrage projet)
+  flutter_bloc: ^8.1.5
+  equatable: ^2.0.5
+  get_it: ^7.7.0
+
+  # Réseau — consomme l'API Sanctum existante telle quelle (aucune modif backend)
+  dio: ^5.4.3
+
+  # Persistance du token Sanctum + préférences locales (statut de présence, etc.)
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.2.3
+
+  # Étape 2 : statut GPS + connectivité/synchronisation
+  geolocator: ^12.0.0
+  connectivity_plus: ^6.0.3
+
+  # Étape 4 : scan QR (réutilise le format QR déjà émis par EmplacementController,
+  # ex. "EMP-QR-E0DC9F24CB149141" vu sur /api/interventions)
+  mobile_scanner: ^5.1.1
+
+  # Étape 5 : verrouillage biométrique / PIN de repli
+  local_auth: ^2.2.0
+
+  intl: ^0.19.0
+
+  # Écran de détail mission — moteur de formulaire dynamique (types Photo,
+  # Document, Signature) : capture caméra/galerie, sélection de fichier,
+  # zone de dessin tactile. Les fichiers sont manipulés en mémoire (octets)
+  # et le brouillon persisté via SharedPreferences (base64) — PAS de
+  # path_provider/dart:io File : ce projet ne cible actuellement QUE Flutter
+  # Web (aucun dossier android/ ni ios/), qui n'a pas de système de fichiers ;
+  # image_picker/file_picker n'y renvoient de toute façon aucun chemin
+  # exploitable (XFile.path est une blob URL, PlatformFile.path est null).
+  image_picker: ^1.1.2
+  file_picker: ^8.1.2
+  signature: ^5.5.0
+
+  # Écran de détail mission enrichi — fiche chantier (mini-carte, itinéraire,
+  # appel, documents). flutter_map + OpenStreetMap pour rester cohérent avec
+  # l'intégration déjà utilisée côté web (Leaflet + OSM sur
+  # resources/views/client/chantiers/show.blade.php) plutôt que d'introduire
+  # Google Maps, absent du reste du projet. url_launcher ouvre l'app de
+  # navigation externe (itinéraire), le tel: (appel), et les documents.
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  url_launcher: ^6.3.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  bloc_test: ^9.1.7
+  mocktail: ^1.0.4
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true

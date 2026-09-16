@@ -1,139 +1,187 @@
 <x-app-layout>
-    <x-slot name="header">
-        Centre des Rapports d'Intervention
-    </x-slot>
-
     <div class="space-y-6">
-        <!-- Header Banner & KPIs -->
-        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-6 shadow-xl border border-slate-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div>
-                <span class="inline-flex items-center gap-2 px-3 py-1 bg-indigo-500/20 border border-indigo-400/30 rounded-full text-indigo-300 text-xs font-semibold mb-2">
-                    📄 Module de Reporting & Certifications Client
-                </span>
-                <h3 class="text-2xl font-black text-white tracking-tight">Rapports Techniques & Procès-Verbaux</h3>
-                <p class="text-xs text-slate-300 mt-1 max-w-xl">
-                    Consultez, validez et exportez en PDF haute définition tous les comptes-rendus d'interventions certifiés et signés par vos techniciens.
-                </p>
+        <!-- Titre -->
+        <div>
+            <h1 class="text-xl sm:text-2xl font-bold text-[#131523] tracking-tight">Rapports & Validation</h1>
+            <p class="text-xs text-[#5A607F] mt-1">Consultez, validez et exportez en PDF les comptes-rendus d'interventions certifiés par vos techniciens</p>
+        </div>
+
+        <!-- KPI bar -->
+        <div class="ds-stat-bar">
+            <div class="ds-stat-block">
+                <div>
+                    <p class="ds-stat-label">Total générés</p>
+                    <p class="ds-stat-value">{{ $stats['total'] }}</p>
+                </div>
+                <span class="ds-stat-icon ds-stat-icon-primary"><i class="ti ti-file-text"></i></span>
             </div>
-            @php
-                $totalRapports = \App\Models\Rapport::count();
-                $rapportsValides = \App\Models\Rapport::whereHas('intervention', fn($q) => $q->where('statut', 'Terminee'))->count();
-            @endphp
-            <div class="flex items-center gap-4 bg-white/5 border border-white/10 p-4 rounded-xl backdrop-blur-md">
-                <div class="text-center px-3 border-r border-white/10">
-                    <span class="block text-2xl font-black text-white">{{ $totalRapports }}</span>
-                    <span class="text-[10px] uppercase tracking-wider text-slate-400 font-bold">Total Générés</span>
+            <div class="ds-stat-block">
+                <div>
+                    <p class="ds-stat-label">Certifiés PDF</p>
+                    <p class="ds-stat-value">{{ $stats['certifies'] }}</p>
                 </div>
-                <div class="text-center px-3">
-                    <span class="block text-2xl font-black text-emerald-400">{{ $rapportsValides }}</span>
-                    <span class="text-[10px] uppercase tracking-wider text-emerald-300 font-bold">Certifiés PDF</span>
+                <span class="ds-stat-icon ds-stat-icon-success"><i class="ti ti-file-check"></i></span>
+            </div>
+            <div class="ds-stat-block">
+                <div>
+                    <p class="ds-stat-label">En révision</p>
+                    <p class="ds-stat-value">{{ $stats['enRevision'] }}</p>
                 </div>
+                <span class="ds-stat-icon ds-stat-icon-warning"><i class="ti ti-clock-edit"></i></span>
+            </div>
+            <div class="ds-stat-block">
+                <div>
+                    <p class="ds-stat-label">Taux de certification</p>
+                    <p class="ds-stat-value">{{ $stats['taux'] }}%</p>
+                </div>
+                <span class="ds-stat-icon ds-stat-icon-secondary"><i class="ti ti-chart-pie"></i></span>
             </div>
         </div>
 
-        <!-- Barres de Recherche & Filtres -->
-        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-5">
-            <form method="GET" action="{{ route('rapports.index') }}" class="flex flex-col md:flex-row gap-3 items-center justify-between">
-                <div class="relative w-full md:w-96">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-gray-400">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    </span>
-                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Rechercher par code, client, technicien..."
-                        class="w-full pl-10 pr-4 py-2.5 rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 text-xs focus:ring-2 focus:ring-indigo-500 shadow-sm">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            <!-- Colonne principale : recherche + table -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Recherche & filtres -->
+                <div class="ds-card-elevated p-5">
+                    <form method="GET" action="{{ route('rapports.index') }}" class="flex flex-col md:flex-row gap-3 items-center">
+                        <div class="flex-1 w-full flex items-center gap-2.5 px-3.5 py-2 rounded-[4px] bg-[#F5F6FA] border border-[#E6E9F4] focus-within:border-[#1E5EFF] transition">
+                            <i class="fas fa-search text-[#A1A7C4] text-sm shrink-0"></i>
+                            <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Rechercher par code, client, technicien..."
+                                class="bg-transparent border-0 outline-none focus:ring-0 p-0 text-sm text-[#131523] placeholder-[#A1A7C4] w-full">
+                        </div>
+                        <div class="flex items-center gap-2 w-full md:w-auto">
+                            <button type="submit" class="ds-btn ds-btn-primary ds-btn-sm">Filtrer</button>
+                            @if(isset($search) && $search)
+                                <a href="{{ route('rapports.index') }}" class="ds-btn ds-btn-white ds-btn-sm">Réinitialiser</a>
+                            @endif
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="flex items-center gap-2 w-full md:w-auto">
-                    <button type="submit" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition text-xs shadow-md flex items-center gap-2">
-                        <span>Filtrer</span>
-                    </button>
-                    @if(isset($search) && $search)
-                        <a href="{{ route('rapports.index') }}" class="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 transition text-xs">
-                            Réinitialiser
-                        </a>
+
+                <!-- Table des rapports -->
+                <div class="ds-card-elevated overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="ds-table">
+                            <thead>
+                                <tr>
+                                    <th>Code / Intervention</th>
+                                    <th>Client &amp; Chantier</th>
+                                    <th>Technicien</th>
+                                    <th>Horodatage</th>
+                                    <th>Conformité</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($rapports as $rapport)
+                                    <tr>
+                                        <td>
+                                            <span class="font-bold text-xs text-[#1E5EFF]">{{ $rapport->intervention->code_intervention ?? '-' }}</span>
+                                            <p class="text-[11px] text-[#A1A7C4] mt-0.5">{{ $rapport->intervention->typeIntervention->nom ?? 'Technique' }}</p>
+                                        </td>
+                                        <td>
+                                            <p class="text-xs font-bold text-[#131523]">{{ $rapport->intervention->chantier->client->nom ?? '-' }}</p>
+                                            <p class="text-[11px] text-[#A1A7C4]">{{ $rapport->intervention->chantier->nom ?? '-' }}</p>
+                                        </td>
+                                        <td class="text-xs font-semibold text-[#131523]">
+                                            {{ $rapport->intervention->technicien->name ?? '-' }}
+                                        </td>
+                                        <td class="text-xs whitespace-nowrap">
+                                            <p class="text-[#5A607F]">{{ $rapport->created_at ? $rapport->created_at->format('d/m/Y H:i') : '-' }}</p>
+                                            <p class="text-[11px] text-[#A1A7C4]">{{ $rapport->intervention->duree_reelle ? $rapport->intervention->duree_reelle.' min' : 'Standard' }}</p>
+                                        </td>
+                                        <td>
+                                            <span class="ds-badge ds-badge-sm ds-badge-light-{{ $rapport->statutBadge['theme'] }}">
+                                                {{ $rapport->statutBadge['label'] }}
+                                            </span>
+                                        </td>
+                                        <td class="text-right whitespace-nowrap">
+                                            <div class="flex items-center justify-end gap-2">
+                                                <a href="{{ route('rapports.show', $rapport) }}" class="ds-btn ds-btn-white ds-btn-sm">Consulter</a>
+                                                <a href="{{ route('rapports.pdf', $rapport) }}" target="_blank" class="ds-btn ds-btn-danger ds-btn-sm">
+                                                    <i class="fas fa-file-pdf"></i> Export PDF
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="6">
+                                            <div class="text-center py-16">
+                                                <div class="w-14 h-14 rounded-full bg-[#F5F6FA] flex items-center justify-center mx-auto mb-4">
+                                                    <i class="fas fa-file-lines text-xl text-[#A1A7C4]"></i>
+                                                </div>
+                                                <p class="text-sm font-bold text-[#131523]">Aucun rapport d'intervention trouvé</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    @if($rapports->hasPages())
+                        <div class="px-6 py-4 border-t border-[#E6E9F4] flex items-center justify-between flex-wrap gap-3">
+                            <p class="text-xs text-[#A1A7C4]">{{ $rapports->total() }} résultat(s)</p>
+                            {{ $rapports->links() }}
+                        </div>
+                    @else
+                        <div class="px-6 py-4 border-t border-[#E6E9F4]">
+                            <p class="text-xs text-[#A1A7C4]">{{ $rapports->total() }} résultat(s)</p>
+                        </div>
                     @endif
                 </div>
-            </form>
-        </div>
-
-        <!-- Table Metronic 8 des rapports -->
-        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-xs text-left text-gray-600 dark:text-gray-300">
-                    <thead class="text-[11px] font-black uppercase tracking-wider text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/80 border-b border-gray-200 dark:border-gray-800">
-                        <tr>
-                            <th class="px-6 py-4">Code / Intervention</th>
-                            <th class="px-6 py-4">Client & Chantier</th>
-                            <th class="px-6 py-4">Technicien</th>
-                            <th class="px-6 py-4">Horodatage</th>
-                            <th class="px-6 py-4">Conformité</th>
-                            <th class="px-6 py-4 text-right">Actions Export PDF</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800 font-medium">
-                        @forelse ($rapports as $rapport)
-                            <tr class="hover:bg-indigo-50/30 dark:hover:bg-gray-800/50 transition">
-                                <td class="px-6 py-4">
-                                    <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400 text-sm">
-                                        {{ $rapport->intervention->code_intervention ?? '-' }}
-                                    </span>
-                                    <div class="text-[10px] text-gray-400 font-normal">
-                                        Type: {{ $rapport->intervention->typeIntervention->nom ?? 'Technique' }}
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="text-gray-900 dark:text-white font-bold">{{ $rapport->intervention->chantier->client->nom ?? '-' }}</div>
-                                    <div class="text-[11px] text-gray-500">{{ $rapport->intervention->chantier->nom ?? '-' }}</div>
-                                </td>
-                                <td class="px-6 py-4 font-semibold text-gray-800 dark:text-gray-200">
-                                    {{ $rapport->intervention->technicien->name ?? '-' }}
-                                </td>
-                                <td class="px-6 py-4 text-[11px]">
-                                    <div class="text-gray-700 dark:text-gray-300">
-                                        <span class="font-semibold text-gray-400">Date :</span> 
-                                        {{ $rapport->created_at ? $rapport->created_at->format('d/m/Y H:i') : '-' }}
-                                    </div>
-                                    <div class="text-gray-400 text-[10px]">
-                                        Durée : {{ $rapport->intervention->duree_reelle ? $rapport->intervention->duree_reelle.' min' : 'Standard' }}
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4">
-                                    @if (($rapport->intervention->statut ?? '') === 'Terminee')
-                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                                            ✓ Certifié
-                                        </span>
-                                    @else
-                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                                            ⏳ En Révision
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a href="{{ route('rapports.show', $rapport) }}" class="px-3 py-1.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 text-gray-700 dark:text-gray-300 font-bold rounded-lg text-xs transition">
-                                            Consulter
-                                        </a>
-                                        <a href="{{ route('rapports.pdf', $rapport) }}" target="_blank" class="px-3 py-1.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-lg text-xs shadow transition flex items-center gap-1.5">
-                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                            Export PDF Pro
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-gray-400 font-medium">
-                                    Aucun rapport d'intervention trouvé dans la base de données.
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
             </div>
-            @if($rapports->hasPages())
-                <div class="px-6 py-4 border-t border-gray-150 dark:border-gray-800">
-                    {{ $rapports->links() }}
+
+            <!-- Colonne latérale : Taux de certification -->
+            <div class="ds-card-elevated overflow-hidden">
+                <div class="px-6 py-4 border-b border-[#E6E9F4]">
+                    <h3 class="text-sm font-bold text-[#131523]">Taux de certification</h3>
                 </div>
-            @endif
+                <div class="p-6 flex flex-col items-center">
+                    <div class="ds-progress-ring">
+                        <canvas id="chart-certification-ring" width="140" height="140"></canvas>
+                        <div class="ds-progress-ring-label">
+                            <span class="ds-progress-ring-value">{{ $stats['taux'] }}%</span>
+                            <span class="ds-progress-ring-caption">Certifiés</span>
+                        </div>
+                    </div>
+                    <div class="w-full mt-6 space-y-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="flex items-center gap-2 text-[#5A607F]"><span class="w-2.5 h-2.5 rounded-full bg-[#1FD286]"></span> Certifiés</span>
+                            <span class="font-bold text-[#131523]">{{ $stats['certifies'] }}</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="flex items-center gap-2 text-[#5A607F]"><span class="w-2.5 h-2.5 rounded-full bg-[#F99600]"></span> En révision</span>
+                            <span class="font-bold text-[#131523]">{{ $stats['enRevision'] }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
+
+    @if($stats['total'] > 0)
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const ctx = document.getElementById('chart-certification-ring');
+                if (!ctx) return;
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Certifiés', 'En révision'],
+                        datasets: [{
+                            data: [{{ $stats['certifies'] }}, {{ $stats['enRevision'] }}],
+                            backgroundColor: ['#1FD286', '#F99600'],
+                            borderWidth: 0,
+                        }],
+                    },
+                    options: {
+                        cutout: '75%',
+                        plugins: { legend: { display: false }, tooltip: { enabled: true } },
+                    },
+                });
+            });
+        </script>
+    @endif
 </x-app-layout>

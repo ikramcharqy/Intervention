@@ -21,11 +21,13 @@ class FormulaireService
     public function createFormulaire(array $data): Formulaire
     {
         return DB::transaction(function () use ($data) {
+            // Un protocole naît toujours inactif : il n'a encore aucune question,
+            // il ne peut donc pas être envoyé à un technicien sur le terrain.
             $formulaire = Formulaire::create([
                 'type_intervention_id' => $data['type_intervention_id'],
                 'nom'                  => $data['nom'],
                 'description'          => $data['description'] ?? null,
-                'is_active'            => $data['is_active'] ?? true,
+                'is_active'            => false,
             ]);
 
             return $formulaire;
@@ -34,14 +36,24 @@ class FormulaireService
 
     /**
      * Met à jour un formulaire existant.
+     *
+     * @throws \RuntimeException si on tente d'activer un protocole sans aucune question.
      */
     public function updateFormulaire(Formulaire $formulaire, array $data): Formulaire
     {
+        $veutActiver = (bool) ($data['is_active'] ?? $formulaire->is_active);
+
+        if ($veutActiver && $formulaire->questions()->count() === 0) {
+            throw new \RuntimeException(
+                "Ce protocole ne peut pas être activé : ajoutez au moins une question avant de l'envoyer aux techniciens."
+            );
+        }
+
         $formulaire->update([
             'type_intervention_id' => $data['type_intervention_id'],
             'nom'                  => $data['nom'],
             'description'          => $data['description'] ?? null,
-            'is_active'            => $data['is_active'] ?? $formulaire->is_active,
+            'is_active'            => $veutActiver,
         ]);
 
         return $formulaire;
@@ -80,7 +92,11 @@ class FormulaireService
                 'ordre'              => $data['ordre'] ?? $ordre,
                 'placeholder'        => $data['placeholder'] ?? null,
                 'valeur_par_defaut'  => $data['valeur_par_defaut'] ?? null,
-                'condition_affichage' => null, // Réservé pour l'avenir
+                'condition_affichage' => $data['condition_affichage'] ?? null,
+                'nombre_min'         => $data['nombre_min'] ?? null,
+                'nombre_max'         => $data['nombre_max'] ?? null,
+                'nombre_unite'       => $data['nombre_unite'] ?? null,
+                'fichiers_max'       => $data['fichiers_max'] ?? null,
             ]);
 
             // Création des choix si le type en nécessite
@@ -105,6 +121,10 @@ class FormulaireService
                 'ordre'             => $data['ordre'] ?? $question->ordre,
                 'placeholder'       => $data['placeholder'] ?? null,
                 'valeur_par_defaut' => $data['valeur_par_defaut'] ?? null,
+                'nombre_min'        => $data['nombre_min'] ?? null,
+                'nombre_max'        => $data['nombre_max'] ?? null,
+                'nombre_unite'      => $data['nombre_unite'] ?? null,
+                'fichiers_max'      => $data['fichiers_max'] ?? null,
             ]);
 
             // Resynchronisation des choix

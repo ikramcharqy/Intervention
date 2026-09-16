@@ -9,7 +9,11 @@
                     <div class="flex items-center gap-2 flex-wrap">
                         <h1 class="text-lg font-extrabold text-slate-900 tracking-tight">{{ $intervention->code_intervention }}</h1>
                         @php
-                            $statusMap = [
+                            // Couleurs propres à cette carte (mise en avant plus large que le badge
+                        // standard) — le libellé affiché, lui, vient désormais de la même source
+                        // unique que <x-soft-badge> (App\Models\Intervention::statutLabel()) pour
+                        // ne plus jamais afficher la valeur technique brute sans accent.
+                        $statusMap = [
                                 'Demande'                => ['color' => 'bg-sky-100 text-sky-800 border-sky-200', 'dot' => 'bg-sky-500'],
                                 'Planifiee'              => ['color' => 'bg-amber-100 text-amber-800 border-amber-200', 'dot' => 'bg-amber-500'],
                                 'Affectee'               => ['color' => 'bg-violet-100 text-violet-800 border-violet-200', 'dot' => 'bg-violet-500'],
@@ -58,7 +62,7 @@
                         @endphp
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold {{ $s['color'] }}">
                             <span class="w-1.5 h-1.5 rounded-full {{ $s['dot'] }}"></span>
-                            {{ $intervention->statut }}
+                            {{ \App\Models\Intervention::statutLabel($intervention->statut) }}
                         </span>
                         @if($isRetard)
                             <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold rounded-lg">
@@ -822,7 +826,7 @@
                                     <div class="w-8 h-8 rounded-full flex items-center justify-center text-sm bg-amber-500 border-2 border-amber-500 text-white ring-4 ring-amber-100">
                                         ⚠
                                     </div>
-                                    <span class="text-[10px] font-semibold mt-1 text-amber-700 whitespace-nowrap">{{ $intervention->statut }}</span>
+                                    <span class="text-[10px] font-semibold mt-1 text-amber-700 whitespace-nowrap">{{ \App\Models\Intervention::statutLabel($intervention->statut) }}</span>
                                 </div>
                             @endif
                         </div>
@@ -916,7 +920,7 @@
                         <div class="flex items-center justify-center">
                             <span class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-extrabold {{ $s['color'] }} shadow-sm">
                                 <span class="w-2 h-2 rounded-full {{ $s['dot'] }}"></span>
-                                {{ $intervention->statut }}
+                                {{ \App\Models\Intervention::statutLabel($intervention->statut) }}
                             </span>
                         </div>
                         <div class="grid grid-cols-1 gap-1.5 text-xs">

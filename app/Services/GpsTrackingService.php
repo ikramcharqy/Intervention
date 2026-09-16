@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\GpsPositionBroadcast;
 use App\Models\GpsTrackingPoint;
 use App\Models\GpsTrackingSession;
 use App\Models\Intervention;
@@ -64,6 +65,8 @@ class GpsTrackingService
             'captured_at' => $data['captured_at'] ?? now(),
         ]);
 
+        $vitesseKmh = 0.0;
+
         if ($dernierPoint) {
             $distanceAjoutee = $this->haversineMetres(
                 (float) $dernierPoint->latitude,
@@ -73,6 +76,22 @@ class GpsTrackingService
             );
 
             $session->increment('distance_metres', $distanceAjoutee);
+
+            $secondesEcoulees = $dernierPoint->captured_at->diffInSeconds($point->captured_at, false);
+            if ($secondesEcoulees > 0) {
+                $vitesseKmh = ($distanceAjoutee / $secondesEcoulees) * 3.6;
+            }
+        }
+
+        $session->refresh();
+
+        try {
+            event(new GpsPositionBroadcast($point, $vitesseKmh));
+        } catch (\Throwable $e) {
+            // La position est déjà enregistrée en base : une panne du serveur
+            // temps réel (Reverb indisponible) ne doit jamais faire échouer
+            // l'enregistrement du point GPS côté technicien.
+            report($e);
         }
 
         return $point;

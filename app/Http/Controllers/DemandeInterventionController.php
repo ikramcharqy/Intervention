@@ -5,15 +5,20 @@ namespace App\Http\Controllers;
 use App\Models\DemandeIntervention;
 use App\Models\Client;
 use App\Models\TypeIntervention;
+use App\Services\DemandeInterventionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class DemandeInterventionController extends Controller
 {
+    public function __construct(private DemandeInterventionService $demandeInterventionService)
+    {
+    }
+
     public function index()
     {
-        $query = DemandeIntervention::with(['commercial', 'client', 'chantier', 'typeIntervention']);
-        
+        $query = DemandeIntervention::with(['commercial', 'client', 'chantier', 'typeIntervention', 'devis']);
+
         if (auth()->user()->hasRole('Commercial')) {
             $query->where('commercial_id', auth()->id());
         }
@@ -47,7 +52,7 @@ class DemandeInterventionController extends Controller
         ]);
 
         $validated['commercial_id'] = auth()->id();
-        $validated['reference'] = 'DEM-' . strtoupper(uniqid());
+        $validated['reference'] = $this->demandeInterventionService->generateUniqueReference();
 
         // Handle uploads
         $photos = [];
@@ -73,6 +78,7 @@ class DemandeInterventionController extends Controller
 
     public function show(DemandeIntervention $demandeIntervention)
     {
+        $demandeIntervention->load('devis');
         return $this->roleView('demande_interventions.show', compact('demandeIntervention'));
     }
 
@@ -160,12 +166,14 @@ class DemandeInterventionController extends Controller
                 ]);
             }
 
-            // 3. Génération du code intervention unique
-            $codeIntervention = 'INT-' . strtoupper(uniqid());
+            // 3. Génération du code intervention unique — centralisée (cf. ReferenceGeneratorService)
+            $codeIntervention = app(\App\Services\ReferenceGeneratorService::class)
+                ->generateInterventionReference($demandeIntervention->client);
 
             // 4. Création de l'Intervention transmise à l'Admin
             $intervention = \App\Models\Intervention::create([
                 'code_intervention'    => $codeIntervention,
+                'demande_intervention_id' => $demandeIntervention->id,
                 'chantier_id'          => $demandeIntervention->chantier_id,
                 'emplacement_id'       => $emplacement?->id,
                 'technicien_id'        => null, // À affecter par l'Admin
@@ -186,6 +194,16 @@ class DemandeInterventionController extends Controller
                 'statut_apres'    => \App\Models\Intervention::STATUT_PLANIFIEE,
                 'commentaire'     => "Intervention créée suite à la qualification commerciale de la demande #{$demandeIntervention->reference}.",
             ]);
+
+            // Notification portail Client : la demande est devenue une intervention planifiée.
+            $utilisateurClient = $demandeIntervention->client?->utilisateurPortail();
+            $utilisateurClient?->notify(new \App\Notifications\ClientPortalNotification(
+                type: 'demande_convertie',
+                titre: 'Demande acceptée',
+                message: "Votre demande {$demandeIntervention->reference} a été acceptée et planifiée (intervention {$intervention->code_intervention}).",
+                lienRoute: 'client.interventions.show',
+                lienParams: [$intervention->id],
+            ));
 
             return redirect()->route('demande-interventions.index')
                 ->with('success', "Demande qualifiée et validée ! L'intervention #{$intervention->code_intervention} a été transmise à l'administration pour planification et affectation.");
@@ -209,6 +227,14 @@ class DemandeInterventionController extends Controller
             'statut'      => 'Refusee',
             'description' => trim(($demandeIntervention->description ?? '') . "\n\n[REFUS COMMERCIAL (" . now()->format('d/m/Y H:i') . ")]\nMotif: " . $motif),
         ]);
+
+        $utilisateurClient = $demandeIntervention->client?->utilisateurPortail();
+        $utilisateurClient?->notify(new \App\Notifications\ClientPortalNotification(
+            type: 'demande_refusee',
+            titre: 'Demande refusée',
+            message: "Votre demande {$demandeIntervention->reference} a été refusée. Motif : {$motif}",
+            lienRoute: 'client.demandes.index',
+        ));
 
         return redirect()->route('demande-interventions.index')
             ->with('success', 'La demande d\'intervention a été refusée avec succès.');

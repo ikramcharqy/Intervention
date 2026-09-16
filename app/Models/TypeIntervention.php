@@ -42,4 +42,10 @@ class TypeIntervention extends Model
     {
         return $this->hasOne(Formulaire::class);
     }
+
+    // Prospects ayant identifié ce type comme besoin technique
+    public function prospects()
+    {
+        return $this->belongsToMany(Prospect::class, 'prospect_type_intervention');
+    }
 }

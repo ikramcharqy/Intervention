@@ -223,6 +223,62 @@
             'label' => 'Refus Technicien',
             'pulse' => true,
         ],
+
+        // Niveaux de priorité (DemandeIntervention / Intervention) : mêmes clés que
+        // la colonne "priorite", pour réutiliser ce composant au lieu de dupliquer
+        // un mapping couleur ad hoc par vue (déjà fait à l'identique dans 2+ fichiers).
+        'Faible' => [
+            'bg' => 'bg-slate-100',
+            'text' => 'text-slate-600',
+            'border' => 'border-slate-200',
+            'dot' => 'bg-slate-400',
+            'label' => 'Faible',
+            'pulse' => false,
+        ],
+        'Normale' => [
+            'bg' => 'bg-indigo-50',
+            'text' => 'text-indigo-700',
+            'border' => 'border-indigo-200',
+            'dot' => 'bg-indigo-500',
+            'label' => 'Normale',
+            'pulse' => false,
+        ],
+        'Haute' => [
+            'bg' => 'bg-amber-50',
+            'text' => 'text-amber-700',
+            'border' => 'border-amber-200',
+            'dot' => 'bg-amber-500',
+            'label' => 'Haute',
+            'pulse' => false,
+        ],
+        'Urgente' => [
+            'bg' => 'bg-rose-50',
+            'text' => 'text-rose-700 font-semibold',
+            'border' => 'border-rose-200',
+            'dot' => 'bg-rose-500',
+            'label' => 'Urgente',
+            'pulse' => true,
+        ],
+
+        // Statuts des tickets de support (TicketSupport). 'En cours' est déjà défini
+        // ci-dessus (Intervention) avec la même signification opérationnelle — réutilisé
+        // tel quel plutôt que dupliqué.
+        'Ouvert' => [
+            'bg' => 'bg-indigo-50',
+            'text' => 'text-indigo-700',
+            'border' => 'border-indigo-200',
+            'dot' => 'bg-indigo-500',
+            'label' => 'Ouvert',
+            'pulse' => false,
+        ],
+        'Résolu' => [
+            'bg' => 'bg-emerald-50',
+            'text' => 'text-emerald-700',
+            'border' => 'border-emerald-200',
+            'dot' => 'bg-emerald-500',
+            'label' => 'Résolu',
+            'pulse' => false,
+        ],
     ];
 
     $cfg = $configs[$normalized] ?? [

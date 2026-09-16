@@ -95,7 +95,7 @@
                             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                                 @foreach ($user->clientsGeres as $clt)
                                     <tr>
-                                        <td class="px-4 py-2 font-mono text-sm">{{ $clt->code_client }}</td>
+                                        <td class="px-4 py-2 text-sm">{{ $clt->code_client }}</td>
                                         <td class="px-4 py-2">{{ $clt->nom }}</td>
                                         <td class="px-4 py-2">{{ $clt->telephone }}</td>
                                         <td class="px-4 py-2">{{ $clt->ville }}</td>

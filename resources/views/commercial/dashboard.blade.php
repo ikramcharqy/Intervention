@@ -1,196 +1,309 @@
 <x-commercial-layout>
-    <x-slot name="header">Tableau de bord Commercial</x-slot>
+    <x-slot name="header"></x-slot>
 
     <div class="space-y-8">
-        <!-- Welcome Banner Metronic Style -->
-        <div class="p-6 md:p-8 rounded-2xl bg-gradient-to-r from-[#1E1E2D] to-[#2B2B40] text-white flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-md relative overflow-hidden">
-            <div class="space-y-2 z-10">
-                <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold rounded-full uppercase tracking-wider">
-                    Espace Commercial & Ventes
-                </span>
-                <h2 class="text-2xl md:text-3xl font-extrabold font-heading text-white">Bonjour, {{ Auth::user()->name }} 👋</h2>
-                <p class="text-xs md:text-sm text-[#A1A5B7]">Suivez vos prospects, opportunités et devis en temps réel.</p>
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+            <div>
+                <h1 class="text-[28px] font-extrabold text-[#181C32] font-heading">Bonjour, {{ Auth::user()->name }}</h1>
+                <p class="text-sm text-[#A1A5B7] mt-1">Suivez vos performances commerciales en un coup d'œil.</p>
             </div>
-            <div class="flex items-center gap-3 z-10">
-                <a href="{{ route('prospects.create') }}" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-2">
-                    <svg width="16" height="16" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                    + Nouveau Prospect
-                </a>
-                <a href="{{ route('commercial.devis.create') }}" class="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-bold rounded-lg transition flex items-center gap-2">
-                    <svg width="16" height="16" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                    + Nouveau Devis
-                </a>
+
+            <!-- Sélecteur de période -->
+            <form method="GET" action="{{ route('commercial.dashboard') }}" id="period-form" class="flex items-center gap-2.5">
+                <select name="period" onchange="document.getElementById('custom-range').classList.toggle('hidden', this.value !== 'custom'); this.value !== 'custom' && this.form.submit();"
+                        class="text-xs font-semibold text-[#181C32] border border-[#EFF2F5] rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <option value="week" {{ $period === 'week' ? 'selected' : '' }}>Cette semaine</option>
+                    <option value="month" {{ $period === 'month' ? 'selected' : '' }}>Ce mois</option>
+                    <option value="quarter" {{ $period === 'quarter' ? 'selected' : '' }}>Ce trimestre</option>
+                    <option value="custom" {{ $period === 'custom' ? 'selected' : '' }}>Personnalisé</option>
+                </select>
+                <div id="custom-range" class="flex items-center gap-1.5 {{ $period === 'custom' ? '' : 'hidden' }}">
+                    <input type="date" name="from" value="{{ request('from') }}" class="text-xs border border-[#EFF2F5] rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <span class="text-[#A1A5B7] text-xs">→</span>
+                    <input type="date" name="to" value="{{ request('to') }}" class="text-xs border border-[#EFF2F5] rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    <button type="submit" class="text-xs font-bold text-emerald-600 px-2">OK</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Carte KPI unique, 3 colonnes séparées par un trait -->
+        <div class="metronic-card divide-y sm:divide-y-0 sm:divide-x divide-[#EFF2F5] flex flex-col sm:flex-row">
+            <div class="p-6 flex-1 flex items-center justify-between gap-4">
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-[#5E6278]">CA de la Période</p>
+                    <p class="text-2xl font-extrabold text-[#181C32] mt-2 font-heading">{{ format_montant($revenueTile['value'], 0) }}</p>
+                    @include('commercial.partials.kpi-variation', ['tile' => $revenueTile, 'periodLabel' => $periodLabel])
+                </div>
+                <div class="w-24 h-14 shrink-0">
+                    <canvas id="sparkRevenue"></canvas>
+                </div>
+            </div>
+
+            <div class="p-6 flex-1">
+                <p class="text-xs font-semibold text-[#5E6278]">Devis Acceptés</p>
+                <p class="text-2xl font-extrabold text-[#181C32] mt-2 font-heading">{{ number_format($salesTile['value']) }}</p>
+                @include('commercial.partials.kpi-variation', ['tile' => $salesTile, 'periodLabel' => $periodLabel])
+            </div>
+
+            <div class="p-6 flex-1">
+                <p class="text-xs font-semibold text-[#5E6278]">Nouveaux Prospects</p>
+                <p class="text-2xl font-extrabold text-[#181C32] mt-2 font-heading">{{ number_format($prospectsTile['value']) }}</p>
+                @include('commercial.partials.kpi-variation', ['tile' => $prospectsTile, 'periodLabel' => $periodLabel])
             </div>
         </div>
 
-        <!-- Metronic KPI Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <a href="{{ route('prospects.index') }}" class="metronic-card p-6 flex items-center justify-between hover:shadow-md transition">
+        <!-- Actions Requises -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <a href="{{ route('commercial.devis.index', ['relance' => 1]) }}" class="metronic-card p-5 flex items-center justify-between hover:shadow-md transition">
                 <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#A1A5B7]">Prospects</span>
-                    <div class="text-2xl font-extrabold text-[#181C32] mt-1 font-heading">{{ $stats['prospects'] }}</div>
-                    <span class="text-[11px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded mt-2 inline-block">Pistes d'affaires</span>
+                    <p class="text-xs font-semibold text-[#5E6278]">Devis à relancer</p>
+                    <p class="text-2xl font-extrabold text-[#181C32] mt-1 font-heading">{{ $devisARelancer }}</p>
+                    <p class="text-[11px] text-[#A1A5B7] mt-1">Envoyés depuis plus de {{ \App\Http\Controllers\Commercial\DashboardController::DEVIS_RELANCE_JOURS }} jours, sans réponse</p>
                 </div>
-                <div class="h-12 w-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shrink-0">
-                    <svg width="24" height="24" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                <div class="h-10 w-10 rounded-lg bg-[#F5F8FA] text-[#5E6278] flex items-center justify-center shrink-0">
+                    <i class="fas fa-clock-rotate-left text-sm"></i>
                 </div>
             </a>
 
-            <a href="{{ route('clients.index') }}" class="metronic-card p-6 flex items-center justify-between hover:shadow-md transition">
+            <a href="{{ route('prospects.index', ['inactifs' => 1]) }}" class="metronic-card p-5 flex items-center justify-between hover:shadow-md transition">
                 <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#A1A5B7]">Clients</span>
-                    <div class="text-2xl font-extrabold text-[#181C32] mt-1 font-heading">{{ $stats['clients'] }}</div>
-                    <span class="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded mt-2 inline-block">Comptes Signés</span>
+                    <p class="text-xs font-semibold text-[#5E6278]">Prospects inactifs</p>
+                    <p class="text-2xl font-extrabold text-[#181C32] mt-1 font-heading">{{ $prospectsInactifs }}</p>
+                    <p class="text-[11px] text-[#A1A5B7] mt-1">Sans activité depuis plus de {{ \App\Http\Controllers\Commercial\DashboardController::PROSPECT_INACTIVITE_JOURS }} jours</p>
                 </div>
-                <div class="h-12 w-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-500 shrink-0">
-                    <svg width="24" height="24" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                <div class="h-10 w-10 rounded-lg bg-[#F5F8FA] text-[#5E6278] flex items-center justify-center shrink-0">
+                    <i class="fas fa-user-clock text-sm"></i>
                 </div>
             </a>
-
-            <a href="{{ route('commercial.devis.index') }}" class="metronic-card p-6 flex items-center justify-between hover:shadow-md transition">
-                <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#A1A5B7]">Total Devis</span>
-                    <div class="text-2xl font-extrabold text-[#181C32] mt-1 font-heading">{{ $stats['devis'] }}</div>
-                    <span class="text-[11px] font-semibold text-purple-600 bg-purple-50 px-2 py-0.5 rounded mt-2 inline-block">Propositions</span>
-                </div>
-                <div class="h-12 w-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-500 shrink-0">
-                    <svg width="24" height="24" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                </div>
-            </a>
-
-            <div class="metronic-card p-6 flex items-center justify-between">
-                <div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-[#A1A5B7]">Taux Conversion</span>
-                    <div class="text-2xl font-extrabold text-amber-600 mt-1 font-heading">{{ $stats['taux_conversion'] }}%</div>
-                    <span class="text-[11px] font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded mt-2 inline-block">Performance Ventes</span>
-                </div>
-                <div class="h-12 w-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0">
-                    <svg width="24" height="24" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                </div>
-            </div>
         </div>
 
-        <!-- Devis Status Row Metronic Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div class="metronic-card p-6 border-l-4 border-l-amber-400 flex items-center justify-between">
-                <div>
-                    <span class="text-xs font-bold text-amber-600 uppercase tracking-wider">Devis en Attente</span>
-                    <div class="text-2xl font-extrabold text-[#181C32] mt-1 font-heading">{{ $stats['devis_attente'] }}</div>
-                </div>
-                <div class="h-10 w-10 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center shrink-0">
-                    <svg width="20" height="20" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-            </div>
-
-            <div class="metronic-card p-6 border-l-4 border-l-emerald-500 flex items-center justify-between">
-                <div>
-                    <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider">Devis Acceptés</span>
-                    <div class="text-2xl font-extrabold text-[#181C32] mt-1 font-heading">{{ $stats['devis_acceptes'] }}</div>
-                </div>
-                <div class="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center shrink-0">
-                    <svg width="20" height="20" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <!-- Derniers Devis (équivalent "Recent Transactions") -->
+        <div>
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-extrabold text-[#181C32] font-heading">Derniers Devis</h2>
+                <div class="flex items-center gap-5">
+                    <button type="button" class="flex items-center gap-1.5 text-xs font-semibold text-[#5E6278] hover:text-[#181C32]">
+                        <i class="fas fa-search text-[11px]"></i> Rechercher
+                    </button>
+                    <a href="{{ route('commercial.devis.index') }}" class="flex items-center gap-1.5 text-xs font-semibold text-[#5E6278] hover:text-[#181C32]">
+                        <i class="fas fa-arrow-up-from-bracket text-[11px]"></i> Exporter
+                    </a>
+                    <button type="button" class="flex items-center gap-1.5 text-xs font-semibold text-[#5E6278] hover:text-[#181C32]">
+                        <i class="fas fa-filter text-[11px]"></i> Filtrer
+                    </button>
                 </div>
             </div>
 
-            <div class="metronic-card p-6 border-l-4 border-l-rose-500 flex items-center justify-between">
-                <div>
-                    <span class="text-xs font-bold text-rose-600 uppercase tracking-wider">Devis Refusés</span>
-                    <div class="text-2xl font-extrabold text-[#181C32] mt-1 font-heading">{{ $stats['devis_refuses'] }}</div>
-                </div>
-                <div class="h-10 w-10 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center shrink-0">
-                    <svg width="20" height="20" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Grids -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Derniers Devis -->
-            <div class="metronic-card p-6">
-                <div class="flex items-center justify-between mb-6 pb-4 border-b border-[#EFF2F5]">
-                    <h3 class="text-base font-bold text-[#181C32] font-heading">Derniers Devis Émis</h3>
-                    <a href="{{ route('commercial.devis.index') }}" class="text-xs font-bold text-emerald-600 hover:underline">Voir tout →</a>
-                </div>
-
+            <div class="metronic-card overflow-hidden">
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-xs">
                         <thead>
-                            <tr class="border-b border-[#EFF2F5] text-[#A1A5B7] uppercase font-bold text-[10px]">
-                                <th class="pb-3">Référence</th>
-                                <th class="pb-3">Client / Prospect</th>
-                                <th class="pb-3">Montant HT</th>
-                                <th class="pb-3 text-right">Statut</th>
+                            <tr class="bg-[#F9F9FB] text-[#A1A5B7] uppercase font-bold text-[10px]">
+                                <th class="py-3 pl-6 w-10"><input type="checkbox" class="rounded border-[#D9D9D9]"></th>
+                                <th class="py-3">Devis</th>
+                                <th class="py-3">Date</th>
+                                <th class="py-3">Montant</th>
+                                <th class="py-3">Statut</th>
+                                <th class="py-3 pr-6 w-10"></th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[#EFF2F5]">
-                            @forelse($recentDevis as $d)
+                            @forelse($recentDevis as $i => $d)
+                                @php
+                                    $name = $d->client?->nom ?? $d->prospect?->nom_contact ?? 'N/A';
+                                    $badge = match($d->statut) {
+                                        'Accepté', 'Accepte', 'Validé' => 'bg-emerald-50 text-emerald-600',
+                                        'Refusé', 'Refuse', 'Annulé' => 'bg-rose-50 text-rose-600',
+                                        default => 'bg-[#F5F8FA] text-[#5E6278]'
+                                    };
+                                @endphp
                                 <tr class="hover:bg-[#F9F9FB] transition">
-                                    <td class="py-3 font-mono font-bold text-[#181C32]">{{ $d->reference }}</td>
-                                    <td class="py-3 font-semibold text-[#3F4254]">{{ $d->client?->nom_complet ?? $d->prospect?->nom_complet ?? 'N/A' }}</td>
-                                    <td class="py-3 font-mono font-bold text-[#181C32]">{{ number_format($d->montant_ht, 2) }} DH</td>
-                                    <td class="py-3 text-right">
-                                        @php
-                                            $badge = match($d->statut) {
-                                                'Accepte' => 'bg-emerald-50 text-emerald-600',
-                                                'Refuse' => 'bg-rose-50 text-rose-600',
-                                                default => 'bg-amber-50 text-amber-600'
-                                            };
-                                        @endphp
-                                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg {{ $badge }}">
-                                            {{ $d->statut }}
-                                        </span>
+                                    <td class="py-3.5 pl-6"><input type="checkbox" class="rounded border-[#D9D9D9]"></td>
+                                    <td class="py-3.5">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-9 h-9 rounded-lg flex items-center justify-center font-bold text-[11px] shrink-0 bg-emerald-50 text-emerald-700">
+                                                {{ strtoupper(substr($name, 0, 2)) }}
+                                            </div>
+                                            <div class="min-w-0">
+                                                <p class="font-bold text-[#181C32] truncate">{{ $d->reference }}</p>
+                                                <p class="text-[11px] text-[#A1A5B7] truncate">{{ $name }}</p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 text-[#5E6278]">{{ $d->date_emission?->format('d/m/Y H:i') }}</td>
+                                    <td class="py-3.5 font-semibold text-[#181C32]">{{ format_montant($d->montant_ttc, 0) }}</td>
+                                    <td class="py-3.5">
+                                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-full {{ $badge }}">{{ $d->statut }}</span>
+                                    </td>
+                                    <td class="py-3.5 pr-6 text-right">
+                                        <a href="{{ route('commercial.devis.show', $d) }}" class="inline-flex items-center justify-center w-6 h-6 rounded-full text-[#A1A5B7] hover:bg-[#F5F8FA] hover:text-[#181C32] transition">
+                                            <i class="fas fa-chevron-right text-[10px]"></i>
+                                        </a>
                                     </td>
                                 </tr>
                             @empty
-                                <tr>
-                                    <td colspan="4" class="py-6 text-center text-[#A1A5B7] italic">Aucun devis récent.</td>
-                                </tr>
+                                <tr><td colspan="6" class="py-8 text-center text-[#A1A5B7] italic">Aucun devis pour l'instant.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
                 </div>
             </div>
+        </div>
 
-            <!-- Derniers Prospects -->
+        <!-- Statistiques complémentaires -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+
+            <!-- Évolution des Devis Émis -->
+            <div class="metronic-card p-6 lg:col-span-2">
+                <h2 class="text-sm font-bold text-[#181C32] font-heading mb-1">Évolution des Devis Émis</h2>
+                <p class="text-xs text-[#A1A5B7] mb-4">Nombre de devis créés par mois, 6 derniers mois</p>
+                <div class="relative h-52">
+                    <canvas id="chartDevisTendance"></canvas>
+                </div>
+            </div>
+
+            <!-- Répartition par statut -->
             <div class="metronic-card p-6">
-                <div class="flex items-center justify-between mb-6 pb-4 border-b border-[#EFF2F5]">
-                    <h3 class="text-base font-bold text-[#181C32] font-heading">Pistes & Prospects Récents</h3>
+                <h2 class="text-sm font-bold text-[#181C32] font-heading mb-1">Répartition des Devis</h2>
+                <p class="text-xs text-[#A1A5B7] mb-4">Par statut</p>
+                @if($parStatutDevis->isNotEmpty())
+                    <div class="relative h-36">
+                        <canvas id="chartDevisStatut"></canvas>
+                    </div>
+                    <div class="mt-5 space-y-2.5">
+                        @php
+                            $statutColors = ['Brouillon' => '#94A3B8', 'Envoyé' => '#94A3B8', 'En attente' => '#94A3B8', 'Accepté' => '#10B981', 'Accepte' => '#10B981', 'Validé' => '#10B981', 'Refusé' => '#F43F5E', 'Refuse' => '#F43F5E', 'Annulé' => '#F43F5E'];
+                            $totalDevisStatut = max(1, $parStatutDevis->sum());
+                        @endphp
+                        @foreach($parStatutDevis as $label => $value)
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="flex items-center gap-2 text-[#5E6278] font-semibold">
+                                    <span class="w-2 h-2 rounded-full" style="background-color: {{ $statutColors[$label] ?? '#94A3B8' }};"></span>
+                                    {{ $label }}
+                                </span>
+                                <span class="font-bold text-[#181C32]">{{ round(($value / $totalDevisStatut) * 100) }}%</span>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="h-36 flex items-center justify-center text-[#A1A5B7] text-xs">Aucun devis pour l'instant.</div>
+                @endif
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- Top Clients -->
+            <div class="metronic-card p-6">
+                <h2 class="text-sm font-bold text-[#181C32] font-heading mb-4">Top Clients</h2>
+                <div class="space-y-4">
+                    @php $rankColors = ['#059669', '#10B981', '#34D399', '#6EE7B7', '#A7F3D0']; @endphp
+                    @forelse($topClients as $tc)
+                        <a href="{{ $tc->client ? route('clients.show', $tc->client) : '#' }}" class="block {{ $tc->client ? 'hover:opacity-80' : 'pointer-events-none' }} transition">
+                            <div class="flex items-center justify-between text-xs mb-1.5">
+                                <span class="font-semibold text-[#3F4254]">{{ $tc->client?->nom ?? 'Client supprimé' }}</span>
+                                <span class="text-[#A1A5B7]">{{ format_montant($tc->total, 0) }}</span>
+                            </div>
+                            <div class="w-full h-1.5 rounded-full bg-[#F5F8FA] overflow-hidden">
+                                <div class="h-full rounded-full" style="width: {{ ($tc->total / $topClientMax) * 100 }}%; background-color: {{ $rankColors[$loop->index % 5] }};"></div>
+                            </div>
+                        </a>
+                    @empty
+                        <p class="text-xs text-[#A1A5B7] italic text-center py-6">Aucun devis accepté pour l'instant.</p>
+                    @endforelse
+                </div>
+            </div>
+
+            <!-- Prospects Récents -->
+            <div class="metronic-card p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-sm font-bold text-[#181C32] font-heading">Prospects Récents</h2>
                     <a href="{{ route('prospects.index') }}" class="text-xs font-bold text-emerald-600 hover:underline">Voir tout →</a>
                 </div>
-
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-xs">
-                        <thead>
-                            <tr class="border-b border-[#EFF2F5] text-[#A1A5B7] uppercase font-bold text-[10px]">
-                                <th class="pb-3">Prospect</th>
-                                <th class="pb-3">Entreprise</th>
-                                <th class="pb-3">Statut</th>
-                                <th class="pb-3 text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-[#EFF2F5]">
-                            @forelse($recentProspects as $p)
-                                <tr class="hover:bg-[#F9F9FB] transition">
-                                    <td class="py-3 font-semibold text-[#181C32]">{{ $p->nom_complet }}</td>
-                                    <td class="py-3 text-[#5E6278]">{{ $p->nom_entreprise ?? 'Particulier' }}</td>
-                                    <td class="py-3">
-                                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg bg-blue-50 text-blue-600">
-                                            {{ $p->statut }}
-                                        </span>
-                                    </td>
-                                    <td class="py-3 text-right">
-                                        <a href="{{ route('prospects.show', $p) }}" class="px-2.5 py-1 bg-[#F5F8FA] hover:bg-[#EEF0F8] text-[#3F4254] font-bold rounded-md text-[10px]">Voir</a>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4" class="py-6 text-center text-[#A1A5B7] italic">Aucun prospect récent.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                <div class="space-y-3.5">
+                    @forelse($recentProspects as $p)
+                        <a href="{{ route('prospects.show', $p) }}" class="flex items-center justify-between gap-2 hover:opacity-80 transition">
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-[#181C32] truncate">{{ $p->nom_contact }}</p>
+                                <p class="text-[11px] text-[#5E6278] truncate">{{ $p->nom_entreprise ?? 'Particulier' }}</p>
+                            </div>
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-[#F5F8FA] text-[#5E6278] shrink-0">{{ $p->statut }}</span>
+                        </a>
+                    @empty
+                        <p class="text-xs text-[#A1A5B7] italic text-center py-6">Aucun prospect récent.</p>
+                    @endforelse
                 </div>
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+    (function() {
+        new Chart(document.getElementById('chartDevisTendance'), {
+            type: 'bar',
+            data: {
+                labels: @json($moisLabelsFr),
+                datasets: [{
+                    data: @json($devisTendanceSeries->values()),
+                    backgroundColor: '#10B981',
+                    borderRadius: 6,
+                    maxBarThickness: 40,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { color: '#A1A5B7', font: { size: 11 } } },
+                    y: { beginAtZero: true, ticks: { color: '#A1A5B7', font: { size: 11 }, precision: 0 }, grid: { color: '#F1F4F9' } }
+                }
+            }
+        });
+
+        @if($parStatutDevis->isNotEmpty())
+        new Chart(document.getElementById('chartDevisStatut'), {
+            type: 'doughnut',
+            data: {
+                labels: @json($parStatutDevis->keys()),
+                datasets: [{
+                    data: @json($parStatutDevis->values()),
+                    backgroundColor: @json($parStatutDevis->keys()).map(label => ({
+                        'Brouillon': '#94A3B8', 'Envoyé': '#94A3B8', 'En attente': '#94A3B8',
+                        'Accepté': '#10B981', 'Accepte': '#10B981', 'Validé': '#10B981',
+                        'Refusé': '#F43F5E', 'Refuse': '#F43F5E', 'Annulé': '#F43F5E',
+                    }[label] || '#94A3B8')),
+                    borderWidth: 3,
+                    borderColor: '#fff',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '72%',
+                plugins: { legend: { display: false } }
+            }
+        });
+        @endif
+
+        new Chart(document.getElementById('sparkRevenue'), {
+            type: 'bar',
+            data: {
+                labels: @json($revenueSparkline->values()),
+                datasets: [{
+                    data: @json($revenueSparkline->values()),
+                    backgroundColor: @json($revenueSparkline->values()).map((v, i, arr) => i === arr.length - 1 ? '#059669' : '#A7F3D0'),
+                    borderRadius: 3,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } }
+            }
+        });
+    })();
+    </script>
 </x-commercial-layout>

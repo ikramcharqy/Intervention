@@ -126,27 +126,10 @@
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                         @foreach($interventions as $intervention)
-                            @php
-                                $priorityBadge = match($intervention->priorite) {
-                                    'Urgente' => 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-                                    'Haute'   => 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-                                    'Normale' => 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                                    default   => 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
-                                };
-                                $statutBadge = match($intervention->statut) {
-                                    'Planifiee'        => 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-                                    'Acceptee'         => 'bg-blue-100 text-blue-700',
-                                    'En cours'         => 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-                                    'Formulaire rempli'=> 'bg-purple-100 text-purple-700',
-                                    'Terminee'         => 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-                                    'Annulee'          => 'bg-red-100 text-red-700',
-                                    default            => 'bg-gray-100 text-gray-600',
-                                };
-                            @endphp
                             <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/40 transition">
                                 <td class="px-4 py-3">
                                     <a href="{{ route('interventions.show', $intervention->id) }}"
-                                       class="font-mono text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
+                                       class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
                                         {{ $intervention->code_intervention }}
                                     </a>
                                 </td>
@@ -157,14 +140,10 @@
                                     {{ $intervention->date_prevue_debut?->format('d/m/Y H:i') ?? '—' }}
                                 </td>
                                 <td class="px-4 py-3">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $priorityBadge }}">
-                                        {{ $intervention->priorite }}
-                                    </span>
+                                    <x-soft-badge :status="$intervention->priorite" />
                                 </td>
                                 <td class="px-4 py-3">
-                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $statutBadge }}">
-                                        {{ $intervention->statut }}
-                                    </span>
+                                    <x-soft-badge :status="$intervention->statut" />
                                 </td>
                             </tr>
                         @endforeach

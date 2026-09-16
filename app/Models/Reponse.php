@@ -32,6 +32,47 @@ class Reponse extends Model
         'reponse_boolean' => 'boolean',
     ];
 
+    /**
+     * Sélection Checkbox multiple : au-delà d'un seul choix,
+     * RemplissageFormulaireService::sauvegarderReponses() ne peut pas utiliser
+     * `choix_question_id` (une seule colonne, une seule relation) et stocke
+     * les identifiants bruts séparés par des virgules dans `reponse_texte`
+     * (ex: "3,7,9"). Cet accesseur les résout vers leurs libellés réels
+     * (`ChoixQuestion::valeur`) pour que les consommateurs de l'API (app
+     * Technicien) n'aient jamais à afficher des identifiants bruts — même
+     * logique que celle déjà utilisée côté web
+     * (resources/views/components/rapport-formulaire.blade.php), centralisée
+     * ici plutôt que réimplémentée par chaque client.
+     */
+    protected $appends = ['choix_labels'];
+
+    public function getChoixLabelsAttribute(): ?array
+    {
+        if (!$this->relationLoaded('question') || $this->question?->type_reponse !== 'Checkbox') {
+            return null;
+        }
+        if ($this->choix_question_id || empty($this->reponse_texte)) {
+            return null;
+        }
+
+        $ids = collect(explode(',', $this->reponse_texte))
+            ->map(fn ($id) => trim($id))
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id);
+
+        if ($ids->isEmpty()) {
+            return null;
+        }
+
+        $choix = $this->relationLoaded('question') && $this->question->relationLoaded('choix')
+            ? $this->question->choix
+            : ChoixQuestion::whereIn('id', $ids)->get();
+
+        $labels = $ids->map(fn ($id) => $choix->firstWhere('id', $id)?->valeur)->filter()->values();
+
+        return $labels->isEmpty() ? null : $labels->all();
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Relations

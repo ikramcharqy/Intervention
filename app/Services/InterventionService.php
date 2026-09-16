@@ -12,8 +12,159 @@ use Illuminate\Support\Facades\DB;
 
 class InterventionService
 {
-    public function __construct(protected GpsTrackingService $gpsTrackingService)
+    public function __construct(
+        protected GpsTrackingService $gpsTrackingService,
+        protected StockService $stockService,
+        protected ReferenceGeneratorService $referenceGenerator
+    ) {
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Lecture — Portail Client (source commune Dashboard / Mes Interventions)
+    |--------------------------------------------------------------------------
+    | Méthodes ajoutées pour que le Tableau de Bord et "Mes Interventions" du
+    | rôle Client ne dupliquent plus chacun leur propre requête ad hoc : les
+    | deux pages doivent partager la même définition du périmètre "interventions
+    | de ce client" pour que leurs compteurs ne puissent jamais diverger.
+    */
+
+    /**
+     * Périmètre de base des interventions rattachées à un ensemble de chantiers
+     * (typiquement les chantiers d'un client du portail Client).
+     */
+    public function pourChantiers(\Illuminate\Support\Collection $chantierIds): \Illuminate\Database\Eloquent\Builder
     {
+        return Intervention::whereIn('chantier_id', $chantierIds);
+    }
+
+    /**
+     * Regroupement des ~19 statuts internes du workflow (Intervention::STATUT_*)
+     * en 4 catégories compréhensibles côté portail Client. N'affecte QUE
+     * l'affichage/filtrage côté Client : les statuts réels, la machine à états
+     * (transitionsAutorisees) et les vues Admin/Commercial/Technicien restent
+     * inchangés — ils continuent d'afficher le statut précis.
+     *
+     * Note métier vérifiée dans le code : une intervention peut atteindre
+     * STATUT_TERMINEE via InterventionService::finishIntervention() (clôture
+     * directe par le technicien, sans contrôle de complétude), alors que
+     * STATUT_VALIDEE n'est atteignable que via validateIntervention(), qui
+     * exige explicitement un rapport complet (verifierCompletudePreuves()).
+     * Les deux sont donc légitimement regroupées sous "Terminées" côté Client,
+     * mais une intervention "Terminée" peut réellement ne pas encore avoir de
+     * rapport — d'où le filtre optionnel "avec rapport" conservé séparément
+     * (et non fusionné en un unique statut) dans Mes Interventions.
+     */
+    public const GROUPES_STATUT_CLIENT = [
+        'planifiees' => [
+            Intervention::STATUT_DEMANDE,
+            Intervention::STATUT_PLANIFIEE,
+            Intervention::STATUT_AFFECTEE,
+            Intervention::STATUT_EN_ATTENTE_REAFFECTATION,
+        ],
+        'en_cours' => [
+            Intervention::STATUT_ACCEPTEE,
+            Intervention::STATUT_EN_COURS,
+            Intervention::STATUT_SUSPENDUE,
+            Intervention::STATUT_REPORTEE,
+            Intervention::STATUT_PARTIELLEMENT_REALISEE,
+            Intervention::STATUT_CLIENT_ABSENT,
+            Intervention::STATUT_MATERIEL_MANQUANT,
+            Intervention::STATUT_DEUXIEME_VISITE,
+            Intervention::STATUT_FORM_REMPLI,
+            Intervention::STATUT_EN_ATTENTE_VALID,
+            Intervention::STATUT_REJETEE,
+            Intervention::STATUT_ROUVERTE,
+        ],
+        'terminees' => [
+            Intervention::STATUT_TERMINEE,
+            Intervention::STATUT_VALIDEE,
+        ],
+        'annulees' => [
+            Intervention::STATUT_ANNULEE,
+        ],
+    ];
+
+    public const LIBELLES_GROUPE_CLIENT = [
+        'tous' => 'Toutes',
+        'planifiees' => 'Planifiées',
+        'en_cours' => 'En cours',
+        'terminees' => 'Terminées',
+        'annulees' => 'Annulées',
+    ];
+
+    /**
+     * Liste des statuts internes correspondant à un groupe client ("en_cours", ...).
+     */
+    public function statutsPourGroupeClient(string $groupe): array
+    {
+        return self::GROUPES_STATUT_CLIENT[$groupe] ?? [];
+    }
+
+    /**
+     * Groupe client ("planifiees" / "en_cours" / "terminees" / "annulees")
+     * correspondant à un statut interne donné, pour affichage/regroupement.
+     */
+    public function groupeClientPourStatut(string $statut): string
+    {
+        foreach (self::GROUPES_STATUT_CLIENT as $groupe => $statuts) {
+            if (in_array($statut, $statuts, true)) {
+                return $groupe;
+            }
+        }
+
+        return 'en_cours';
+    }
+
+    /**
+     * Répartition du nombre d'interventions par statut, pour un ensemble de chantiers.
+     * Total = somme des valeurs retournées (aucune valeur codée en dur côté appelant).
+     */
+    public function repartitionParStatut(\Illuminate\Support\Collection $chantierIds): \Illuminate\Support\Collection
+    {
+        return $this->pourChantiers($chantierIds)
+            ->selectRaw('statut, COUNT(*) as total')
+            ->groupBy('statut')
+            ->pluck('total', 'statut');
+    }
+
+    /**
+     * Évolution mensuelle (N derniers mois) du nombre d'interventions créées et
+     * terminées, pour un ensemble de chantiers. Alimente le graphique de tendance
+     * et les mini sparklines des KPI du Tableau de Bord Client — données réelles,
+     * jamais générées côté vue.
+     */
+    public function evolutionMensuelle(\Illuminate\Support\Collection $chantierIds, int $mois = 6): array
+    {
+        $depuis = now()->subMonths($mois - 1)->startOfMonth();
+
+        $creeesParMois = $this->pourChantiers($chantierIds)
+            ->where('created_at', '>=', $depuis)
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as mois, COUNT(*) as total")
+            ->groupBy('mois')
+            ->pluck('total', 'mois');
+
+        $termineesParMois = $this->pourChantiers($chantierIds)
+            ->whereIn('statut', [Intervention::STATUT_TERMINEE, Intervention::STATUT_VALIDEE])
+            ->whereNotNull('date_reelle_fin')
+            ->where('date_reelle_fin', '>=', $depuis)
+            ->selectRaw("DATE_FORMAT(date_reelle_fin, '%Y-%m') as mois, COUNT(*) as total")
+            ->groupBy('mois')
+            ->pluck('total', 'mois');
+
+        $labels = [];
+        $creees = [];
+        $terminees = [];
+
+        for ($i = $mois - 1; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $cle = $date->format('Y-m');
+            $labels[] = ucfirst($date->translatedFormat('M'));
+            $creees[] = (int) $creeesParMois->get($cle, 0);
+            $terminees[] = (int) $termineesParMois->get($cle, 0);
+        }
+
+        return compact('labels', 'creees', 'terminees');
     }
 
     /*
@@ -30,9 +181,11 @@ class InterventionService
     public function createIntervention(array $data): Intervention
     {
         return DB::transaction(function () use ($data) {
-            // Auto-génération d'un code unique si non spécifié
+            // Auto-génération d'un code unique si non spécifié — centralisée dans
+            // ReferenceGeneratorService (format INT-{INITIALES_CLIENT}-{SÉQUENCE}).
             if (empty($data['code_intervention'])) {
-                $data['code_intervention'] = 'INT-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -4));
+                $chantier = \App\Models\Chantier::with('client')->find($data['chantier_id'] ?? null);
+                $data['code_intervention'] = $this->referenceGenerator->generateInterventionReference($chantier?->client);
             }
 
             // Valeur par défaut pour date_prevue_debut & date_prevue_fin si non fournies
@@ -57,7 +210,7 @@ class InterventionService
                 commentaire:  'Intervention créée'
             );
 
-            if ($intervention->technicien) {
+            if ($intervention->technicien && $intervention->technicien->souhaiteNotification('intervention_updates')) {
                 $intervention->technicien->notify(new \App\Notifications\InterventionPlanifieeNotification($intervention));
             }
 
@@ -110,7 +263,7 @@ class InterventionService
 
             // Notifier le technicien assigné
             $technicien = \App\Models\User::find($technicienId);
-            if ($technicien) {
+            if ($technicien && $technicien->souhaiteNotification('intervention_updates')) {
                 try {
                     $technicien->notify(new \App\Notifications\InterventionPlanifieeNotification($intervention));
                 } catch (\Throwable $e) {
@@ -146,6 +299,13 @@ class InterventionService
             commentaire:  $commentaire ?: "L'intervention a été terminée et transmise à l'administration par le technicien. Formulaire et rapport scellés."
         );
 
+        $this->notifierClient(
+            $intervention,
+            'intervention_terminee',
+            "Intervention terminée",
+            "L'intervention {$intervention->code_intervention} sur \"{$intervention->chantier?->nom}\" a été clôturée."
+        );
+
         return $intervention;
     }
 
@@ -178,7 +338,9 @@ class InterventionService
                     isset($data['priorite'])           ? 'Priorité modifiée'      : null,
                     isset($data['description'])        ? 'Description modifiée'   : null,
                 ]);
-                $intervention->technicien->notify(new \App\Notifications\InterventionModifieeNotification($intervention, array_values($changesDesc)));
+                if ($intervention->technicien->souhaiteNotification('intervention_updates')) {
+                    $intervention->technicien->notify(new \App\Notifications\InterventionModifieeNotification($intervention, array_values($changesDesc)));
+                }
             }
 
             return $intervention;
@@ -217,7 +379,7 @@ class InterventionService
                 commentaire:  'Intervention acceptée par le technicien'
             );
 
-            if ($intervention->technicien) {
+            if ($intervention->technicien && $intervention->technicien->souhaiteNotification('intervention_updates')) {
                 $intervention->technicien->notify(new \App\Notifications\InterventionAccepteeNotification($intervention));
             }
         });
@@ -306,7 +468,7 @@ class InterventionService
                     $comm = "Demande acceptée par Admin. Intervention réaffectée au technicien #{$nouveauTechnicienId}.";
                     // Notifier le nouveau technicien de sa réaffectation
                     $nouveauTech = \App\Models\User::find($nouveauTechnicienId);
-                    if ($nouveauTech) {
+                    if ($nouveauTech && $nouveauTech->souhaiteNotification('intervention_updates')) {
                         $nouveauTech->notify(new \App\Notifications\InterventionReaffecteeNotification($intervention, $commentaireAdmin));
                     }
                 } else {
@@ -493,7 +655,14 @@ class InterventionService
 
             $this->demarrerSuiviGps($intervention);
 
-            if ($intervention->technicien) {
+            $this->notifierClient(
+                $intervention,
+                'intervention_demarree',
+                "Intervention démarrée",
+                "Le technicien {$intervention->technicien?->name} a démarré l'intervention {$intervention->code_intervention} sur \"{$intervention->chantier?->nom}\"."
+            );
+
+            if ($intervention->technicien && $intervention->technicien->souhaiteNotification('intervention_updates')) {
                 $intervention->technicien->notify(new \App\Notifications\InterventionDemarreeNotification($intervention));
             }
         });
@@ -532,7 +701,7 @@ class InterventionService
                 commentaire:  $motif ?: 'Intervention suspendue'
             );
 
-            if ($intervention->technicien) {
+            if ($intervention->technicien && $intervention->technicien->souhaiteNotification('intervention_updates')) {
                 $intervention->technicien->notify(new \App\Notifications\InterventionSuspenduNotification($intervention, $motif));
             }
         });
@@ -625,7 +794,7 @@ class InterventionService
                 commentaire:  'Formulaire rempli et soumis à validation'
             );
 
-            if ($intervention->technicien) {
+            if ($intervention->technicien && $intervention->technicien->souhaiteNotification('intervention_updates')) {
                 $intervention->technicien->notify(new \App\Notifications\InterventionFormulaireSubmisNotification($intervention));
             }
         });
@@ -644,7 +813,27 @@ class InterventionService
             throw new Exception("Validation impossible : Preuves obligatoires manquantes [{$listeManquants}].");
         }
 
-        DB::transaction(function () use ($intervention) {
+        // Matériaux déclarés par le technicien et pas encore décomptés du
+        // stock (is_valide = false). Contrôle intégral de disponibilité
+        // AVANT toute écriture : si un seul matériau manque, on bloque toute
+        // la validation avec un message clair, sans rien modifier.
+        $lignesMateriaux = $intervention->materiaux()->where('is_valide', false)->with('materiau')->get();
+
+        $manquantsStock = [];
+        foreach ($lignesMateriaux as $ligne) {
+            if (!$ligne->materiau) {
+                continue;
+            }
+            if ((float) $ligne->materiau->stock < (float) $ligne->quantite) {
+                $manquantsStock[] = "{$ligne->materiau->nom} (demandé {$ligne->quantite} {$ligne->unite}, disponible {$ligne->materiau->stock} {$ligne->materiau->unite})";
+            }
+        }
+
+        if (!empty($manquantsStock)) {
+            throw new Exception("Validation impossible : stock insuffisant pour [" . implode(', ', $manquantsStock) . "].");
+        }
+
+        DB::transaction(function () use ($intervention, $lignesMateriaux) {
             $ancienStatut = $intervention->statut;
             $now = now();
 
@@ -658,6 +847,23 @@ class InterventionService
                 'pourcentage_global' => 100,
             ]);
 
+            // Décompte réel du stock, une seule fois par ligne (is_valide
+            // empêche tout double décompte si l'intervention est rouverte
+            // puis revalidée).
+            foreach ($lignesMateriaux as $ligne) {
+                if (!$ligne->materiau) {
+                    continue;
+                }
+                $this->stockService->consommerMateriau(
+                    $ligne->materiau,
+                    (float) $ligne->quantite,
+                    $intervention,
+                    $intervention->technicien,
+                    Auth::user()
+                );
+                $ligne->update(['is_valide' => true]);
+            }
+
             $this->enregistrerHistorique(
                 $intervention,
                 statut_avant: $ancienStatut,
@@ -665,14 +871,33 @@ class InterventionService
                 commentaire:  'Validée et clôturée avec succès par l\'administrateur (Toutes les preuves obligatoires sont vérifiées).'
             );
 
-            if ($intervention->technicien) {
+            if ($intervention->technicien && $intervention->technicien->souhaiteNotification('intervention_updates')) {
                 $intervention->technicien->notify(new \App\Notifications\InterventionValideeNotification($intervention));
+            }
+
+            $this->notifierClient(
+                $intervention,
+                'intervention_terminee',
+                "Intervention validée",
+                "L'intervention {$intervention->code_intervention} sur \"{$intervention->chantier?->nom}\" a été validée et clôturée."
+            );
+
+            if ($intervention->rapport) {
+                $this->notifierClient(
+                    $intervention,
+                    'rapport_disponible',
+                    "Rapport disponible",
+                    "Le rapport de l'intervention {$intervention->code_intervention} est maintenant disponible.",
+                    route: 'client.rapports.show',
+                    routeParams: [$intervention->rapport->id],
+                );
             }
 
             \App\Models\AuditLog::create([
                 'user_id'    => Auth::id(),
                 'user_name'  => Auth::user()?->name ?? 'Admin',
                 'action'     => 'Validation Intervention',
+                'category'   => \App\Models\AuditLog::CATEGORY_BUSINESS,
                 'module'     => 'Interventions',
                 'severity'   => 'success',
                 'ip_address' => request()->ip(),
@@ -835,7 +1060,7 @@ class InterventionService
 
             $this->demarrerSuiviGps($intervention);
 
-            if ($intervention->technicien) {
+            if ($intervention->technicien && $intervention->technicien->souhaiteNotification('intervention_updates')) {
                 $intervention->technicien->notify(new \App\Notifications\InterventionRejeteeNotification($intervention, $motif));
             }
         });
@@ -1009,7 +1234,8 @@ class InterventionService
             $technicienId = $dataRevisite['technicien_id'] ?? $interventionOriginale->technicien_id;
             $motif = $dataRevisite['motif'] ?? 'Deuxième visite programmée';
 
-            $codeRevisite = 'INT-' . date('Ymd') . '-REV' . rand(100, 999);
+            $chantierRevisite = \App\Models\Chantier::with('client')->find($interventionOriginale->chantier_id);
+            $codeRevisite = $this->referenceGenerator->generateInterventionReference($chantierRevisite?->client);
 
             $nouvelleIntervention = Intervention::create([
                 'code_intervention'       => $codeRevisite,
@@ -1050,6 +1276,40 @@ class InterventionService
 
             return $nouvelleIntervention;
         });
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications — Portail Client
+    |--------------------------------------------------------------------------
+    | Additif : les notify() existants vers le technicien ne sont pas modifiés.
+    | Résout l'utilisateur du portail Client rattaché au chantier de l'intervention
+    | et lui pousse une notification réelle (table `notifications`, déjà utilisée
+    | par le Technicien/l'API) au lieu de rien envoyer côté Client comme avant.
+    */
+
+    private function notifierClient(
+        Intervention $intervention,
+        string $type,
+        string $titre,
+        string $message,
+        string $route = 'client.interventions.show',
+        ?array $routeParams = null,
+    ): void {
+        $client = $intervention->chantier?->client;
+        $utilisateur = $client?->utilisateurPortail();
+
+        if (!$utilisateur) {
+            return;
+        }
+
+        $utilisateur->notify(new \App\Notifications\ClientPortalNotification(
+            type: $type,
+            titre: $titre,
+            message: $message,
+            lienRoute: $route,
+            lienParams: $routeParams ?? [$intervention->id],
+        ));
     }
 
     /*

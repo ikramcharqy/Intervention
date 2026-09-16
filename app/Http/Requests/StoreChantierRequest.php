@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Chantier;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -27,7 +28,7 @@ class StoreChantierRequest extends FormRequest
                 Rule::exists('clients', 'id')->where('is_active', true),
             ],
             'code_chantier' => [
-                'required',
+                'nullable',
                 'string',
                 'max:30',
                 'regex:/^[A-Z0-9\-]+$/',
@@ -36,10 +37,7 @@ class StoreChantierRequest extends FormRequest
             'nom'       => ['required', 'string', 'max:255'],
             'type_local' => [
                 'required',
-                Rule::in([
-                    'Maison', 'Appartement', 'Magasin', 'Bureau', 'Usine',
-                    'Restaurant', 'Hotel', 'Hopital', 'Ecole', 'Administration', 'Autre',
-                ]),
+                Rule::in(Chantier::TYPES_LOCAL),
             ],
             'adresse'   => ['required', 'string', 'max:500'],
             'ville'     => ['required', 'string', 'max:100'],
@@ -67,7 +65,6 @@ class StoreChantierRequest extends FormRequest
             'client_id.required' => 'Veuillez sélectionner un client.',
             'client_id.exists'   => 'Le client sélectionné n\'existe pas ou est inactif.',
 
-            'code_chantier.required' => 'Le code chantier est obligatoire.',
             'code_chantier.unique'   => 'Ce code chantier est déjà utilisé.',
             'code_chantier.regex'    => 'Le code chantier ne peut contenir que des lettres majuscules, des chiffres et des tirets.',
 

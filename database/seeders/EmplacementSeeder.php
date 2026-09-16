@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\Chantier;
 use App\Models\Emplacement;
+use App\Services\ReferenceGeneratorService;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 class EmplacementSeeder extends Seeder
 {
@@ -14,6 +14,8 @@ class EmplacementSeeder extends Seeder
      */
     public function run(): void
     {
+        $referenceGenerator = app(ReferenceGeneratorService::class);
+
         $defaultEmplacements = [
             ['nom' => 'Bâtiment Principal',  'description' => 'Zone principale du bâtiment.'],
             ['nom' => 'Parking Extérieur',    'description' => 'Espace de stationnement extérieur.'],
@@ -21,7 +23,7 @@ class EmplacementSeeder extends Seeder
             ['nom' => 'Local Technique',      'description' => 'Salle des équipements techniques et électriques.'],
         ];
 
-        Chantier::where('is_active', true)->each(function (Chantier $chantier) use ($defaultEmplacements) {
+        Chantier::where('is_active', true)->each(function (Chantier $chantier) use ($defaultEmplacements, $referenceGenerator) {
             foreach ($defaultEmplacements as $data) {
                 Emplacement::firstOrCreate(
                     [
@@ -30,7 +32,10 @@ class EmplacementSeeder extends Seeder
                     ],
                     [
                         'description' => $data['description'],
-                        'qr_code'     => 'EMP-' . strtoupper(Str::random(10)),
+                        // Format centralisé EMP-[INITIALES_CLIENT]-[NN] — plus
+                        // le hex aléatoire d'origine, jamais mis à jour depuis
+                        // l'introduction de ReferenceGeneratorService.
+                        'qr_code'     => $referenceGenerator->generateEmplacementReference($chantier),
                         'is_active'   => true,
                     ]
                 );

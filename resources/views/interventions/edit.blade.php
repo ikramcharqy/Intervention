@@ -49,13 +49,13 @@
                             @error('chantier_id')<p class="text-red-500 text-sm">{{ $message }}</p>@enderror
                         </div>
 
-                        {{-- Étape 3 : Emplacement (chargé dynamiquement) --}}
-                        <div>
-                            <label for="emplacement_id" class="block font-medium">Emplacement <span class="text-red-500">*</span></label>
-                            <select name="emplacement_id" id="emplacement_id" required
+                        {{-- Étape 3 : Emplacement (chargé dynamiquement, optionnel) --}}
+                        <div id="emplacement-wrapper">
+                            <label for="emplacement_id" class="block font-medium">Emplacement</label>
+                            <select name="emplacement_id" id="emplacement_id"
                                 class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                <option value="">-- Sélectionner d'abord un chantier --</option>
-                                @foreach ($emplacements as $emplacement)
+                                <option value="">-- Aucun (optionnel) --</option>
+                                @foreach ($emplacements->where('chantier_id', $intervention->chantier_id) as $emplacement)
                                     <option value="{{ $emplacement->id }}" @selected(old('emplacement_id', $intervention->emplacement_id) == $emplacement->id)>
                                         {{ $emplacement->nom }}
                                     </option>
@@ -157,9 +157,10 @@
     </div>
 
     <script>
-        const clientSelect      = document.getElementById('client_id');
-        const chantierSelect    = document.getElementById('chantier_id');
-        const emplacementSelect = document.getElementById('emplacement_id');
+        const clientSelect       = document.getElementById('client_id');
+        const chantierSelect     = document.getElementById('chantier_id');
+        const emplacementSelect  = document.getElementById('emplacement_id');
+        const emplacementWrapper = document.getElementById('emplacement-wrapper');
 
         const currentChantier    = "{{ $intervention->chantier_id }}";
         const currentEmplacement = "{{ $intervention->emplacement_id }}";
@@ -170,7 +171,7 @@
                 .then(r => r.json())
                 .then(chantiers => {
                     chantierSelect.innerHTML = '<option value="">-- Sélectionner --</option>';
-                    emplacementSelect.innerHTML = '<option value="">-- Sélectionner d\'abord un chantier --</option>';
+                    emplacementWrapper.style.display = 'none';
                     chantiers.forEach(c => {
                         const opt = document.createElement('option');
                         opt.value = c.id;
@@ -185,13 +186,19 @@
         chantierSelect.addEventListener('change', function () {
             const chantierId = this.value;
             if (!chantierId) {
-                emplacementSelect.innerHTML = '<option value="">-- Sélectionner d\'abord un chantier --</option>';
+                emplacementWrapper.style.display = 'none';
+                emplacementSelect.value = '';
                 return;
             }
             fetch(`/chantiers/${chantierId}/emplacements`)
                 .then(r => r.json())
                 .then(emplacements => {
-                    emplacementSelect.innerHTML = '<option value="">-- Sélectionner --</option>';
+                    if (emplacements.length === 0) {
+                        emplacementWrapper.style.display = 'none';
+                        emplacementSelect.value = '';
+                        return;
+                    }
+                    emplacementSelect.innerHTML = '<option value="">-- Aucun (optionnel) --</option>';
                     emplacements.forEach(e => {
                         const opt = document.createElement('option');
                         opt.value = e.id;
@@ -199,6 +206,7 @@
                         if (e.id == currentEmplacement) opt.selected = true;
                         emplacementSelect.appendChild(opt);
                     });
+                    emplacementWrapper.style.display = '';
                 });
         });
 

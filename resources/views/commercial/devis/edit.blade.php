@@ -62,6 +62,16 @@
                         </div>
                     </div>
 
+                    <div class="kt-form-group" style="margin-top:4px;">
+                        <label class="kt-form-label">Demande d'intervention liée (optionnel)</label>
+                        <select name="demande_intervention_id" class="kt-form-control">
+                            <option value="">Aucune</option>
+                            @foreach($demandesInterventions as $demande)
+                                <option value="{{ $demande->id }}" {{ $devis->demande_intervention_id == $demande->id ? 'selected' : '' }}>{{ $demande->reference }} — {{ $demande->objet }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; margin-top:4px;">
                         <div class="kt-form-group">
                             <label class="kt-form-label">Date d'émission <span class="required">*</span></label>
@@ -102,8 +112,8 @@
                                 <th style="padding-left:20px; width:30%;">Désignation</th>
                                 <th>Description</th>
                                 <th style="width:80px; text-align:center;">Qté</th>
-                                <th style="width:130px; text-align:right;">Prix Unit. HT (€)</th>
-                                <th style="width:120px; text-align:right; padding-right:12px;">Total HT (€)</th>
+                                <th style="width:130px; text-align:right;">Prix Unit. HT ({{ currency_symbol() }})</th>
+                                <th style="width:120px; text-align:right; padding-right:12px;">Total HT ({{ currency_symbol() }})</th>
                                 <th style="width:50px;"></th>
                             </tr>
                         </thead>
@@ -123,7 +133,7 @@
                                         <input type="number" name="lignes[{{ $index }}][prix_unitaire]" step="0.01" min="0" value="{{ $ligne->prix_unitaire }}" required class="kt-form-control price-input" style="margin:0; text-align:right;">
                                     </td>
                                     <td style="padding:10px 12px 10px 8px; text-align:right; font-weight:700; color:#181c32;" class="subtotal-col">
-                                        {{ number_format($ligne->montant_ht, 2, ',', ' ') }} €
+                                        {{ format_montant($ligne->montant_ht) }}
                                     </td>
                                     <td style="padding:10px 8px; text-align:center;">
                                         <button type="button" class="remove-line-btn" style="background:rgba(241,65,108,0.1); border:none; cursor:pointer; color:#f1416c; border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; margin:auto; transition:all 0.2s;" onmouseover="this.style.background='#f1416c'; this.style.color='white';" onmouseout="this.style.background='rgba(241,65,108,0.1)'; this.style.color='#f1416c';">
@@ -141,16 +151,16 @@
                         <div style="width:300px; background:white; border-radius:10px; padding:16px 20px; border:1px solid #eff2f5;">
                             <div style="display:flex; justify-content:space-between; margin-bottom:10px; font-size:13px;">
                                 <span style="color:#7e8299;">Sous-total HT</span>
-                                <span id="total_ht" style="font-weight:600; color:#181c32;">{{ number_format($devis->montant_ht, 2, ',', ' ') }} €</span>
+                                <span id="total_ht" style="font-weight:600; color:#181c32;">{{ format_montant($devis->montant_ht) }}</span>
                             </div>
                             <div style="display:flex; justify-content:space-between; margin-bottom:12px; font-size:13px;">
                                 <span style="color:#7e8299;">TVA</span>
-                                <span id="total_tva" style="font-weight:600; color:#181c32;">{{ number_format($devis->montant_tva, 2, ',', ' ') }} €</span>
+                                <span id="total_tva" style="font-weight:600; color:#181c32;">{{ format_montant($devis->montant_tva) }}</span>
                             </div>
                             <hr class="kt-separator" style="margin-bottom:12px;">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
                                 <span style="font-size:14px; font-weight:700; color:#181c32;">Total TTC</span>
-                                <span id="total_ttc" style="font-size:18px; font-weight:800; color:#3e97ff;">{{ number_format($devis->montant_ttc, 2, ',', ' ') }} €</span>
+                                <span id="total_ttc" style="font-size:18px; font-weight:800; color:#3e97ff;">{{ format_montant($devis->montant_ttc) }}</span>
                             </div>
                         </div>
                     </div>
@@ -168,6 +178,7 @@
     </div>
 
     <script>
+        const CURRENCY = @json(currency_symbol());
         document.addEventListener('DOMContentLoaded', function() {
             const destType = document.getElementById('destinataire_type');
             const prospectGroup = document.getElementById('prospect_select_group');
@@ -204,7 +215,7 @@
                         <td style="padding:10px 8px;">
                             <input type="number" name="lignes[${idx}][prix_unitaire]" step="0.01" min="0" value="0.00" required class="kt-form-control price-input" style="margin:0; text-align:right;">
                         </td>
-                        <td style="padding:10px 12px 10px 8px; text-align:right; font-weight:700; color:#181c32;" class="subtotal-col">0,00 €</td>
+                        <td style="padding:10px 12px 10px 8px; text-align:right; font-weight:700; color:#181c32;" class="subtotal-col">0,00 ${CURRENCY}</td>
                         <td style="padding:10px 8px; text-align:center;">
                             <button type="button" class="remove-line-btn" style="background:rgba(241,65,108,0.1); border:none; cursor:pointer; color:#f1416c; border-radius:6px; width:28px; height:28px; display:flex; align-items:center; justify-content:center; margin:auto; transition:all 0.2s;" onmouseover="this.style.background='#f1416c'; this.style.color='white';" onmouseout="this.style.background='rgba(241,65,108,0.1)'; this.style.color='#f1416c';">
                                 <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -245,14 +256,14 @@
                     const price = parseFloat(row.querySelector('.price-input').value) || 0;
                     const sub = qty * price;
                     totalHT += sub;
-                    row.querySelector('.subtotal-col').textContent = sub.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+                    row.querySelector('.subtotal-col').textContent = sub.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ' + CURRENCY;
                 });
                 const tva = parseFloat(document.getElementById('taux_tva').value) || 0;
                 const totalTVA = totalHT * (tva / 100);
                 const totalTTC = totalHT + totalTVA;
-                document.getElementById('total_ht').textContent  = totalHT.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
-                document.getElementById('total_tva').textContent = totalTVA.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
-                document.getElementById('total_ttc').textContent = totalTTC.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' €';
+                document.getElementById('total_ht').textContent  = totalHT.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ' + CURRENCY;
+                document.getElementById('total_tva').textContent = totalTVA.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ' + CURRENCY;
+                document.getElementById('total_ttc').textContent = totalTTC.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ' + CURRENCY;
             }
         });
     </script>

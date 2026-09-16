@@ -17,7 +17,7 @@
             
             <div class="flex items-center gap-3 bg-white/5 border border-white/10 p-4 rounded-xl backdrop-blur-md">
                 <div class="text-center px-4 border-r border-white/10">
-                    <span class="block text-2xl font-black text-emerald-400">{{ number_format($montantDevisAcceptes ?? 0, 0, ',', ' ') }} MAD</span>
+                    <span class="block text-2xl font-black text-emerald-400">{{ format_montant($montantDevisAcceptes ?? 0, 0) }}</span>
                     <span class="text-[10px] uppercase tracking-wider text-slate-300 font-bold">CA Signé (Devis Acceptés)</span>
                 </div>
                 <div class="text-center px-4">
@@ -91,7 +91,7 @@
                 <p class="text-xs text-gray-400 mb-4">Montant TTC cumulé des offres de devis émanant du service</p>
                 <div class="flex items-baseline gap-2">
                     <span class="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
-                        {{ number_format($montantDevisTotal ?? 0, 2, ',', ' ') }} MAD
+                        {{ format_montant($montantDevisTotal ?? 0) }}
                     </span>
                 </div>
                 <div class="mt-4 h-2.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
@@ -124,9 +124,21 @@
                 <h4 class="font-bold text-gray-900 dark:text-white mb-1 text-xs uppercase tracking-wider">Statut des Devis Commercial</h4>
                 <p class="text-xs text-gray-400 mb-4">Répartition des propositions commerciales par état.</p>
                 @if(isset($parStatutDevis) && $parStatutDevis->isNotEmpty())
+                    {{-- Volume faible : les valeurs absolues priment sur le pourcentage du
+                    donut (qui donnerait une fausse impression de significativité statistique). --}}
+                    <div class="flex flex-wrap gap-1.5 mb-3">
+                        @foreach($parStatutDevis as $statutDevis => $totalStatut)
+                            <span class="px-2.5 py-1 text-[11px] font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                                {{ $totalStatut }} {{ $statutDevis }}
+                            </span>
+                        @endforeach
+                    </div>
                     <div class="relative h-56">
                         <canvas id="chartDevisStatut"></canvas>
                     </div>
+                    @if(($nbDevis ?? 0) < 20)
+                        <p class="text-[10px] text-gray-400 mt-2 text-center">Basé sur {{ $nbDevis }} devis — volume encore faible, à interpréter avec prudence.</p>
+                    @endif
                 @else
                     <div class="h-56 flex items-center justify-center text-gray-400 text-xs">Aucun devis créé pour l'instant.</div>
                 @endif
@@ -135,16 +147,67 @@
             {{-- Graphique Répartition des Interventions --}}
             <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
                 <h4 class="font-bold text-gray-900 dark:text-white mb-1 text-xs uppercase tracking-wider">Interventions Générées par le Commercial</h4>
-                <p class="text-xs text-gray-400 mb-4">Suivi de l'exécution terrain des demandes clients.</p>
-                @if(isset($parStatut) && $parStatut->isNotEmpty())
+                <p class="text-xs text-gray-400 mb-4">Suivi des demandes d'intervention issues de vos devis acceptés.</p>
+                @if(isset($parStatutDemandes) && $parStatutDemandes->isNotEmpty())
                     <div class="relative h-56">
                         <canvas id="chartStatut"></canvas>
                     </div>
                 @else
-                    <div class="h-56 flex items-center justify-center text-gray-400 text-xs">Aucune intervention enregistrée.</div>
+                    <div class="h-56 flex items-center justify-center text-gray-400 text-xs">Aucune demande d'intervention générée pour l'instant.</div>
                 @endif
             </div>
 
+        </div>
+
+        {{-- Section Évolution & Entonnoir --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            {{-- Évolution mensuelle Devis --}}
+            <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+                <h4 class="font-bold text-gray-900 dark:text-white mb-1 text-xs uppercase tracking-wider">Évolution Mensuelle (6 derniers mois)</h4>
+                <p class="text-xs text-gray-400 mb-4">Nombre de devis émis et montant accepté par mois.</p>
+                @if(isset($parMoisDevis) && $parMoisDevis->isNotEmpty())
+                    <div class="relative h-64">
+                        <canvas id="chartEvolution"></canvas>
+                    </div>
+                @else
+                    <div class="h-64 flex items-center justify-center text-gray-400 text-xs">Aucun devis émis sur les 6 derniers mois.</div>
+                @endif
+            </div>
+
+            {{-- Répartition des Prospects par Statut --}}
+            <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+                <h4 class="font-bold text-gray-900 dark:text-white mb-1 text-xs uppercase tracking-wider">Prospects par Statut</h4>
+                <p class="text-xs text-gray-400 mb-4">Répartition de votre portefeuille de prospects.</p>
+                @if(isset($parStatutProspects) && $parStatutProspects->isNotEmpty())
+                    <div class="flex flex-wrap gap-1.5 mb-3">
+                        @foreach($parStatutProspects as $statutProspect => $totalStatutP)
+                            <span class="px-2.5 py-1 text-[11px] font-bold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                                {{ $totalStatutP }} {{ $statutProspect }}
+                            </span>
+                        @endforeach
+                    </div>
+                    <div class="relative h-56">
+                        <canvas id="chartProspectsStatut"></canvas>
+                    </div>
+                @else
+                    <div class="h-56 flex items-center justify-center text-gray-400 text-xs">Aucun prospect enregistré.</div>
+                @endif
+            </div>
+
+        </div>
+
+        {{-- Entonnoir de Conversion --}}
+        <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-6">
+            <h4 class="font-bold text-gray-900 dark:text-white mb-1 text-xs uppercase tracking-wider">Entonnoir de Conversion</h4>
+            <p class="text-xs text-gray-400 mb-4">Du premier contact prospect jusqu'à la conversion effective en client — repère les étapes où le pipeline perd le plus de volume.</p>
+            @if(isset($entonnoirConversion) && array_sum($entonnoirConversion) > 0)
+                <div class="relative h-64">
+                    <canvas id="chartEntonnoir"></canvas>
+                </div>
+            @else
+                <div class="h-64 flex items-center justify-center text-gray-400 text-xs">Aucune donnée de pipeline pour l'instant.</div>
+            @endif
         </div>
     </div>
 
@@ -178,14 +241,14 @@
         });
         @endif
 
-        // Doughnut Interventions Statut
-        @if(isset($parStatut) && $parStatut->isNotEmpty())
+        // Doughnut Interventions Statut (Demandes d'Intervention du commercial)
+        @if(isset($parStatutDemandes) && $parStatutDemandes->isNotEmpty())
         new Chart(document.getElementById('chartStatut'), {
             type: 'doughnut',
             data: {
-                labels: @json($parStatut->keys()),
+                labels: @json($parStatutDemandes->keys()),
                 datasets: [{
-                    data: @json($parStatut->values()),
+                    data: @json($parStatutDemandes->values()),
                     backgroundColor: ['#6366f1','#f59e0b','#10b981','#8b5cf6','#ef4444','#64748b'],
                     borderWidth: 2,
                     borderColor: isDark ? '#111827' : '#fff',
@@ -196,6 +259,99 @@
                 maintainAspectRatio: false,
                 plugins: {
                     legend: { position: 'right', labels: { color: textColor, font: { size: 11 }, boxWidth: 12 } }
+                }
+            }
+        });
+        @endif
+
+        // Doughnut Prospects Statut
+        @if(isset($parStatutProspects) && $parStatutProspects->isNotEmpty())
+        new Chart(document.getElementById('chartProspectsStatut'), {
+            type: 'doughnut',
+            data: {
+                labels: @json($parStatutProspects->keys()),
+                datasets: [{
+                    data: @json($parStatutProspects->values()),
+                    backgroundColor: ['#64748b','#f59e0b','#6366f1','#10b981','#ef4444'],
+                    borderWidth: 2,
+                    borderColor: isDark ? '#111827' : '#fff',
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { color: textColor, font: { size: 11 }, boxWidth: 12 } }
+                }
+            }
+        });
+        @endif
+
+        // Évolution mensuelle : barres (nb devis) + ligne (montant accepté)
+        @if(isset($parMoisDevis) && $parMoisDevis->isNotEmpty())
+        new Chart(document.getElementById('chartEvolution'), {
+            data: {
+                labels: @json($parMoisDevis->pluck('mois')),
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Devis émis',
+                        data: @json($parMoisDevis->pluck('nb_devis')),
+                        backgroundColor: '#6366f1',
+                        borderRadius: 4,
+                        yAxisID: 'y',
+                    },
+                    {
+                        type: 'line',
+                        label: 'Montant accepté ({{ currency_symbol() }})',
+                        data: @json($parMoisDevis->pluck('montant_accepte')),
+                        borderColor: '#10b981',
+                        backgroundColor: '#10b981',
+                        tension: 0.3,
+                        yAxisID: 'y1',
+                    },
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'bottom', labels: { color: textColor, font: { size: 11 }, boxWidth: 12 } }
+                },
+                scales: {
+                    x: { ticks: { color: textColor } },
+                    y: { position: 'left', ticks: { color: textColor, precision: 0 }, title: { display: true, text: 'Devis émis', color: textColor } },
+                    y1: { position: 'right', ticks: { color: textColor }, grid: { drawOnChartArea: false }, title: { display: true, text: 'Montant ({{ currency_symbol() }})', color: textColor } },
+                }
+            }
+        });
+        @endif
+
+        // Entonnoir de conversion (barres horizontales décroissantes)
+        @if(isset($entonnoirConversion) && array_sum($entonnoirConversion) > 0)
+        new Chart(document.getElementById('chartEntonnoir'), {
+            type: 'bar',
+            data: {
+                labels: @json(array_keys($entonnoirConversion)),
+                datasets: [{
+                    data: @json(array_values($entonnoirConversion)),
+                    backgroundColor: ['#6366f1','#3e97ff','#f59e0b','#10b981'],
+                    borderRadius: 6,
+                    barThickness: 32,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => ctx.raw + ' ' + ctx.label } }
+                },
+                scales: {
+                    x: { ticks: { color: textColor, precision: 0 }, beginAtZero: true },
+                    y: { ticks: { color: textColor, font: { size: 12, weight: 'bold' } } }
                 }
             }
         });

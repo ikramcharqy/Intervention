@@ -17,7 +17,12 @@ Route::middleware('guest')->group(function () {
 
     Route::post('register', [RegisteredUserController::class, 'store']);
 
+    // no-back-cache (Étape 1) : /login ne doit jamais être resservie depuis le
+    // bfcache après une veille/retour arrière — son contenu (redirection vers
+    // /2fa/setup ou /2fa/challenge selon l'état réel) doit être recalculé à
+    // chaque affichage.
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
+        ->middleware('no-back-cache')
         ->name('login');
 
     Route::post('login', [AuthenticatedSessionController::class, 'store']);
@@ -54,6 +59,10 @@ Route::middleware('auth')->group(function () {
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
 
+    // no-back-cache (Étape 3) : la page affichée juste après /logout ne doit
+    // pas non plus pouvoir revenir depuis le bfcache une fois la session
+    // invalidée côté serveur.
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+        ->middleware('no-back-cache')
         ->name('logout');
 });

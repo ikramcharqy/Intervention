@@ -46,6 +46,8 @@ class ChantierController extends Controller
 
     /**
      * Formulaire de création.
+     * Accessible depuis le module Chantiers global ou depuis la fiche d'un
+     * client (`?client_id=`, lu directement dans la vue pour pré-sélection).
      */
     public function create(): View
     {

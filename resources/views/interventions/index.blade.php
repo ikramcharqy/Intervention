@@ -113,7 +113,7 @@
                                 <!-- Référence -->
                                 <td>
                                     <a href="{{ route('interventions.show', $intervention) }}" class="inline-flex items-center gap-2 group">
-                                        <span class="font-mono font-bold text-xs text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100 group-hover:bg-indigo-100 transition">
+                                        <span class="font-bold text-xs text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-md border border-indigo-100 group-hover:bg-indigo-100 transition">
                                             {{ $intervention->code_intervention }}
                                         </span>
                                     </a>

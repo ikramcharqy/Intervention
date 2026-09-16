@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
-    <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- Assets Vite -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -133,7 +133,7 @@
                     </button>
 
                     <!-- Commercial -->
-                    <button type="button" onclick="fillCreds('commercial@fieldflow.test')" 
+                    <button type="button" onclick="fillCreds('commercial@intervention.ma')" 
                             class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-emerald-300 hover:bg-emerald-50/40 transition group flex flex-col items-center gap-1.5">
                         <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
                             <i class="fas fa-briefcase"></i>

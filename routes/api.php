@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChantierController;
 use App\Http\Controllers\Api\FormulaireController;
 use App\Http\Controllers\Api\InterventionController;
+use App\Http\Controllers\Api\MediaController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\PushSubscriptionController;
@@ -18,6 +20,13 @@ use Illuminate\Support\Facades\Route;
 
 // Public Auth routes
 Route::middleware('throttle:6,1')->post('/login', [AuthController::class, 'login']);
+
+// Fichiers du disque public (photos/signatures/documents) — non authentifié,
+// même niveau d'accès que le lien symbolique public/storage qu'il remplace
+// pour l'app Flutter Web (cf. Api\MediaController). Volontairement en dehors
+// du groupe auth:sanctum : ces fichiers étaient déjà accessibles sans jeton
+// via /storage/*.
+Route::get('/media/{path}', [MediaController::class, 'show'])->where('path', '.*');
 
 // Protected routes (Sanctum)
 Route::middleware('auth:sanctum')->group(function () {
@@ -52,6 +61,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/interventions/{intervention}/materiaux/{pivot}', [InterventionController::class, 'removeMateriau']);
     Route::get('/materiaux', [InterventionController::class, 'catalogueMateriaux']);
 
+    // Fiche chantier (Technicien) — même donnée que ClientModule\ChantierController::show(),
+    // restreinte aux chantiers où le technicien connecté a au moins une intervention.
+    Route::get('/chantiers/{chantier}', [ChantierController::class, 'show']);
+
     // 2. Module Formulaires Dynamiques — throttle 30/min (évite soumissions multiples)
     Route::get('/interventions/{intervention}/formulaire', [FormulaireController::class, 'show']);
     Route::middleware('throttle:api-upload')->post('/interventions/{intervention}/formulaire', [FormulaireController::class, 'store']);
@@ -85,6 +98,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/', [ProfileController::class, 'update']);
         Route::post('/photo', [ProfileController::class, 'updatePhoto']);
         Route::put('/password', [ProfileController::class, 'updatePassword']);
+        Route::put('/presence', [ProfileController::class, 'updatePresence']);
+        Route::put('/notification-preferences', [ProfileController::class, 'updateNotificationPreferences']);
+        Route::get('/login-history', [ProfileController::class, 'loginHistory']);
+        Route::get('/sessions', [ProfileController::class, 'sessions']);
+        Route::delete('/sessions/{tokenId}', [ProfileController::class, 'revokeSession']);
     });
 
     // 7. Module Push Notifications PWA (Web Push Subscriptions)

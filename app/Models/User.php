@@ -5,13 +5,12 @@ namespace App\Models;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Permission\Traits\HasRoles;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasRoles, SoftDeletes;
+    use HasApiTokens,HasFactory, Notifiable, HasRoles;
     //notifiable=> permet d'envoyer des notifications à l'utilisateur
     //HasRoles=>permet d'attribuer des rôles et des permissions à l'utilisateur
 
@@ -24,7 +23,9 @@ class User extends Authenticatable
         'adresse',
         'password',
         'is_active',
-        'client_id',
+        'en_service',
+        'en_service_maj_le',
+        'notification_preferences',
     ];
 
     protected $hidden = [
@@ -38,7 +39,22 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'en_service' => 'boolean',
+            'en_service_maj_le' => 'datetime',
+            'notification_preferences' => 'array',
         ];
+    }
+
+    /**
+     * Préférence de notification par catégorie — actuellement une seule
+     * catégorie réellement exploitée (`intervention_updates`, cf.
+     * ProfileUpdateRequest::prepareForValidation()) ; `true` par défaut tant
+     * que l'utilisateur n'a jamais explicitement désactivé cette catégorie
+     * (préférence absente ≠ préférence refusée).
+     */
+    public function souhaiteNotification(string $categorie): bool
+    {
+        return ($this->notification_preferences[$categorie] ?? true) !== false;
     }
 
         public function interventions()
@@ -77,14 +93,15 @@ class User extends Authenticatable
             'admin_id'
         );
     }
-    public function client()
-    {
-        return $this->belongsTo(Client::class);
-    }
 
     // Clients gérés par ce commercial
     public function clientsGeres()
     {
         return $this->hasMany(Client::class, 'commercial_id');
+    }
+
+        public function client()
+    {
+        return $this->hasOne(Client::class);
     }
 }

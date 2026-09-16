@@ -1,199 +1,141 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Devis {{ $devis->reference ?? $devis->id }}</title>
-    <style>
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        .header {
-            margin-bottom: 30px;
-        }
-        .company-name {
-            font-size: 24px;
-            font-weight: bold;
-            color: #1e3a8a;
-        }
-        .devis-title {
-            font-size: 28px;
-            font-weight: bold;
-            color: #1e3a8a;
-            text-align: right;
-            margin-top: -30px;
-        }
-        .details-table {
-            width: 100%;
-            margin-bottom: 30px;
-            border-collapse: collapse;
-        }
-        .details-table td {
-            vertical-align: top;
-            width: 50%;
-        }
-        .section-title {
-            font-size: 12px;
-            text-transform: uppercase;
-            color: #999;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        .info-box {
-            background-color: #f3f4f6;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        .info-box table {
-            width: 100%;
-        }
-        .info-box td {
-            padding: 4px 0;
-        }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 30px;
-        }
-        .items-table th {
-            background-color: #1e3a8a;
-            color: white;
-            padding: 10px;
-            font-size: 13px;
-            text-align: left;
-        }
-        .items-table td {
-            padding: 12px 10px;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 13px;
-        }
-        .text-right {
-            text-align: right !important;
-        }
-        .text-center {
-            text-align: center !important;
-        }
-        .totals-table {
-            width: 300px;
-            float: right;
-            margin-bottom: 30px;
-            border-collapse: collapse;
-        }
-        .totals-table td {
-            padding: 8px 10px;
-            font-size: 13px;
-        }
-        .totals-table tr.grand-total {
-            background-color: #1e3a8a;
-            color: white;
-            font-weight: bold;
-        }
-        .observations {
-            margin-top: 50px;
-            clear: both;
-            border-top: 1px solid #e5e7eb;
-            padding-top: 20px;
-        }
-    </style>
-</head>
-<body>
+@php
+    $documentTitle = 'Devis';
+    $documentReference = $devis->reference ?? 'DEVIS-'.$devis->id;
+@endphp
+@extends('pdf.layout')
 
-    <div class="header">
-        <div class="company-name">CRM INTERVENTION</div>
-        <div class="devis-title">DEVIS</div>
+@push('styles')
+    .recipient-block { font-size: 10px; font-weight: bold; color: #1e293b; line-height: 1.6; }
+    .expiration-note { display: inline-block; font-size: 9.5px; font-weight: bold; padding: 3px 9px; border-radius: 10px; margin-bottom: 16px; }
+    .totals-table { width: 280px; float: right; margin-top: 6px; margin-bottom: 16px; border-collapse: collapse; }
+    .totals-table td { padding: 7px 12px; font-size: 10.5px; border: 1px solid #e2e8f0; }
+    .totals-table tr.grand-total td { background-color: #ecfdf5; color: #047857; font-weight: bold; font-size: 11.5px; }
+    .clearfix { clear: both; }
+    .terms { font-size: 9.5px; color: #475569; line-height: 1.7; margin-bottom: 4px; }
+    .terms strong { color: #1e293b; }
+    .signature-table { width: 100%; border-collapse: collapse; margin-top: 30px; }
+    .signature-table td { width: 50%; vertical-align: top; font-size: 9.5px; padding-top: 30px; border-top: 1px solid #cbd5e1; }
+@endpush
+
+@section('meta')
+    <strong>Destinataire :</strong><br>
+    <div class="recipient-block">
+        @if($devis->prospect)
+            {{ $devis->prospect->nom_contact ?? $devis->prospect->nom_entreprise }}<br>
+            {{ $devis->prospect->nom_entreprise }}
+        @elseif($devis->client)
+            {{ $devis->client->nom_contact ?? $devis->client->nom }}<br>
+            {{ $devis->client->nom }}
+        @else
+            Non spécifié
+        @endif
     </div>
+@endsection
 
-    <table class="details-table">
-        <tr>
-            <td>
-                <div class="section-title">Émetteur</div>
-                <strong>CRM Intervention</strong><br>
-                Commercial : {{ $devis->commercial ? $devis->commercial->name : 'N/A' }}<br>
-                Email : {{ $devis->commercial ? $devis->commercial->email : 'N/A' }}<br>
-            </td>
-            <td>
-                <div class="section-title">Destinataire</div>
-                @if($devis->prospect)
-                    <strong>{{ $devis->prospect->nom_entreprise }}</strong><br>
-                    Contact : {{ $devis->prospect->nom_contact }}<br>
-                    Email : {{ $devis->prospect->email }}<br>
-                    Téléphone : {{ $devis->prospect->telephone }}<br>
-                    Adresse : {{ $devis->prospect->adresse }}<br>
-                @elseif($devis->client)
-                    <strong>{{ $devis->client->nom }}</strong><br>
-                    Contact : {{ $devis->client->nom_contact }}<br>
-                    Email : {{ $devis->client->email }}<br>
-                    Téléphone : {{ $devis->client->telephone }}<br>
-                    Adresse : {{ $devis->client->adresse_facturation }}<br>
-                @else
-                    <strong>Non spécifié</strong>
-                @endif
-            </td>
-        </tr>
-    </table>
+@section('content')
+    @if($devis->client)
+        <p style="font-size:9.5px; color:#64748b; margin-top:-10px;">N° client : {{ $devis->client->code_client }}</p>
+    @endif
 
-    <div class="info-box">
-        <table>
-            <tr>
-                <td><strong>Référence :</strong> {{ $devis->reference ?? 'DEVIS-'.$devis->id }}</td>
-                <td><strong>Date d'émission :</strong> {{ $devis->date_emission ? $devis->date_emission->format('d/m/Y') : 'N/A' }}</td>
-            </tr>
-            <tr>
-                <td><strong>Statut :</strong> {{ $devis->statut }}</td>
-                <td><strong>Date d'expiration :</strong> {{ $devis->date_expiration ? $devis->date_expiration->format('d/m/Y') : 'N/A' }}</td>
-            </tr>
-        </table>
-    </div>
-
-    <table class="items-table">
-        <thead>
-            <tr>
-                <th style="width: 30%;">Désignation</th>
-                <th>Description</th>
-                <th class="text-center" style="width: 12%;">Quantité</th>
-                <th class="text-right" style="width: 18%;">Prix U. HT</th>
-                <th class="text-right" style="width: 18%;">Total HT</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($devis->lignes as $ligne)
-                <tr>
-                    <td><strong>{{ $ligne->designation }}</strong></td>
-                    <td style="color: #666;">{{ $ligne->description ?? '-' }}</td>
-                    <td class="text-center">{{ number_format($ligne->quantite, 2, ',', ' ') }}</td>
-                    <td class="text-right">{{ number_format($ligne->prix_unitaire, 2, ',', ' ') }} €</td>
-                    <td class="text-right">{{ number_format($ligne->montant_ht, 2, ',', ' ') }} €</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-
-    <table class="totals-table">
-        <tr>
-            <td>Total HT :</td>
-            <td class="text-right">{{ number_format($devis->montant_ht, 2, ',', ' ') }} €</td>
-        </tr>
-        <tr>
-            <td>TVA ({{ $devis->taux_tva }}%) :</td>
-            <td class="text-right">{{ number_format($devis->montant_tva, 2, ',', ' ') }} €</td>
-        </tr>
-        <tr class="grand-total">
-            <td>Total TTC :</td>
-            <td class="text-right">{{ number_format($devis->montant_ttc, 2, ',', ' ') }} €</td>
-        </tr>
-    </table>
-
-    @if($devis->observations)
-        <div class="observations">
-            <div class="section-title">Observations / Conditions</div>
-            <p style="white-space: pre-wrap; font-size: 12px; color: #555;">{{ $devis->observations }}</p>
+    @if($devis->date_expiration)
+        @php
+            $joursRestants = now()->startOfDay()->diffInDays($devis->date_expiration->startOfDay(), false);
+            $urgent = $joursRestants <= 7;
+        @endphp
+        <div class="expiration-note" style="background-color: {{ $urgent ? '#fee2e2' : '#fef3c7' }}; color: {{ $urgent ? '#991b1b' : '#92400e' }};">
+            Devis valable jusqu'au {{ $devis->date_expiration->format('d/m/Y') }}
+            @if($joursRestants >= 0)
+                ({{ $joursRestants }} jour{{ $joursRestants > 1 ? 's' : '' }} restant{{ $joursRestants > 1 ? 's' : '' }})
+            @else
+                — délai expiré
+            @endif
         </div>
     @endif
 
-</body>
-</html>
+    <div class="section">
+        <div class="section-header">Détail des prestations</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 28%;">Désignation</th>
+                    <th>Description</th>
+                    <th style="width: 10%; text-align:center;">Quantité</th>
+                    <th style="width: 16%; text-align:right;">Prix U. HT</th>
+                    <th style="width: 16%; text-align:right;">Total HT</th>
+                    <th style="width: 8%; text-align:center;">TVA</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($devis->lignes as $ligne)
+                    <tr>
+                        <td><strong>{{ $ligne->designation }}</strong></td>
+                        <td style="color:#64748b;">{{ $ligne->description ?? '-' }}</td>
+                        <td style="text-align:center;">{{ number_format($ligne->quantite, 2, ',', ' ') }}</td>
+                        <td style="text-align:right;">{{ number_format($ligne->prix_unitaire, 2, ',', ' ') }} {{ $currency }}</td>
+                        <td style="text-align:right;">{{ number_format($ligne->montant_ht, 2, ',', ' ') }} {{ $currency }}</td>
+                        <td style="text-align:center;">{{ $devis->taux_tva }} %</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+
+    <table class="totals-table">
+        <tr>
+            <td>Total HT</td>
+            <td style="text-align:right;">{{ number_format($devis->montant_ht, 2, ',', ' ') }} {{ $currency }}</td>
+        </tr>
+        <tr>
+            <td>TVA ({{ $devis->taux_tva }} %)</td>
+            <td style="text-align:right;">{{ number_format($devis->montant_tva, 2, ',', ' ') }} {{ $currency }}</td>
+        </tr>
+        <tr class="grand-total">
+            <td>Total TTC</td>
+            <td style="text-align:right;">{{ number_format($devis->montant_ttc, 2, ',', ' ') }} {{ $currency }}</td>
+        </tr>
+    </table>
+
+    <div class="clearfix"></div>
+
+    @php
+        $conditionsParts = [];
+        if ($payment['deposit_percent'] > 0) {
+            $decimales = $payment['deposit_percent'] == floor($payment['deposit_percent']) ? 0 : 2;
+            $conditionsParts[] = number_format($payment['deposit_percent'], $decimales, ',', ' ') . ' % à la commande';
+        }
+        if ($payment['mode']) {
+            $conditionsParts[] = 'solde par ' . $payment['mode'];
+        }
+        if ($payment['delay_days']) {
+            $conditionsParts[] = $payment['delay_days'] . ' jours net';
+        }
+    @endphp
+    <p class="terms">
+        <strong>Durée de validité :</strong> {{ $devis->date_expiration ? 'jusqu\'au '.$devis->date_expiration->format('d/m/Y') : 'non spécifiée' }}<br>
+        @if(!empty($conditionsParts))
+            <strong>Conditions de règlement :</strong> {{ implode(', ', $conditionsParts) }}
+        @endif
+    </p>
+
+    <p class="terms">Nous restons à votre disposition pour toute information complémentaire.</p>
+
+    @if($devis->observations)
+        <div class="section">
+            <div class="section-header">Observations</div>
+            <div class="info-box" style="font-size:9.5px; white-space:pre-wrap;">{{ $devis->observations }}</div>
+        </div>
+    @endif
+
+    <p class="terms">Si ce devis vous convient, veuillez le retourner signé, daté et cacheté :</p>
+
+    <table class="signature-table">
+        <tr>
+            <td>Pour {{ $company['name'] }} (cachet et signature)</td>
+            <td>Pour le client<br>(précédée de la mention : « Lu et approuvé, bon pour accord »)</td>
+        </tr>
+    </table>
+
+    @if($legalMentions)
+        <p class="terms" style="margin-top:16px; color:#94a3b8;">{{ $legalMentions }}</p>
+    @endif
+@endsection

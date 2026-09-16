@@ -2,8 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+
 abstract class Controller
 {
+    use AuthorizesRequests;
+
+
     /**
      * Résout la vue à afficher selon le rôle de l'utilisateur connecté.
      *

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Intervention;
+use App\Services\ApiSessionService;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,10 @@ use Illuminate\Validation\Rules\Password;
 
 class ProfileController extends BaseApiController
 {
+    public function __construct(private ApiSessionService $apiSession)
+    {
+    }
+
     /**
      * Obtenir le profil complet du technicien connecté avec ses statistiques.
      */
@@ -42,6 +47,7 @@ class ProfileController extends BaseApiController
                 'photo'     => $user->photo,
                 'photo_url' => $photoUrl,
                 'is_active' => (bool) $user->is_active,
+                'notification_preferences' => $user->notification_preferences,
                 'roles'     => $user->getRoleNames(),
             ],
             'statistics' => $stats,
@@ -134,6 +140,34 @@ class ProfileController extends BaseApiController
     }
 
     /**
+     * Mettre à jour le statut de présence "En service"/"Hors service"
+     * déclaré par le technicien (PresenceToggle côté app mobile). Ne
+     * déclenche aucun tracking GPS — question de conformité non tranchée,
+     * cf. commentaires PresenceService.php côté Flutter.
+     */
+    public function updatePresence(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'en_service' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse('Données invalides.', $validator->errors(), 422);
+        }
+
+        $user = $request->user();
+        $user->update([
+            'en_service' => $request->boolean('en_service'),
+            'en_service_maj_le' => now(),
+        ]);
+
+        return $this->successResponse([
+            'en_service' => $user->en_service,
+            'en_service_maj_le' => $user->en_service_maj_le,
+        ], 'Statut de présence mis à jour.');
+    }
+
+    /**
      * Changer le mot de passe de l'utilisateur.
      */
     public function updatePassword(Request $request): JsonResponse
@@ -167,5 +201,78 @@ class ProfileController extends BaseApiController
         } catch (Exception $e) {
             return $this->errorResponse($e->getMessage(), null, 400);
         }
+    }
+
+    /**
+     * Préférences de notification par catégorie — actuellement une seule
+     * catégorie réellement exploitée (`intervention_updates`, cf.
+     * InterventionService::souhaiteNotification()) ; conçu en tableau
+     * `categorie => bool` pour rester extensible sans nouvelle migration si
+     * d'autres catégories sont ajoutées plus tard.
+     */
+    public function updateNotificationPreferences(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'intervention_updates' => 'required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->errorResponse('Données invalides.', $validator->errors(), 422);
+        }
+
+        $user = $request->user();
+        $user->update([
+            'notification_preferences' => array_merge(
+                $user->notification_preferences ?? [],
+                ['intervention_updates' => $request->boolean('intervention_updates')]
+            ),
+        ]);
+
+        return $this->successResponse(
+            ['notification_preferences' => $user->notification_preferences],
+            'Préférences de notification mises à jour.'
+        );
+    }
+
+    /**
+     * Historique des connexions API (jetons Sanctum) — distinct de
+     * l'historique de connexion web (SessionSecurityService), qui ne
+     * concerne que les sessions par cookie.
+     */
+    public function loginHistory(Request $request): JsonResponse
+    {
+        return $this->successResponse(
+            $this->apiSession->historiqueConnexions($request->user()),
+            'Historique de connexion récupéré.'
+        );
+    }
+
+    /**
+     * Appareils connectés (un jeton Sanctum = une connexion API distincte).
+     */
+    public function sessions(Request $request): JsonResponse
+    {
+        $currentTokenId = $request->user()->currentAccessToken()?->id;
+
+        return $this->successResponse(
+            $this->apiSession->appareilsActifs($request->user(), $currentTokenId),
+            'Appareils connectés récupérés.'
+        );
+    }
+
+    /**
+     * Révoque un appareil (jeton Sanctum) précis — y compris potentiellement
+     * l'appareil courant, ce qui déconnectera immédiatement l'app appelante ;
+     * comportement attendu d'une action "révoquer cet appareil".
+     */
+    public function revokeSession(Request $request, int $tokenId): JsonResponse
+    {
+        $revoked = $this->apiSession->revoquerAppareil($request->user(), $tokenId);
+
+        if (!$revoked) {
+            return $this->errorResponse('Appareil introuvable.', null, 404);
+        }
+
+        return $this->successResponse(null, 'Appareil déconnecté avec succès.');
     }
 }

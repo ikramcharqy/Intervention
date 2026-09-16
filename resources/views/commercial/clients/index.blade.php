@@ -11,25 +11,11 @@
                         class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 text-sm focus:ring-2 focus:ring-indigo-500">
                 </div>
 
-                @if($commerciaux->isNotEmpty())
-                <div class="min-w-[200px]">
-                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Commercial</label>
-                    <select name="commercial_id" class="w-full rounded-xl border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 text-sm">
-                        <option value="">Tous les commerciaux</option>
-                        @foreach($commerciaux as $com)
-                            <option value="{{ $com->id }}" @selected(($commercialFilter ?? '') == $com->id)>
-                                {{ $com->prenom }} {{ $com->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                @endif
-
                 <div class="flex gap-2">
                     <button type="submit" class="bg-indigo-600 text-white font-medium py-2 px-4 rounded-xl hover:bg-indigo-700 transition text-sm shadow-sm">
                         Filtrer
                     </button>
-                    @if($search || $commercialFilter)
+                    @if($search)
                         <a href="{{ route('clients.index') }}" class="bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium py-2 px-4 rounded-xl hover:bg-gray-200 transition text-sm">
                             Réinitialiser
                         </a>
@@ -71,7 +57,7 @@
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                         @forelse ($clients as $client)
                             <tr class="hover:bg-gray-50/50 dark:hover:bg-gray-800/40 transition {{ !$client->is_active ? 'opacity-60' : '' }}">
-                                <td class="px-5 py-3.5 font-mono font-semibold text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 w-28">
+                                <td class="px-5 py-3.5 font-semibold text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/20 w-28">
                                     {{ $client->code_client }}
                                 </td>
                                 <td class="px-5 py-3.5 font-semibold text-gray-900 dark:text-white">

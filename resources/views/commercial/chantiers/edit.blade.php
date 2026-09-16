@@ -39,8 +39,8 @@
 
                     <div>
                         <label for="type_local" class="block font-medium">Type de local</label>
-                        <select name="type_local" id="type_local" class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                            @foreach (['Maison', 'Appartement', 'Magasin', 'Bureau', 'Usine', 'Restaurant', 'Hotel', 'Hopital', 'Ecole', 'Administration', 'Autre'] as $type)
+                        <select name="type_local" id="type_local" required class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                            @foreach (\App\Models\Chantier::TYPES_LOCAL as $type)
                                 <option value="{{ $type }}" @selected(old('type_local', $chantier->type_local) == $type)>{{ $type }}</option>
                             @endforeach
                         </select>

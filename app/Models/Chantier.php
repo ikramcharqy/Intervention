@@ -9,6 +9,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Chantier extends Model
 {
     use HasFactory, SoftDeletes;
+
+    const TYPES_LOCAL = [
+        'Maison', 'Appartement', 'Magasin', 'Bureau', 'Usine',
+        'Restaurant', 'Hotel', 'Hopital', 'Ecole', 'Administration',
+        'Entrepôt', 'Local technique', 'Site industriel', 'Commerce',
+        'Société', 'Entreprise', 'Autre',
+    ];
+
+    const VILLES_PRINCIPALES = [
+        'Casablanca', 'Rabat', 'Mohammedia', 'Marrakech', 'Tanger', 'Fès',
+        'Salé', 'Meknès', 'Agadir', 'Oujda', 'Kénitra', 'Tétouan', 'Safi',
+        'El Jadida', 'Nador', 'Béni Mellal',
+    ];
+
     protected $fillable = [
         'client_id',
         'code_chantier',
@@ -43,6 +57,6 @@ class Chantier extends Model
 
     public function emplacements()
     {
-        return $this->hasMany(Emplacement::class);
+        return $this->hasMany(Emplacement::class)->orderBy('ordre_affichage')->orderBy('nom');
     }
 }

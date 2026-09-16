@@ -29,7 +29,7 @@
                             <option value="">-- Sélectionner --</option>
 
                             @foreach ($clients as $client)
-                                <option value="{{ $client->id }}" @selected(old('client_id') == $client->id)>
+                                <option value="{{ $client->id }}" @selected(old('client_id', request('client_id')) == $client->id)>
                                     {{ $client->nom }}
                                 </option>
                             @endforeach
@@ -46,10 +46,19 @@
                                 class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
                                 <option value="">-- Sélectionner --</option>
                                 @foreach ($chantiers as $chantier)
-                                    <option value="{{ $chantier->id }}" @selected(old('chantier_id') == $chantier->id)>{{ $chantier->nom }}</option>
+                                    <option value="{{ $chantier->id }}" @selected(old('chantier_id', request('chantier_id')) == $chantier->id)>{{ $chantier->nom }}</option>
                                 @endforeach
                             </select>
                             @error('chantier_id')<p class="text-red-500 text-sm">{{ $message }}</p>@enderror
+                        </div>
+
+                        <div id="emplacement-wrapper" style="display:none">
+                            <label for="emplacement_id" class="block font-medium">Emplacement</label>
+                            <select name="emplacement_id" id="emplacement_id"
+                                class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                <option value="">-- Aucun (optionnel) --</option>
+                            </select>
+                            @error('emplacement_id')<p class="text-red-500 text-sm">{{ $message }}</p>@enderror
                         </div>
 
                         <div>
@@ -145,4 +154,40 @@
             </div>
         </div>
     </div>
+
+    <script>
+        const emplacementsByChantier = @json($emplacements->groupBy('chantier_id'));
+        const currentEmplacement = "{{ old('emplacement_id', request('emplacement_id')) }}";
+
+        const chantierSelect       = document.getElementById('chantier_id');
+        const emplacementWrapper   = document.getElementById('emplacement-wrapper');
+        const emplacementSelect    = document.getElementById('emplacement_id');
+
+        function refreshEmplacements() {
+            const chantierId = chantierSelect.value;
+            const emplacements = emplacementsByChantier[chantierId] || [];
+
+            if (emplacements.length === 0) {
+                emplacementWrapper.style.display = 'none';
+                emplacementSelect.value = '';
+                return;
+            }
+
+            emplacementSelect.innerHTML = '<option value="">-- Aucun (optionnel) --</option>';
+            emplacements.forEach(e => {
+                const opt = document.createElement('option');
+                opt.value = e.id;
+                opt.textContent = e.nom;
+                if (String(e.id) === currentEmplacement) opt.selected = true;
+                emplacementSelect.appendChild(opt);
+            });
+            emplacementWrapper.style.display = '';
+        }
+
+        chantierSelect.addEventListener('change', refreshEmplacements);
+
+        if (chantierSelect.value) {
+            refreshEmplacements();
+        }
+    </script>
 </x-app-layout>

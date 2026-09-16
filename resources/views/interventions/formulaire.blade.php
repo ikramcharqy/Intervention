@@ -29,12 +29,32 @@
                     @csrf
 
                     @foreach($formulaire->questions as $question)
-                        <div class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-4">
+                        @php
+                            // Affichage conditionnel : ce champ ne s'affiche que si une
+                            // réponse précise a été donnée à une question précédente.
+                            $cond = $question->condition_affichage;
+                            $condAttrs = '';
+                            $condStyle = '';
+                            if (!empty($cond['depends_on'])) {
+                                $parentQuestion = $formulaire->questions->firstWhere('id', $cond['depends_on']);
+                                $triggerChoix = $parentQuestion?->choix->firstWhere('valeur', $cond['choix_valeur'] ?? null);
+                                if ($parentQuestion && $triggerChoix) {
+                                    $condAttrs = sprintf(
+                                        'data-depends-on-name="reponses[%d]" data-depends-on-value="%d" data-depends-on-type="%s"',
+                                        $parentQuestion->id,
+                                        $triggerChoix->id,
+                                        $parentQuestion->type_reponse
+                                    );
+                                    $condStyle = 'display:none;';
+                                }
+                            }
+                        @endphp
+                        <div class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-4" {!! $condAttrs !!} style="{{ $condStyle }}">
                             <label class="block font-medium mb-2 text-lg">
                                 {{ $question->ordre }}. {{ $question->question }}
                                 @if($question->obligatoire) <span class="text-red-500">*</span> @endif
                             </label>
-                            
+
                             @php
                                 $valeur = old('reponses.' . $question->id, $reponsesExistantes[$question->id] ?? $question->valeur_par_defaut);
                             @endphp
@@ -219,6 +239,33 @@
                         e.target.closest('tr').remove();
                     }
                 });
+            });
+
+            // Affichage conditionnel des questions (ex: "Précisez" si "Autre" est coché)
+            document.querySelectorAll('[data-depends-on-name]').forEach(function (block) {
+                const name  = block.dataset.dependsOnName;
+                const value = block.dataset.dependsOnValue;
+                const type  = block.dataset.dependsOnType;
+
+                function evaluate() {
+                    let show = false;
+                    if (type === 'Checkbox') {
+                        show = !!document.querySelector('input[name="' + name + '[]"][value="' + value + '"]:checked');
+                    } else if (type === 'Liste') {
+                        const select = document.querySelector('select[name="' + name + '"]');
+                        show = !!select && select.value === value;
+                    } else {
+                        // Radio
+                        const checked = document.querySelector('input[name="' + name + '"]:checked');
+                        show = !!checked && checked.value === value;
+                    }
+                    block.style.display = show ? '' : 'none';
+                }
+
+                document.querySelectorAll('[name="' + name + '"], [name="' + name + '[]"]').forEach(function (el) {
+                    el.addEventListener('change', evaluate);
+                });
+                evaluate();
             });
         });
     </script>

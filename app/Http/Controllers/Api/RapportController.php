@@ -79,7 +79,8 @@ class RapportController extends BaseApiController
             'photos',
             'videos',
             'documents',
-            'reponses.question',
+            'reponses.question.choix',
+            'reponses.choixQuestion',
         ]);
 
         return $this->successResponse($rapport, 'Rapport d\'intervention récupéré.');
@@ -105,7 +106,8 @@ class RapportController extends BaseApiController
             'photos',
             'videos',
             'documents',
-            'reponses.question',
+            'reponses.question.choix',
+            'reponses.choixQuestion',
         ]);
 
         return $this->successResponse($rapport, 'Détails du rapport récupérés.');

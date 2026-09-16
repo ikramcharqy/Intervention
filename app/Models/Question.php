@@ -18,11 +18,18 @@ class Question extends Model
         'placeholder',
         'valeur_par_defaut',
         'condition_affichage', // JSON — réservé pour conditions futures
+        'nombre_min',
+        'nombre_max',
+        'nombre_unite',
+        'fichiers_max',
     ];
 
     protected $casts = [
         'obligatoire'        => 'boolean',
         'condition_affichage' => 'array',
+        'nombre_min'          => 'float',
+        'nombre_max'          => 'float',
+        'fichiers_max'        => 'integer',
     ];
 
     /*

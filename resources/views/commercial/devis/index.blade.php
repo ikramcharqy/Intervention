@@ -1,127 +1,117 @@
 <x-commercial-layout>
-    <x-slot name="header">Devis</x-slot>
+    <x-slot name="header"></x-slot>
 
-    @if(session('success'))
-        <div class="kt-alert kt-alert-success" style="margin-bottom:20px;">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            {{ session('success') }}
-        </div>
-    @endif
-
-    <div class="kt-card">
-        <div class="kt-card-header">
-            <div>
-                <div class="kt-card-title">Gestion des Devis</div>
-                <div style="font-size:12px; color:#a1a5b7; margin-top:3px;">{{ $devis->count() }} devis au total</div>
+    <div class="space-y-6">
+        @if(session('success'))
+            <div class="metronic-card p-4 text-sm font-medium bg-emerald-50 text-emerald-700 border-emerald-100">
+                {{ session('success') }}
             </div>
-            <a href="{{ route('commercial.devis.create') }}" class="kt-btn kt-btn-primary">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-                Nouveau Devis
-            </a>
-        </div>
+        @endif
 
-        <div style="overflow-x: auto;">
-            <table class="kt-table">
-                <thead>
-                    <tr>
-                        <th style="padding-left:24px;">Référence</th>
-                        <th>Destinataire</th>
-                        <th>Date émission</th>
-                        <th style="text-align:right;">Montant TTC</th>
-                        <th>Statut</th>
-                        <th style="text-align:right; padding-right:24px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($devis as $item)
-                        <tr>
-                            <td style="padding-left:24px;">
-                                <div style="display:flex; align-items:center; gap:12px;">
-                                    <div class="kt-avatar" style="background:rgba(114,57,234,0.12); color:#7239ea;">
-                                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        <div class="metronic-card overflow-hidden">
+            <div class="flex items-center justify-between p-6 pb-0">
+                <div>
+                    <h1 class="text-base font-bold text-[#181C32] font-heading">Gestion des Devis</h1>
+                    <p class="text-xs text-[#A1A5B7] mt-1">{{ $devis->count() }} devis au total</p>
+                </div>
+                <a href="{{ route('commercial.devis.create') }}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition">
+                    <i class="fas fa-plus text-[11px]"></i> Nouveau Devis
+                </a>
+            </div>
+
+            <div class="overflow-x-auto mt-6">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="bg-[#F9F9FB] text-[#A1A5B7] uppercase font-bold text-[10px]">
+                            <th class="py-3 pl-6 pr-4">Référence</th>
+                            <th class="py-3 px-4">Destinataire</th>
+                            <th class="py-3 px-4">Date émission</th>
+                            <th class="py-3 px-4 text-right">Montant TTC</th>
+                            <th class="py-3 px-4">Statut</th>
+                            <th class="py-3 pr-6 pl-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#EFF2F5]">
+                        @forelse($devis as $item)
+                            <tr class="hover:bg-[#F9F9FB] transition">
+                                <td class="py-3.5 pl-6 pr-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                                            <i class="fas fa-file-invoice-dollar text-xs"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-[#181C32] truncate">{{ $item->reference ?? 'DEVIS-'.$item->id }}</p>
+                                            @if($item->date_expiration && $item->date_expiration->isPast() && $item->statut === 'Envoyé')
+                                                <p class="text-[10px] text-rose-600 font-bold mt-0.5">
+                                                    <i class="fas fa-triangle-exclamation"></i> Expiré
+                                                </p>
+                                            @endif
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div style="font-weight:700; color:#181c32; font-size:13px;">{{ $item->reference ?? 'DEVIS-'.$item->id }}</div>
-                                        @if($item->date_expiration && $item->date_expiration->isPast() && $item->statut === 'Envoyé')
-                                            <div style="font-size:10px; color:#f1416c; font-weight:600; margin-top:2px;">⚠ Expiré</div>
-                                        @endif
-                                    </div>
-                                </div>
-                            </td>
-                            <td>
-                                @if($item->prospect)
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <span class="kt-badge kt-badge-primary" style="font-size:9px; padding:2px 6px;">Prospect</span>
-                                        <span style="font-size:13px; color:#3f4254; font-weight:500;">{{ $item->prospect->nom_entreprise }}</span>
-                                    </div>
-                                @elseif($item->client)
-                                    <div style="display:flex; align-items:center; gap:6px;">
-                                        <span class="kt-badge kt-badge-success" style="font-size:9px; padding:2px 6px;">Client</span>
-                                        <span style="font-size:13px; color:#3f4254; font-weight:500;">{{ $item->client->nom }}</span>
-                                    </div>
-                                @else
-                                    <span style="color:#a1a5b7; font-size:13px;">—</span>
-                                @endif
-                            </td>
-                            <td>
-                                <span style="font-size:13px; color:#3f4254;">
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    @if($item->prospect)
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-blue-50 text-blue-600">Prospect</span>
+                                            <span class="text-[#3F4254] font-medium">{{ $item->prospect->nom_entreprise }}</span>
+                                        </div>
+                                    @elseif($item->client)
+                                        <div class="flex items-center gap-2">
+                                            <span class="px-2 py-0.5 text-[9px] font-bold rounded-full bg-emerald-50 text-emerald-600">Client</span>
+                                            <span class="text-[#3F4254] font-medium">{{ $item->client->nom }}</span>
+                                        </div>
+                                    @else
+                                        <span class="text-[#A1A5B7]">—</span>
+                                    @endif
+                                </td>
+                                <td class="py-3.5 px-4 text-[#3F4254]">
                                     {{ $item->date_emission ? $item->date_emission->format('d/m/Y') : '—' }}
-                                </span>
-                            </td>
-                            <td style="text-align:right;">
-                                <span style="font-size:14px; font-weight:700; color:#181c32;">
-                                    {{ number_format($item->montant_ttc, 2, ',', ' ') }} €
-                                </span>
-                            </td>
-                            <td>
-                                @php
-                                    $dColor = match($item->statut) {
-                                        'Brouillon' => 'kt-badge-gray',
-                                        'Envoyé'    => 'kt-badge-warning',
-                                        'Accepté'   => 'kt-badge-success',
-                                        'Refusé'    => 'kt-badge-danger',
-                                        default     => 'kt-badge-gray'
-                                    };
-                                @endphp
-                                <span class="kt-badge {{ $dColor }}">{{ $item->statut }}</span>
-                            </td>
-                            <td style="padding-right:24px; text-align:right;">
-                                <div style="display:flex; align-items:center; justify-content:flex-end; gap:6px;">
-                                    <a href="{{ route('commercial.devis.show', $item) }}" class="kt-btn kt-btn-light kt-btn-sm">
-                                        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                        Voir
-                                    </a>
-                                    <a href="{{ route('commercial.devis.edit', $item) }}" class="kt-btn kt-btn-light-primary kt-btn-sm">
-                                        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                                        Modifier
-                                    </a>
-                                    <a href="{{ route('commercial.devis.pdf', $item) }}" target="_blank" class="kt-btn kt-btn-light-danger kt-btn-sm">
-                                        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                                        PDF
-                                    </a>
-                                    <form action="{{ route('commercial.devis.duplicate', $item) }}" method="POST" class="inline">
-                                        @csrf
-                                        <button type="submit" class="kt-btn kt-btn-light-success kt-btn-sm">
-                                            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                                            Dupliquer
-                                        </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6">
-                                <div class="kt-empty-state">
-                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                    <p>Aucun devis trouvé. <a href="{{ route('commercial.devis.create') }}" style="color:#3e97ff; text-decoration:none; font-weight:600;">Créer votre premier devis</a></p>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                                </td>
+                                <td class="py-3.5 px-4 text-right font-bold text-[#181C32]">
+                                    {{ number_format($item->montant_ttc, 2, ',', ' ') }} {{ $currency }}
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    @php
+                                        $dColor = match($item->statut) {
+                                            'Brouillon' => 'bg-[#F5F8FA] text-[#5E6278]',
+                                            'Envoyé', 'En attente' => 'bg-amber-50 text-amber-600',
+                                            'Accepté', 'Accepte', 'Validé' => 'bg-emerald-50 text-emerald-600',
+                                            'Refusé', 'Refuse', 'Annulé' => 'bg-rose-50 text-rose-600',
+                                            default => 'bg-[#F5F8FA] text-[#5E6278]'
+                                        };
+                                    @endphp
+                                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-full {{ $dColor }}">{{ $item->statut }}</span>
+                                </td>
+                                <td class="py-3.5 pr-6 pl-4">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        <a href="{{ route('commercial.devis.show', $item) }}" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-[#EFF2F5] text-[#5E6278] text-[11px] font-bold rounded-lg hover:bg-[#F9F9FB] transition" title="Voir le détail">
+                                            <i class="fas fa-eye text-[10px]"></i> Voir
+                                        </a>
+                                        <a href="{{ route('commercial.devis.edit', $item) }}" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white border border-[#EFF2F5] text-[#5E6278] text-[11px] font-bold rounded-lg hover:bg-[#F9F9FB] transition" title="Modifier">
+                                            <i class="fas fa-pen text-[10px]"></i> Modifier
+                                        </a>
+                                        <a href="{{ route('commercial.devis.pdf', $item) }}" target="_blank" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-rose-50 text-rose-700 text-[11px] font-bold rounded-lg hover:bg-rose-100 transition" title="PDF">
+                                            <i class="fas fa-file-pdf text-[10px]"></i> PDF
+                                        </a>
+                                        <form action="{{ route('commercial.devis.duplicate', $item) }}" method="POST" class="inline">
+                                            @csrf
+                                            <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 text-[11px] font-bold rounded-lg hover:bg-emerald-100 transition" title="Dupliquer">
+                                                <i class="fas fa-copy text-[10px]"></i> Dupliquer
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-12 text-center text-[#A1A5B7] italic">
+                                    Aucun devis trouvé. <a href="{{ route('commercial.devis.create') }}" class="text-emerald-600 font-bold hover:underline">Créer votre premier devis</a>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-
 </x-commercial-layout>

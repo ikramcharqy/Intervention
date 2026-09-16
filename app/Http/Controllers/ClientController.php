@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateClientRequest;
 use App\Models\Client;
 use App\Models\User;
 use App\Services\ClientService;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -16,6 +17,8 @@ use Illuminate\View\View;
  */
 class ClientController extends Controller
 {
+    use AuthorizesRequests;
+
     protected ClientService $clientService;
 
     public function __construct(ClientService $clientService)
@@ -28,11 +31,18 @@ class ClientController extends Controller
      */
     public function index(Request $request): View
     {
+        $this->authorize('viewAny', Client::class);
+
         $search = $request->input('search');
         $commercialFilter = $request->input('commercial_id');
+        $isCommercial = auth()->user()->hasRole('Commercial');
 
-        // Si l'utilisateur connecté est un Commercial, il ne voit que ses propres clients
-        if (auth()->user()->hasRole('Commercial')) {
+        if ($isCommercial) {
+            // Un Commercial ne peut filtrer que sur lui-même : toute tentative de
+            // consulter le portefeuille d'un collègue via un ID différent est bloquée.
+            if ($commercialFilter && (int) $commercialFilter !== auth()->id()) {
+                abort(403, "Vous ne pouvez consulter que votre propre portefeuille clients.");
+            }
             $commercialFilter = auth()->id();
         }
 
@@ -50,10 +60,31 @@ class ClientController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        // Liste des commerciaux pour le filtre
-        $commerciaux = User::role('Commercial')->orderBy('name')->get();
+        // Liste des commerciaux pour le filtre : réservée à l'Admin/Super Admin.
+        // Un Commercial ne doit jamais recevoir les identités de ses collègues.
+        $commerciaux = $isCommercial ? collect() : User::role('Commercial')->orderBy('name')->get();
 
-        return $this->roleView('clients.index', compact('clients', 'search', 'commerciaux', 'commercialFilter'));
+        $nonAssignesCount = auth()->user()->can('manageAssignment', Client::class)
+            ? Client::whereNull('commercial_id')->count()
+            : 0;
+
+        return $this->roleView('clients.index', compact('clients', 'search', 'commerciaux', 'commercialFilter', 'nonAssignesCount'));
+    }
+
+    /**
+     * Affiche la liste des clients sans commercial assigné (Admin/Super Admin).
+     */
+    public function nonAssignes(): View
+    {
+        $this->authorize('manageAssignment', Client::class);
+
+        $clients = Client::whereNull('commercial_id')
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        $commerciaux = User::role('Commercial')->where('is_active', true)->orderBy('name')->get();
+
+        return $this->roleView('clients.a-assigner', compact('clients', 'commerciaux'));
     }
 
     /**
@@ -61,6 +92,8 @@ class ClientController extends Controller
      */
     public function create(): View
     {
+        $this->authorize('create', Client::class);
+
         $commerciaux = User::role('Commercial')->where('is_active', true)->orderBy('name')->get();
         return $this->roleView('clients.create', compact('commerciaux'));
     }
@@ -70,6 +103,8 @@ class ClientController extends Controller
      */
     public function store(StoreClientRequest $request): RedirectResponse
     {
+        $this->authorize('create', Client::class);
+
         $data = $request->validated();
 
         // Auto-assigner le commercial si l'utilisateur connecté est un Commercial
@@ -89,16 +124,26 @@ class ClientController extends Controller
      */
     public function show(Client $client): View
     {
+        $this->authorize('view', $client);
+
         $client->load([
             'clientEntreprise',
+            'clientParticulier',
             'commercial',
             'contacts',
+            'activites' => function ($query) {
+                $query->with('user')->limit(20);
+            },
             'chantiers' => function ($query) {
                 $query->orderBy('created_at', 'desc');
             },
         ]);
 
-        return $this->roleView('clients.show', compact('client'));
+        $commerciaux = auth()->user()->can('reassign', $client)
+            ? User::role('Commercial')->where('is_active', true)->orderBy('name')->get()
+            : collect();
+
+        return $this->roleView('clients.show', compact('client', 'commerciaux'));
     }
 
     /**
@@ -106,7 +151,9 @@ class ClientController extends Controller
      */
     public function edit(Client $client): View
     {
-        $client->load('clientEntreprise');
+        $this->authorize('update', $client);
+
+        $client->load(['clientEntreprise', 'clientParticulier']);
         $commerciaux = User::role('Commercial')->where('is_active', true)->orderBy('name')->get();
 
         return $this->roleView('clients.edit', compact('client', 'commerciaux'));
@@ -117,6 +164,8 @@ class ClientController extends Controller
      */
     public function update(UpdateClientRequest $request, Client $client): RedirectResponse
     {
+        $this->authorize('update', $client);
+
         $this->clientService->updateClient($client, $request->validated());
 
         return redirect()
@@ -129,6 +178,8 @@ class ClientController extends Controller
      */
     public function destroy(Client $client): RedirectResponse
     {
+        $this->authorize('delete', $client);
+
         $this->clientService->deactivate($client);
 
         return redirect()
@@ -141,6 +192,8 @@ class ClientController extends Controller
      */
     public function restore(Client $client): RedirectResponse
     {
+        $this->authorize('update', $client);
+
         $this->clientService->activate($client);
 
         return redirect()
@@ -149,10 +202,39 @@ class ClientController extends Controller
     }
 
     /**
+     * Réassigne un client à un autre commercial (Admin/Super Admin uniquement).
+     */
+    public function reassign(Request $request, Client $client): RedirectResponse
+    {
+        $this->authorize('reassign', $client);
+
+        $validated = $request->validate([
+            'nouveau_commercial_id' => ['required', 'exists:users,id'],
+            'commentaire'           => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $nouveauCommercial = User::findOrFail($validated['nouveau_commercial_id']);
+
+        try {
+            $this->clientService->reassignerCommercial($client, $nouveauCommercial, $validated['commentaire'] ?? null);
+        } catch (\InvalidArgumentException $e) {
+            return redirect()->back()->withErrors(['nouveau_commercial_id' => $e->getMessage()]);
+        }
+
+        $redirectRoute = $request->input('from') === 'non-assignes' ? 'clients.non-assignes' : 'clients.show';
+
+        return redirect()
+            ->route($redirectRoute, $redirectRoute === 'clients.show' ? [$client] : [])
+            ->with('success', "Le client **{$client->nom}** a été réassigné avec succès.");
+    }
+
+    /**
      * Retourne les chantiers actifs d'un client en JSON (pour chargement dynamique).
      */
     public function getChantiers(Client $client)
     {
+        $this->authorize('view', $client);
+
         $chantiers = $client->chantiers()
             ->where('is_active', true)
             ->orderBy('nom')
@@ -166,6 +248,8 @@ class ClientController extends Controller
      */
     public function forceDelete(Client $client): RedirectResponse
     {
+        $this->authorize('forceDelete', $client);
+
         $nom = $client->nom;
         $client->delete();
 

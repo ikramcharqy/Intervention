@@ -58,6 +58,9 @@
                                         @if($demande->statut == 'En attente')
                                             <a href="{{ route('demande-interventions.edit', $demande) }}" class="text-blue-600 hover:underline text-xs">Modifier</a>
                                         @endif
+                                        @if($demande->devis->isNotEmpty())
+                                            <a href="{{ route('commercial.devis.show', $demande->devis->first()) }}" class="text-emerald-600 hover:underline text-xs">Voir le devis d'origine</a>
+                                        @endif
                                     </td>
                                 </tr>
                             @endforeach

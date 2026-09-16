@@ -9,7 +9,6 @@ use App\Models\Chantier;
 use App\Models\Intervention;
 use App\Models\TypeIntervention;
 use App\Models\Rapport;
-use App\Models\Document;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
@@ -23,6 +22,10 @@ class ClientSeeder extends Seeder
             'name' => 'Client',
             'guard_name' => 'web'
         ]);
+
+        // Commercial de démonstration : ces deux clients lui sont rattachés (cohérent avec
+        // les prospects/devis générés à son nom dans DemoDataSeeder).
+        $commercialDemo = User::where('email', 'commercial@intervention.ma')->first();
 
         // 2. Création des fiches Client (Table clients)
         $client1 = Client::updateOrCreate(
@@ -38,6 +41,7 @@ class ClientSeeder extends Seeder
                 'pays' => 'Maroc',
                 'observations' => 'Client entreprise VIP',
                 'is_active' => true,
+                'commercial_id' => $commercialDemo?->id,
             ]
         );
 
@@ -54,6 +58,7 @@ class ClientSeeder extends Seeder
                 'pays' => 'Maroc',
                 'observations' => 'Client particulier',
                 'is_active' => true,
+                'commercial_id' => $commercialDemo?->id,
             ]
         );
 
@@ -61,7 +66,12 @@ class ClientSeeder extends Seeder
         $userClient1 = User::updateOrCreate(
             ['email' => 'client@abc.com'],
             [
-                'name' => 'Mohamed Ali (ABC)',
+                // Le nom de la société ("Société ABC") vit déjà proprement et séparément
+                // dans clients.nom — il ne doit jamais être concaténé ici dans le nom
+                // de la personne (bug corrigé : "Mohamed Ali (ABC)" affiché tel quel
+                // sur Mon Profil et le Dashboard). "name" ne porte que le nom de famille
+                // (bug lié corrigé : le prénom "Mohamed" était dupliqué dans "name").
+                'name' => 'Ali',
                 'prenom' => 'Mohamed',
                 'telephone' => '0611111111',
                 'adresse' => '120 Boulevard Zerktouni, Casablanca',
@@ -75,7 +85,7 @@ class ClientSeeder extends Seeder
         $userClient2 = User::updateOrCreate(
             ['email' => 'fatima@test.com'],
             [
-                'name' => 'Fatima Zahra',
+                'name' => 'Zahra',
                 'prenom' => 'Fatima',
                 'telephone' => '0622222222',
                 'adresse' => '15 Avenue Hassan II, Rabat',
@@ -87,6 +97,7 @@ class ClientSeeder extends Seeder
         $userClient2->syncRoles([$clientRole]);
 
         // Technicien pour assignation
+        $technicienRole = Role::firstOrCreate(['name' => 'technicien', 'guard_name' => 'web']);
         $technicien = User::role('technicien')->first() ?? User::firstOrCreate(
             ['email' => 'tech@intervention.ma'],
             [
@@ -98,6 +109,11 @@ class ClientSeeder extends Seeder
                 'is_active' => true,
             ]
         );
+        // Bug corrigé : ce compte pouvait être créé sans rôle Spatie assigné (comptait dans
+        // "Total Comptes" sans apparaître dans "Répartition des Rôles Spatie" -> divergence KPI).
+        if ($technicien->roles->isEmpty()) {
+            $technicien->assignRole($technicienRole);
+        }
 
         // Type d'intervention
         $typeInterv = TypeIntervention::first() ?? TypeIntervention::create([
@@ -227,29 +243,8 @@ class ClientSeeder extends Seeder
             ]
         );
 
-        // 7. Documents rattachés au Client
-        Document::updateOrCreate(
-            [
-                'client_id' => $client1->id,
-                'nom_original' => 'Contrat_Maintenance_ABC_2026.pdf',
-            ],
-            [
-                'user_id' => $userClient1->id,
-                'chemin' => 'documents/contrat_abc.pdf',
-                'type_mime' => 'application/pdf',
-            ]
-        );
-
-        Document::updateOrCreate(
-            [
-                'client_id' => $client1->id,
-                'nom_original' => 'Plan_Installation_Caméras.pdf',
-            ],
-            [
-                'user_id' => $userClient1->id,
-                'chemin' => 'documents/plan_cameras.pdf',
-                'type_mime' => 'application/pdf',
-            ]
-        );
+        // 7. Documents rattachés au Client : entièrement délégué à DocumentSeeder (qui
+        // s'exécute après celui-ci dans DatabaseSeeder), pour centraliser la génération
+        // des PDF structurés au même endroit que le reste des documents de démonstration.
     }
 }

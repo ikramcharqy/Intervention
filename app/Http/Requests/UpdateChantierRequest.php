@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Chantier;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -32,10 +33,7 @@ class UpdateChantierRequest extends FormRequest
             'nom'        => ['required', 'string', 'max:255'],
             'type_local' => [
                 'required',
-                Rule::in([
-                    'Maison', 'Appartement', 'Magasin', 'Bureau', 'Usine',
-                    'Restaurant', 'Hotel', 'Hopital', 'Ecole', 'Administration', 'Autre',
-                ]),
+                Rule::in(Chantier::TYPES_LOCAL),
             ],
             'adresse'   => ['required', 'string', 'max:500'],
             'ville'     => ['required', 'string', 'max:100'],

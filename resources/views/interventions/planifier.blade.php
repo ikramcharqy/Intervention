@@ -10,7 +10,7 @@
                 <div>
                     <h1 class="text-2xl font-bold text-[#181C32] font-heading flex items-center gap-3">
                         Planification &amp; Affectation
-                        <span class="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-mono font-bold rounded-lg border border-blue-200">
+                        <span class="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-lg border border-blue-200">
                             {{ $intervention->code_intervention }}
                         </span>
                     </h1>

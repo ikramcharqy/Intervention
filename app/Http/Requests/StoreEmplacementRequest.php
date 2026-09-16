@@ -20,12 +20,13 @@ class StoreEmplacementRequest extends FormRequest
                 'integer',
                 Rule::exists('chantiers', 'id')->where('is_active', true),
             ],
-            'nom'         => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:1000'],
-            'latitude'    => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude'   => ['nullable', 'numeric', 'between:-180,180'],
-            'nfc_uid'     => ['nullable', 'string', 'max:255'],
-            'is_active'   => ['boolean'],
+            'nom'             => ['required', 'string', 'max:255'],
+            'description'     => ['nullable', 'string', 'max:1000'],
+            'ordre_affichage' => ['nullable', 'integer', 'min:0'],
+            'latitude'        => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude'       => ['nullable', 'numeric', 'between:-180,180'],
+            'nfc_uid'         => ['nullable', 'string', 'max:255'],
+            'is_active'       => ['boolean'],
         ];
     }
 
@@ -43,13 +44,14 @@ class StoreEmplacementRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'chantier_id' => 'chantier',
-            'nom'         => 'nom de l\'emplacement',
-            'description' => 'description',
-            'latitude'    => 'latitude',
-            'longitude'   => 'longitude',
-            'nfc_uid'     => 'UID NFC',
-            'is_active'   => 'statut actif',
+            'chantier_id'     => 'chantier',
+            'nom'             => 'nom de l\'emplacement',
+            'description'     => 'description',
+            'ordre_affichage' => 'ordre d\'affichage',
+            'latitude'        => 'latitude',
+            'longitude'       => 'longitude',
+            'nfc_uid'         => 'UID NFC',
+            'is_active'       => 'statut actif',
         ];
     }
 }

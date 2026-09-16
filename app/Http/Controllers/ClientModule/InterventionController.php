@@ -6,11 +6,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Intervention;
 use App\Models\Chantier;
 use App\Models\Client;
+use App\Models\DemandeIntervention;
+use App\Services\DemandeInterventionService;
+use App\Services\InterventionService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class InterventionController extends Controller
 {
+    public function __construct(
+        private InterventionService $interventionService,
+        private DemandeInterventionService $demandeInterventionService,
+    ) {
+    }
+
     private function getClient(): ?Client
     {
         $user = auth()->user();
@@ -24,25 +33,53 @@ class InterventionController extends Controller
     {
         $client = $this->getClient();
 
+        $statutFiltre = $request->input('statut', 'tous');
+        $chantierFiltre = $request->input('chantier_id');
+        $recherche = $request->input('q');
+        $avecRapport = $request->boolean('avec_rapport');
+
         if (!$client) {
             $interventions = collect();
-            $statutFiltre = $request->input('statut', 'tous');
-            return view('client.interventions.index', compact('interventions', 'statutFiltre'));
+            $chantiersDuClient = collect();
+            return view('client.interventions.index', compact('interventions', 'statutFiltre', 'chantierFiltre', 'recherche', 'chantiersDuClient', 'avecRapport'));
         }
 
-        $chantierIds = Chantier::where('client_id', $client->id)->pluck('id');
-        $statutFiltre = $request->input('statut', 'tous');
+        $chantiersDuClient = Chantier::where('client_id', $client->id)->orderBy('nom')->get(['id', 'nom']);
+        $chantierIds = $chantiersDuClient->pluck('id');
 
-        $query = Intervention::with(['chantier', 'technicien', 'typeIntervention'])
-            ->whereIn('chantier_id', $chantierIds);
+        // Même périmètre de base que ClientModule\DashboardController::index() via
+        // InterventionService::pourChantiers() : les deux pages restent synchronisées.
+        $query = $this->interventionService->pourChantiers($chantierIds)
+            ->with(['chantier', 'technicien', 'typeIntervention', 'rapport']);
 
+        // Filtre sur les 4 catégories client (InterventionService::GROUPES_STATUT_CLIENT),
+        // qui masquent les ~19 statuts internes du workflow sans y toucher.
         if ($statutFiltre && $statutFiltre !== 'tous') {
-            $query->where('statut', $statutFiltre);
+            $query->whereIn('statut', $this->interventionService->statutsPourGroupeClient($statutFiltre));
+        }
+
+        // Affinage optionnel, combinable avec n'importe quel onglet : une intervention
+        // "Terminée" peut légitimement ne pas encore avoir de rapport (cf. commentaire
+        // sur InterventionService::GROUPES_STATUT_CLIENT) — ce n'est donc pas un onglet
+        // à part mais une case à cocher.
+        if ($avecRapport) {
+            $query->whereHas('rapport');
+        }
+
+        if ($chantierFiltre) {
+            $query->where('chantier_id', $chantierFiltre);
+        }
+
+        if ($recherche) {
+            $query->where(function ($q) use ($recherche) {
+                $q->where('code_intervention', 'like', "%{$recherche}%")
+                    ->orWhereHas('chantier', fn ($c) => $c->where('nom', 'like', "%{$recherche}%"));
+            });
         }
 
         $interventions = $query->orderBy('date_prevue_debut', 'desc')->paginate(15)->withQueryString();
 
-        return view('client.interventions.index', compact('interventions', 'statutFiltre'));
+        return view('client.interventions.index', compact('interventions', 'statutFiltre', 'chantierFiltre', 'recherche', 'chantiersDuClient', 'avecRapport'));
     }
 
     public function show(Intervention $intervention): View
@@ -54,25 +91,35 @@ class InterventionController extends Controller
             abort(403, 'Accès non autorisé à cette intervention.');
         }
 
-        $intervention->load(['chantier', 'emplacement', 'technicien', 'typeIntervention', 'rapport', 'materiaux.materiau', 'taches.tache']);
+        $intervention->load(['chantier', 'emplacement', 'technicien', 'typeIntervention', 'rapport.photos', 'rapport.documents', 'materiaux.materiau', 'taches.tache']);
 
         return view('client.interventions.show', compact('intervention'));
     }
 
     /**
      * Formulaire pour permettre au Client d'émettre une demande d'intervention.
+     * Le paramètre "depuis" permet de pré-remplir la demande à partir d'une demande
+     * refusée (action "Soumettre une nouvelle demande liée" côté Mes Demandes).
      */
-    public function createDemande(): View
+    public function createDemande(Request $request): View
     {
         $client = $this->getClient();
         $chantiers = $client ? Chantier::where('client_id', $client->id)->get() : collect();
         $typesIntervention = \App\Models\TypeIntervention::where('is_active', true)->get();
 
-        return view('client.interventions.create_demande', compact('chantiers', 'typesIntervention'));
+        $demandeOrigine = null;
+        if ($client && $request->filled('depuis')) {
+            $demandeOrigine = DemandeIntervention::where('id', $request->input('depuis'))
+                ->where('client_id', $client->id)
+                ->first();
+        }
+
+        return view('client.interventions.create_demande', compact('chantiers', 'typesIntervention', 'demandeOrigine'));
     }
 
     /**
-     * Enregistre la demande d'intervention émise par le Client.
+     * Enregistre la demande d'intervention émise par le Client (logique déléguée
+     * à DemandeInterventionService::createFromClientPortal, partagée avec le canal Commercial).
      */
     public function storeDemande(Request $request)
     {
@@ -83,27 +130,25 @@ class InterventionController extends Controller
 
         $validated = $request->validate([
             'chantier_id'          => 'required|exists:chantiers,id',
-            'type_intervention_id' => 'nullable|exists:type_interventions,id',
+            'type_intervention_id' => 'required|exists:type_interventions,id',
             'priorite'             => 'required|string',
             'objet'                => 'required|string|max:255',
             'description'          => 'required|string',
+            'creneau_souhaite'     => 'nullable|string|max:255',
+            'contact_sur_site'     => 'nullable|string|max:255',
+            'photos.*'             => 'nullable|image|max:5120',
         ]);
 
-        $commercialId = $client->commercial_id;
-        if (!$commercialId) {
-            $commercialUser = \App\Models\User::role('Commercial')->first() 
-                ?? \App\Models\User::whereHas('roles', function($q) { $q->where('name', 'Commercial'); })->first();
-            $commercialId = $commercialUser?->id;
+        $photos = [];
+        if ($request->hasFile('photos')) {
+            foreach ($request->file('photos') as $file) {
+                $photos[] = $file->store('demandes/photos', 'public');
+            }
         }
 
-        $validated['client_id']     = $client->id;
-        $validated['commercial_id'] = $commercialId;
-        $validated['reference']     = 'DEM-CL-' . strtoupper(uniqid());
-        $validated['statut']        = 'En attente';
+        $this->demandeInterventionService->createFromClientPortal($client, $validated, $photos);
 
-        \App\Models\DemandeIntervention::create($validated);
-
-        return redirect()->route('client.interventions.index')
+        return redirect()->route('client.demandes.index')
             ->with('success', 'Votre demande d\'intervention a été soumise avec succès. Votre responsable commercial examinera votre demande et vous contactera par téléphone ou email.');
     }
 }

@@ -20,7 +20,7 @@
                     <div>
                         <h3 class="text-lg font-semibold border-b border-gray-100 dark:border-gray-700 pb-2 mb-4">Informations Générales</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><strong>Code Client :</strong> <span class="font-mono">{{ $client->code_client }}</span></div>
+                            <div><strong>Code Client :</strong> <span>{{ $client->code_client }}</span></div>
                             <div><strong>Type de Client :</strong> {{ $client->type_client }}</div>
                             <div><strong>Nom / Raison Sociale :</strong> {{ $client->nom }}</div>
                             <div><strong>Nom du Contact :</strong> {{ $client->nom_contact ?? '-' }}</div>
@@ -50,6 +50,16 @@
                                 <div><strong>Identifiant Fiscal (IF) :</strong> {{ $client->clientEntreprise->if ?? '-' }}</div>
                                 <div><strong>Registre du Commerce (RC) :</strong> {{ $client->clientEntreprise->rc ?? '-' }}</div>
                                 <div><strong>Patente :</strong> {{ $client->clientEntreprise->patente ?? '-' }}</div>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($client->type_client === 'Particulier' && $client->clientParticulier && auth()->user()->can('viewIdentity', $client))
+                        <div>
+                            <h3 class="text-lg font-semibold border-b border-gray-100 dark:border-gray-700 pb-2 mb-4">Identité du Client</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div><strong>Numéro CIN :</strong> {{ $client->clientParticulier->numero_cin ?? '-' }}</div>
+                                <div><strong>Date de naissance :</strong> {{ $client->clientParticulier->date_naissance?->format('d/m/Y') ?? '-' }}</div>
                             </div>
                         </div>
                     @endif
@@ -112,6 +122,43 @@
                 </div>
             </div>
 
+            {{-- Historique / Activité --}}
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 text-gray-900 dark:text-gray-100">
+                <div class="mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
+                    <h3 class="text-lg font-semibold">Historique / Activité</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Timeline chronologique des actions effectuées sur ce client.</p>
+                </div>
+
+                @php
+                    $activiteIcons = [
+                        'creation'               => ['🆕', 'text-indigo-600 dark:text-indigo-400'],
+                        'modification'           => ['✏️', 'text-gray-500 dark:text-gray-400'],
+                        'changement_commercial'  => ['🔁', 'text-amber-600 dark:text-amber-400'],
+                        'changement_statut'      => ['🔔', 'text-emerald-600 dark:text-emerald-400'],
+                        'appel'                  => ['📞', 'text-indigo-600 dark:text-indigo-400'],
+                        'note'                   => ['📝', 'text-gray-500 dark:text-gray-400'],
+                        'autre'                  => ['•', 'text-gray-500 dark:text-gray-400'],
+                    ];
+                @endphp
+
+                @forelse ($client->activites as $activite)
+                    @php [$emoji, $color] = $activiteIcons[$activite->type_action] ?? $activiteIcons['autre']; @endphp
+                    <div class="flex gap-3 {{ !$loop->last ? 'pb-4 mb-4 border-b border-gray-50 dark:border-gray-800' : '' }}">
+                        <div class="w-7 h-7 rounded-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center shrink-0 text-sm {{ $color }}">
+                            {{ $emoji }}
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ $activite->description }}</p>
+                            <p class="text-xs text-gray-400 mt-0.5">
+                                {{ $activite->user->name ?? 'Système' }} &middot; {{ $activite->created_at->diffForHumans() }}
+                            </p>
+                        </div>
+                    </div>
+                @empty
+                    <p class="text-sm text-gray-400 text-center py-4">Aucune activité enregistrée pour ce client.</p>
+                @endforelse
+            </div>
+
             {{-- Liste des chantiers associés --}}
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 text-gray-900 dark:text-gray-100">
                 <div class="flex justify-between items-center mb-4 border-b border-gray-100 dark:border-gray-700 pb-2">
@@ -166,7 +213,7 @@
 
                 {{-- Formulaire d'ajout de contact --}}
                 <div x-show="showContactForm" x-collapse class="mb-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                    <form action="{{ route('contacts.store', $client) }}" method="POST">
+                    <form action="{{ route('clients.contacts.store', $client) }}" method="POST">
                         @csrf
                         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                             <div>

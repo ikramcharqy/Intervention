@@ -8,7 +8,7 @@
     <div class="py-12">
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg p-6 text-gray-900 dark:text-gray-100">
-                <form method="POST" action="{{ route('clients.store') }}" class="space-y-6" x-data="{ typeClient: '{{ old('type_client', 'Entreprise') }}' }">
+                <form method="POST" action="{{ route('clients.store') }}" enctype="multipart/form-data" class="space-y-6" x-data="{ typeClient: '{{ old('type_client', 'Entreprise') }}' }">
                     @csrf
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -52,7 +52,9 @@
 
                         {{-- Nom / Raison sociale --}}
                         <div class="col-span-1 md:col-span-2">
-                            <label for="nom" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom ou Raison Sociale <span class="text-red-500">*</span></label>
+                            <label for="nom" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                <span x-text="typeClient === 'Particulier' ? 'Nom complet' : 'Nom ou Raison Sociale'"></span> <span class="text-red-500">*</span>
+                            </label>
                             <input type="text" name="nom" id="nom" required value="{{ old('nom') }}"
                                 class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                             @error('nom') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
@@ -120,8 +122,8 @@
                         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Informations de l'Entreprise</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label for="ice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ICE</label>
-                                <input type="text" name="ice" id="ice" value="{{ old('ice') }}"
+                                <label for="ice" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ICE <span class="text-red-500">*</span></label>
+                                <input type="text" name="ice" id="ice" :required="typeClient === 'Entreprise'" value="{{ old('ice') }}"
                                     class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                                 @error('ice') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                             </div>
@@ -145,6 +147,41 @@
                                 <input type="text" name="patente" id="patente" value="{{ old('patente') }}"
                                     class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
                                 @error('patente') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Identité du Client Particulier (Conditionnelle selon type_client) --}}
+                    <div x-show="typeClient === 'Particulier'" class="border-t border-gray-200 dark:border-gray-700 pt-6 space-y-4">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Identité du Client</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">Donnée personnelle sensible (loi 09-08) : visible uniquement par l'Admin et le Commercial assigné.</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="numero_cin" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Numéro CIN <span class="text-red-500">*</span></label>
+                                <input type="text" name="numero_cin" id="numero_cin" :required="typeClient === 'Particulier'" value="{{ old('numero_cin') }}" placeholder="Ex: AB123456"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                @error('numero_cin') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label for="date_naissance" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date de Naissance</label>
+                                <input type="date" name="date_naissance" id="date_naissance" value="{{ old('date_naissance') }}"
+                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
+                                @error('date_naissance') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label for="cin_recto" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Scan CIN Recto</label>
+                                <input type="file" name="cin_recto" id="cin_recto" accept=".pdf,.jpg,.jpeg,.png"
+                                    class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                @error('cin_recto') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label for="cin_verso" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Scan CIN Verso</label>
+                                <input type="file" name="cin_verso" id="cin_verso" accept=".pdf,.jpg,.jpeg,.png"
+                                    class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                                @error('cin_verso') <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p> @enderror
                             </div>
                         </div>
                     </div>

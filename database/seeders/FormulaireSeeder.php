@@ -87,7 +87,12 @@ class FormulaireSeeder extends Seeder
         $this->q($form, 11, 'Photo',    'Photo du boîtier installé et branché',                     true,  'Prenez une photo nette du boîtier');
         $this->q($form, 12, 'Photo',    'Photo du cheminement du câble (goulottes, fixations)',      true,  'Photo du parcours câble visible');
         $this->q($form, 13, 'Photo',    'Photo de la chambre de tirage / point de raccordement',    false, 'Optionnelle si non accessible');
-        $this->q($form, 14, 'Video',    'Vidéo de démonstration connexion réussie',                 false, 'Enregistrez le test de connexion');
+        // 'Video' n'existe pas dans Formulaire::TYPES_CHAMPS (types réellement
+        // supportés par RemplissageFormulaireService et le moteur de rendu
+        // Flutter) — corrigé en 'Document' pour rester dans un type géré de
+        // bout en bout (upload de fichier générique, incluant une vidéo),
+        // plutôt que de laisser une question tomber sur un rendu texte erroné.
+        $this->q($form, 14, 'Document', 'Vidéo de démonstration connexion réussie',                 false, 'Enregistrez le test de connexion (fichier vidéo)');
 
         // Section : Conformité & réception
         $this->q($form, 15, 'Checkbox', 'Points de vérification checklist de conformité',           true)->choix()->createMany([
@@ -150,7 +155,7 @@ class FormulaireSeeder extends Seeder
         $this->q($form, 13, 'Photo',    'Photo du tableau réseau (switch PoE / contrôleur)',        true);
         $this->q($form, 14, 'Photo',    'Photo de chaque borne installée avec son emplacement',     true);
         $this->q($form, 15, 'Photo',    'Capture d\'écran du portail d\'administration',            false, 'Si accessible, faites une capture');
-        $this->q($form, 16, 'Video',    'Vidéo du test de connexion et de navigation',              false);
+        $this->q($form, 16, 'Document', 'Vidéo du test de connexion et de navigation',              false);
         $this->q($form, 17, 'GPS',      'Position GPS de chaque borne (principale)',                false);
 
         // Bilan
@@ -219,7 +224,7 @@ class FormulaireSeeder extends Seeder
         $this->q($form, 15, 'Photo',    'Photo du NVR/DVR et du rack câblage',                     true);
         $this->q($form, 16, 'Photo',    'Photo de la vue générale caméra principale',               true);
         $this->q($form, 17, 'Photo',    'Capture d\'écran de l\'interface NVR (live view)',         true,  'Montrez toutes les caméras actives');
-        $this->q($form, 18, 'Video',    'Vidéo de démonstration du système (live + playback)',      false);
+        $this->q($form, 18, 'Document', 'Vidéo de démonstration du système (live + playback)',      false);
 
         // Livraison
         $this->q($form, 19, 'Checkbox', 'Documents et accès remis au client',                       true)->choix()->createMany([
@@ -360,7 +365,7 @@ class FormulaireSeeder extends Seeder
         // Preuves
         $this->q($form, 12, 'Photo',    'Photo de l\'équipement en panne (état initial)',           true);
         $this->q($form, 13, 'Photo',    'Photo après réparation (état résolu)',                     true);
-        $this->q($form, 14, 'Video',    'Vidéo du problème ou de la résolution',                   false, 'Si pertinent, filmez la panne / solution');
+        $this->q($form, 14, 'Document', 'Vidéo du problème ou de la résolution',                   false, 'Si pertinent, filmez la panne / solution');
 
         // Suivi
         $this->q($form, 15, 'OuiNon',   'Suivi requis sous 24h ?',                                  false);
@@ -427,6 +432,23 @@ class FormulaireSeeder extends Seeder
         $this->q($form, 19, 'TexteLong','Description de l\'architecture réseau mise en place',     false);
         $this->q($form, 20, 'TexteLong','Recommandations sécurité et points d\'attention',         false);
         $this->q($form, 21, 'Signature','Validation client / responsable IT',                       true);
+
+        // Paramètre technique : le protocole est une valeur à l'intérieur du
+        // processus "Configuration Routeur", pas un TypeIntervention distinct
+        // (même étapes, mêmes photos, même signature quel que soit le protocole).
+        $qProtocole = $this->q($form, 22, 'Checkbox', 'Protocole(s) configuré(s)', true);
+        $qProtocole->choix()->createMany([
+            ['valeur' => 'bgp',           'libelle' => 'BGP',                     'ordre' => 1],
+            ['valeur' => 'ospf',          'libelle' => 'OSPF',                    'ordre' => 2],
+            ['valeur' => 'vlan_trunking', 'libelle' => 'VLAN Trunking (802.1Q)',  'ordre' => 3],
+            ['valeur' => 'dhcp',          'libelle' => 'DHCP',                    'ordre' => 4],
+            ['valeur' => 'pppoe',         'libelle' => 'PPPoE',                   'ordre' => 5],
+            ['valeur' => 'snmp',          'libelle' => 'SNMP',                    'ordre' => 6],
+            ['valeur' => 'autre',         'libelle' => 'Autre',                   'ordre' => 7],
+        ]);
+
+        $this->q($form, 23, 'Texte', 'Si "Autre" : précisez', false, 'Ex : IS-IS, MPLS...')
+            ->update(['condition_affichage' => ['depends_on' => $qProtocole->id, 'choix_valeur' => 'autre']]);
     }
 
     // =========================================================================
@@ -537,7 +559,7 @@ class FormulaireSeeder extends Seeder
         // Photos et vidéos
         $this->q($form, 16, 'Photo',    'Photo du boîtier GPS installé (emplacement dans véhicule)',true);
         $this->q($form, 17, 'Photo',    'Capture de la plateforme (position en temps réel)',       true,  'Screenshot de la plateforme de tracking');
-        $this->q($form, 18, 'Video',    'Vidéo de vérification du tracking en temps réel',        false, 'Filmez la position se déplacer sur la carte');
+        $this->q($form, 18, 'Document', 'Vidéo de vérification du tracking en temps réel',        false, 'Filmez la position se déplacer sur la carte');
         $this->q($form, 19, 'TexteLong','Observations et anomalies détectées',                     false);
         $this->q($form, 20, 'TexteLong','Recommandations et prochaine maintenance',               false, 'Date et nature du prochain entretien');
     }

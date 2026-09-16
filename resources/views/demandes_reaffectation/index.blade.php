@@ -1,111 +1,98 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex items-center justify-between">
+    <div class="space-y-6">
+        <!-- Titre + Badge -->
+        <div class="flex items-center justify-between flex-wrap gap-3">
             <div>
-                <h1 class="text-2xl font-bold text-[#181C32] font-heading flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-500 to-rose-700 flex items-center justify-center shadow-md">
-                        <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                    </div>
-                    Arbitrage — Refus Techniciens &amp; Réaffectation
-                </h1>
-                <p class="text-sm text-[#A1A5B7] mt-0.5">Gestion des demandes de réaffectation suite aux refus motivés transmis par les techniciens</p>
+                <h1 class="text-xl sm:text-2xl font-bold text-[#131523] tracking-tight">Arbitrage — Refus Techniciens &amp; Réaffectation</h1>
+                <p class="text-xs text-[#5A607F] mt-1">Gestion des demandes de réaffectation suite aux refus motivés transmis par les techniciens</p>
             </div>
-            <span class="px-4 py-2 bg-rose-50 border border-rose-200 text-rose-700 text-sm font-bold rounded-xl flex items-center gap-2">
-                <span class="w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
+            <span class="inline-flex items-center gap-2 px-3.5 py-2 rounded-[4px] bg-[#FDE3E6] border border-[#F8C4CA] text-[#F0142F] text-xs font-bold">
+                <span class="w-2 h-2 rounded-full bg-[#F0142F] {{ $demandes->total() > 0 ? 'animate-pulse' : '' }}"></span>
                 {{ $demandes->total() }} demande(s) enregistrée(s)
             </span>
         </div>
-    </x-slot>
 
-    <div class="space-y-6">
+        <!-- Alertes session -->
         @if(session('success'))
-            <div class="flex items-center gap-3 p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-sm font-semibold shadow-sm">
-                <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {{ session('success') }}
+            <div class="p-4 rounded-[6px] bg-[#E3FBF0] border border-[#C4F8E2] text-[#06A561] text-xs font-semibold flex items-center gap-3">
+                <i class="fas fa-check-circle text-[#06A561] text-sm shrink-0"></i>
+                <span>{{ session('success') }}</span>
             </div>
         @endif
-
         @if(session('error'))
-            <div class="flex items-center gap-3 p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-2xl text-sm font-semibold shadow-sm">
-                <svg class="w-5 h-5 text-rose-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {{ session('error') }}
+            <div class="p-4 rounded-[6px] bg-[#FDE3E6] border border-[#F8C4CA] text-[#F0142F] text-xs font-semibold flex items-center gap-3">
+                <i class="fas fa-exclamation-circle text-[#F0142F] text-sm shrink-0"></i>
+                <span>{{ session('error') }}</span>
             </div>
         @endif
 
-        <div class="metronic-card overflow-hidden">
-            <div class="px-6 py-4 border-b border-[#EFF2F5] bg-gradient-to-r from-rose-50/60 to-white flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <svg class="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <h3 class="text-sm font-bold text-[#181C32]">Demandes de Réaffectation en attente d'Arbitrage Admin</h3>
-                </div>
+        <!-- Table -->
+        <div class="ds-card-elevated overflow-hidden">
+            <div class="flex items-center gap-3 px-6 py-4 border-b border-[#E6E9F4]">
+                <i class="fas fa-users text-[#F0142F]"></i>
+                <h3 class="text-sm font-bold text-[#131523]">Demandes de Réaffectation en attente d'Arbitrage Admin</h3>
             </div>
 
             <div class="overflow-x-auto">
-                <table class="w-full text-sm text-left">
+                <table class="ds-table">
                     <thead>
-                        <tr class="bg-[#F9F9FB] border-b border-[#EFF2F5] text-[10px] font-bold uppercase tracking-wider text-[#A1A5B7]">
-                            <th class="px-6 py-4">Intervention</th>
-                            <th class="px-6 py-4">Technicien Réclamant</th>
-                            <th class="px-6 py-4">Motif du Refus</th>
-                            <th class="px-6 py-4">Statut Demande</th>
-                            <th class="px-6 py-4">Émise Le</th>
-                            <th class="px-6 py-4 text-right">Décision &amp; Arbitrage Admin</th>
+                        <tr>
+                            <th>Intervention</th>
+                            <th>Technicien Réclamant</th>
+                            <th>Motif du Refus</th>
+                            <th>Statut Demande</th>
+                            <th>Émise le</th>
+                            <th class="text-right">Décision &amp; Arbitrage Admin</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-[#F5F8FA]">
+                    <tbody>
                         @forelse($demandes as $demande)
-                            <tr class="hover:bg-[#F9F9FB] transition">
-                                <td class="px-6 py-4 font-mono font-bold text-[#3E97FF] text-sm">
-                                    <a href="{{ route('interventions.show', $demande->intervention_id) }}" class="hover:underline flex items-center gap-2">
-                                        #{{ $demande->intervention->code_intervention ?? 'INT-'.$demande->intervention_id }}
+                            <tr>
+                                <td>
+                                    <a href="{{ route('interventions.show', $demande->intervention_id) }}" class="inline-flex items-center gap-2 group">
+                                        <span class="font-bold text-xs text-[#1E5EFF] bg-[#EAF0FF] px-2 py-0.5 rounded border border-[#D9E4FF] group-hover:bg-[#D9E4FF] transition">
+                                            #{{ $demande->intervention->code_intervention ?? 'INT-'.$demande->intervention_id }}
+                                        </span>
                                     </a>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="font-bold text-[#181C32] text-xs">
-                                        👨‍🔧 {{ $demande->technicien->name ?? 'N/A' }} {{ $demande->technicien->prenom ?? '' }}
+                                <td>
+                                    <div class="flex items-center gap-2.5">
+                                        <div class="w-8 h-8 rounded-[4px] bg-[#F5F6FA] border border-[#E6E9F4] text-[#5A607F] text-[10px] font-bold flex items-center justify-center shrink-0">
+                                            {{ strtoupper(substr($demande->technicien->name ?? 'NA', 0, 2)) }}
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-bold text-[#131523] truncate">{{ $demande->technicien->name ?? 'N/A' }} {{ $demande->technicien->prenom ?? '' }}</p>
+                                            <p class="text-[11px] text-[#A1A7C4] truncate">{{ $demande->technicien->email ?? '' }}</p>
+                                        </div>
                                     </div>
-                                    <div class="text-[11px] text-[#A1A5B7]">{{ $demande->technicien->email ?? '' }}</div>
                                 </td>
-                                <td class="px-6 py-4">
-                                    <div class="p-3 bg-amber-50/80 border border-amber-200 text-amber-900 rounded-xl text-xs max-w-sm" title="{{ $demande->motif }}">
-                                        <strong>Motif :</strong> "{{ $demande->motif }}"
+                                <td>
+                                    <div class="p-2.5 rounded-[6px] bg-[#FFF3DE] border border-[#FFE7B8] text-[#B98900] text-[11px] max-w-sm" title="{{ $demande->motif }}">
+                                        <span class="font-bold">Motif :</span> "{{ $demande->motif }}"
                                     </div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td>
                                     @if($demande->statut === 'En attente')
-                                        <span class="px-3 py-1 bg-amber-100 text-amber-800 border border-amber-300 rounded-full font-extrabold text-[10px] uppercase inline-flex items-center gap-1.5">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        <span class="ds-badge ds-badge-sm ds-badge-light-warning inline-flex items-center gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-[#B98900] animate-pulse"></span>
                                             En attente
                                         </span>
                                     @elseif($demande->statut === 'Acceptee')
-                                        <span class="px-3 py-1 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-full font-extrabold text-[10px] uppercase">
-                                            Acceptée par Admin
-                                        </span>
+                                        <span class="ds-badge ds-badge-sm ds-badge-light-success">Acceptée par Admin</span>
                                     @else
-                                        <span class="px-3 py-1 bg-rose-100 text-rose-800 border border-rose-300 rounded-full font-extrabold text-[10px] uppercase">
-                                            Refusée par Admin
-                                        </span>
+                                        <span class="ds-badge ds-badge-sm ds-badge-light-danger">Refusée par Admin</span>
                                     @endif
                                 </td>
-                                <td class="px-6 py-4 text-[#A1A5B7] text-xs whitespace-nowrap">
-                                    {{ $demande->created_at ? $demande->created_at->format('d/m/Y H:i') : '-' }}
+                                <td class="text-xs text-[#5A607F] whitespace-nowrap">
+                                    {{ $demande->created_at ? $demande->created_at->format('d/m/Y H:i') : '—' }}
                                 </td>
-                                <td class="px-6 py-4 text-right">
+                                <td class="text-right">
                                     @if($demande->statut === 'En attente')
-                                        <div class="flex items-center justify-end gap-2">
-                                            <!-- Action Accepter & Réaffecter -->
+                                        <div class="flex items-center justify-end gap-2 flex-wrap">
                                             <form action="{{ route('demandes-reaffectation.traiter', $demande->id) }}" method="POST" class="flex items-center gap-1.5">
                                                 @csrf
                                                 <input type="hidden" name="action" value="accepter">
-                                                <select name="nouveau_technicien_id" class="text-xs py-1.5 px-2.5 border border-slate-300 rounded-xl bg-white focus:ring-2 focus:ring-emerald-500">
+                                                <select name="nouveau_technicien_id" class="text-xs py-1.5 px-2 rounded-[4px] border border-[#E6E9F4] bg-white text-[#131523] focus:border-[#1E5EFF] focus:ring-0">
                                                     <option value="">-- Remettre en attente --</option>
                                                     @foreach($techniciens as $t)
                                                         @if($t->id !== $demande->technicien_id)
@@ -113,29 +100,34 @@
                                                         @endif
                                                     @endforeach
                                                 </select>
-                                                <button type="submit" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition text-xs shadow-sm flex items-center gap-1">
-                                                    ✓ Accepter
+                                                <button type="submit" class="ds-btn ds-btn-sm" style="background-color:#06A561; color:#fff;">
+                                                    <i class="fas fa-check"></i> Accepter
                                                 </button>
                                             </form>
 
-                                            <!-- Action Refuser -->
                                             <form action="{{ route('demandes-reaffectation.traiter', $demande->id) }}" method="POST" onsubmit="return confirm('Confirmez-vous le refus de la demande ? Le technicien initial sera contraint d\'exécuter l\'intervention.');">
                                                 @csrf
                                                 <input type="hidden" name="action" value="refuser">
-                                                <button type="submit" class="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl transition text-xs shadow-sm flex items-center gap-1">
-                                                    ✕ Forcer Technicien
+                                                <button type="submit" class="ds-btn ds-btn-danger ds-btn-sm">
+                                                    <i class="fas fa-times"></i> Forcer Technicien
                                                 </button>
                                             </form>
                                         </div>
                                     @else
-                                        <span class="text-xs text-[#A1A5B7] italic">Traitée par {{ $demande->admin->name ?? 'Admin' }}</span>
+                                        <span class="text-xs text-[#A1A7C4] italic">Traitée par {{ $demande->admin->name ?? 'Admin' }}</span>
                                     @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-12 text-center text-[#A1A5B7] italic">
-                                    Aucune demande de réaffectation pour le moment.
+                                <td colspan="6">
+                                    <div class="text-center py-16">
+                                        <div class="w-14 h-14 rounded-full bg-[#E3FBF0] flex items-center justify-center mx-auto mb-4">
+                                            <i class="fas fa-check text-xl text-[#06A561]"></i>
+                                        </div>
+                                        <p class="text-sm font-bold text-[#131523]">Aucune demande de réaffectation</p>
+                                        <p class="text-xs text-[#A1A7C4] mt-1">Aucun refus technicien en attente d'arbitrage pour le moment.</p>
+                                    </div>
                                 </td>
                             </tr>
                         @endforelse
@@ -144,8 +136,13 @@
             </div>
 
             @if($demandes->hasPages())
-                <div class="px-6 py-4 border-t border-[#EFF2F5]">
+                <div class="px-6 py-4 border-t border-[#E6E9F4] flex items-center justify-between flex-wrap gap-3">
+                    <p class="text-xs text-[#A1A7C4]">{{ $demandes->total() }} résultat(s)</p>
                     {{ $demandes->links() }}
+                </div>
+            @else
+                <div class="px-6 py-4 border-t border-[#E6E9F4]">
+                    <p class="text-xs text-[#A1A7C4]">{{ $demandes->total() }} résultat(s)</p>
                 </div>
             @endif
         </div>

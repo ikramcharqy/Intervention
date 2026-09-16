@@ -14,11 +14,17 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
+        // Étape 6.2 : nom de démonstration corrigé ("shady" laissait penser à un compte
+        // suspect dans le journal d'audit) — remplacé par un nom professionnel cohérent,
+        // le domaine @intervention.ma était déjà correct et conservé tel quel.
+        // Étape 2 : "name" ne doit contenir que le nom de famille — "prenom" porte le
+        // prénom séparément (bug corrigé : "Mohamed Chahmi" + prenom "Mohamed" affichait
+        // "Mohamed Chahmi Mohamed" partout où les deux champs sont concaténés).
         $admin = User::firstOrCreate(
             ['email' => 'adminShaMoh@intervention.ma',],
             [
-            'name'=> 'shady',
-            'prenom'=> 'mohamed',
+            'name'=> 'Chahmi',
+            'prenom'=> 'Mohamed',
             'telephone' => '0612345678',
             'password'=> Hash::make('admin@123'),
             'is_active' => true,
@@ -30,9 +36,9 @@ class AdminSeeder extends Seeder
         $superAdmin = User::firstOrCreate(
             ['email' => 'superadmin@intervention.ma'],
             [
-            'name'=> 'Super',
-            'prenom'=> 'Admin',
-            'telephone' => '0600000000',
+            'name'=> 'Admin',
+            'prenom'=> 'Super',
+            'telephone' => '0661223344',
             'password'=> Hash::make('password'),
             'is_active' => true,
             'adresse' =>'Casablanca, Maroc',

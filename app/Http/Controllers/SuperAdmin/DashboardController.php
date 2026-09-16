@@ -11,6 +11,8 @@ use App\Models\Rapport;
 use App\Models\Formulaire;
 use App\Models\Materiau;
 use App\Models\AuditLog;
+use App\Models\LoginHistory;
+use App\Services\SuperAdmin\AccountRoleStatsService;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
 use Illuminate\View\View;
@@ -18,11 +20,9 @@ use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    public function index(AccountRoleStatsService $roleStats): View
     {
         $adminRoles = Role::whereIn('name', ['admin', 'Administrateur', 'Super Admin'])->pluck('name')->toArray();
-        $adminUserRoles = Role::whereIn('name', ['admin', 'Administrateur'])->pluck('name')->toArray();
-        $techRoles = Role::whereIn('name', ['technicien', 'Technicien'])->pluck('name')->toArray();
 
         // Calcul RÉEL de la taille de la base de données MySQL
         $dbName = config('database.connections.mysql.database');
@@ -38,10 +38,14 @@ class DashboardController extends Controller
             ? number_format($dbSizeBytes / 1048576, 2) . ' MB' 
             : number_format($dbSizeBytes / 1024, 2) . ' KB';
 
+        // Total Comptes / Répartition des Rôles Spatie : dérivés d'une source unique
+        // (AccountRoleStatsService) pour ne plus jamais diverger entre les deux widgets.
+        $roleBreakdown = $roleStats->breakdown();
+
         // Statistiques Système et Métier 100% RÉELLES
         $stats = [
             'total_admins' => !empty($adminRoles) ? User::role($adminRoles)->count() : 0,
-            'total_users' => User::count(),
+            'total_users' => $roleBreakdown['total'],
             'total_roles' => Role::count(),
             'total_permissions' => Permission::count(),
             'active_sessions' => User::where('is_active', true)->count(),
@@ -52,22 +56,31 @@ class DashboardController extends Controller
             'db_size' => $dbSizeFormatted,
             'system_status' => 'Opérationnel',
             'php_version' => PHP_VERSION,
+            'unassigned_accounts' => $roleBreakdown['unassigned'],
         ];
 
-        // Décompte par Rôles
-        $usersByRole = [
-            'Super Admin' => Role::where('name', 'Super Admin')->exists() ? User::role('Super Admin')->count() : 0,
-            'Administrateur' => !empty($adminUserRoles) ? User::role($adminUserRoles)->count() : 0,
-            'Commercial' => Role::where('name', 'Commercial')->exists() ? User::role('Commercial')->count() : 0,
-            'Technicien' => !empty($techRoles) ? User::role($techRoles)->count() : 0,
-            'Client' => Role::where('name', 'Client')->exists() ? User::role('Client')->count() : 0,
-        ];
+        // Décompte par Rôles (+ "Sans rôle" si des comptes non catégorisés existent,
+        // pour que la somme affichée corresponde toujours au Total Comptes ci-dessus).
+        $usersByRole = $roleBreakdown['by_role'];
+        if ($roleBreakdown['unassigned'] > 0) {
+            $usersByRole['Sans rôle'] = $roleBreakdown['unassigned'];
+        }
 
         $recentUsers = User::with('roles')->latest()->limit(5)->get();
 
-        // Récupération RÉELLE des derniers logs d'audit enregistrés en base
-        $recentLogs = AuditLog::latest()->limit(6)->get();
+        // Étape 3.2 : historique de connexion du compte Super Admin courant, en réutilisant
+        // le mécanisme déjà défini pour le portail Client (LoginHistory est déjà alimenté
+        // pour tous les rôles via l'écouteur d'événement Login — cf. AppServiceProvider).
+        $myLoginHistory = LoginHistory::where('user_id', auth()->id())
+            ->latest('logged_in_at')
+            ->limit(5)
+            ->get();
 
-        return view('superadmin.dashboard', compact('stats', 'usersByRole', 'recentUsers', 'recentLogs'));
+        // Journal de Sécurité & Gouvernance uniquement (cf. Étape 2) — l'activité métier
+        // (conversions prospects, validations d'intervention, devis) vit désormais sur les
+        // dashboards Admin/Commercial via AuditLog::business().
+        $recentLogs = AuditLog::security()->latest()->limit(6)->get();
+
+        return view('superadmin.dashboard', compact('stats', 'usersByRole', 'recentUsers', 'recentLogs', 'myLoginHistory'));
     }
 }

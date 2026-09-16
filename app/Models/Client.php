@@ -47,4 +47,15 @@ class Client extends Model
     {
         return $this->hasMany(ClientContact::class);
     }
+
+    /**
+     * Compte utilisateur du portail Client lié à ce client (users.client_id —
+     * même lien que ClientModule\DashboardController::getClient()). Référencé
+     * par InterventionService/DemandeInterventionController/NotificationSeeder
+     * pour notifier le client ; manquait du modèle bien qu'appelé à 3 endroits.
+     */
+    public function utilisateurPortail(): ?User
+    {
+        return User::where('client_id', $this->id)->first();
+    }
 }

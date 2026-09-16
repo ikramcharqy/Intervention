@@ -44,6 +44,41 @@ class Intervention extends Model
     const PRIORITE_HAUTE    = 'Haute';
     const PRIORITE_URGENTE  = 'Urgente';
 
+    /**
+     * Libellés accentués — source unique pour l'affichage. Les constantes STATUT_*
+     * ci-dessus restent des clés techniques non-accentuées (utilisées telles quelles dans
+     * ALLOWED_TRANSITIONS, les requêtes `where('statut', ...)`, les Policies, etc.) et ne
+     * doivent jamais changer de valeur ; seul ce libellé change à l'affichage. Reprend les
+     * mêmes textes que <x-soft-badge> pour rester cohérent partout où celui-ci est déjà
+     * utilisé.
+     */
+    public static function statutLabel(string $statut): string
+    {
+        return match ($statut) {
+            self::STATUT_DEMANDE => 'Demande reçue',
+            self::STATUT_PLANIFIEE => 'Planifiée',
+            self::STATUT_AFFECTEE => 'Affectée',
+            self::STATUT_EN_ATTENTE_REAFFECTATION => 'Refus Technicien',
+            self::STATUT_ACCEPTEE => 'Acceptée',
+            self::STATUT_REFUSEE => 'Refusée',
+            self::STATUT_EN_COURS => 'En cours',
+            self::STATUT_SUSPENDUE => 'Suspendue',
+            self::STATUT_REPORTEE => 'Reportée',
+            self::STATUT_PARTIELLEMENT_REALISEE => 'Partiellement réalisée',
+            self::STATUT_CLIENT_ABSENT => 'Client absent',
+            self::STATUT_MATERIEL_MANQUANT => 'Matériel manquant',
+            self::STATUT_DEUXIEME_VISITE => '2e visite requise',
+            self::STATUT_FORM_REMPLI => 'Formulaire rempli',
+            self::STATUT_EN_ATTENTE_VALID => 'En validation',
+            self::STATUT_REJETEE => 'Rejetée',
+            self::STATUT_TERMINEE => 'Terminée',
+            self::STATUT_VALIDEE => 'Validée',
+            self::STATUT_ANNULEE => 'Annulée',
+            self::STATUT_ROUVERTE => 'Rouverte',
+            default => $statut,
+        };
+    }
+
     // Modes de suivi de présence
     const MODE_GPS    = 'GPS';
     const MODE_QR     = 'QR';
@@ -55,6 +90,7 @@ class Intervention extends Model
 
         'chantier_id',
         'emplacement_id',
+        'demande_intervention_id',
 
         'technicien_id',
         'type_intervention_id',
@@ -126,6 +162,11 @@ class Intervention extends Model
     public function chantier()
     {
         return $this->belongsTo(Chantier::class);
+    }
+
+    public function demandeIntervention()
+    {
+        return $this->belongsTo(DemandeIntervention::class);
     }
 
     // Emplacement précis (sous-partie du chantier)
@@ -252,6 +293,45 @@ class Intervention extends Model
     public function scopeActives(Builder $query): Builder
     {
         return $query->whereNotIn('statut', [self::STATUT_TERMINEE, self::STATUT_ANNULEE]);
+    }
+
+    /**
+     * Étape 4 (Supervision Super Admin) : seuils au-delà desquels une intervention est
+     * considérée "bloquée" dans son statut courant (en heures). Approximé sur
+     * `updated_at` (pas de colonne dédiée "depuis quand dans ce statut") — suffisant pour
+     * un signal de supervision, pas pour un calcul SLA contractuel précis.
+     */
+    public const SEUILS_BLOCAGE_HEURES = [
+        self::STATUT_PLANIFIEE => 72,
+        self::STATUT_AFFECTEE => 48,
+        self::STATUT_EN_ATTENTE_REAFFECTATION => 24,
+        self::STATUT_EN_COURS => 48,
+        self::STATUT_SUSPENDUE => 120,
+        self::STATUT_FORM_REMPLI => 48,
+    ];
+
+    public function estBloquee(): bool
+    {
+        $seuil = self::SEUILS_BLOCAGE_HEURES[$this->statut] ?? null;
+
+        return $seuil !== null && $this->updated_at?->diffInHours(now()) > $seuil;
+    }
+
+    /**
+     * Interventions dont le statut courant dépasse son seuil de blocage (cf.
+     * SEUILS_BLOCAGE_HEURES) — utilisé par le filtre "Interventions bloquées" de la
+     * supervision Super Admin.
+     */
+    public function scopeBloquees(Builder $query): Builder
+    {
+        return $query->where(function ($q) {
+            foreach (self::SEUILS_BLOCAGE_HEURES as $statut => $heures) {
+                $q->orWhere(function ($q2) use ($statut, $heures) {
+                    $q2->where('statut', $statut)
+                       ->where('updated_at', '<', now()->subHours($heures));
+                });
+            }
+        });
     }
 
     // Filtre par technicien

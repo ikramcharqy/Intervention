@@ -1,195 +1,339 @@
 <x-client-layout>
-    <x-slot name="header">Dashboard Client</x-slot>
+    <x-slot name="header">Tableau de bord</x-slot>
+
+    @php
+        // Palette du donut : couleurs sémantiques fixes pour les statuts connus,
+        // rotation neutre pour tout statut additionnel — jamais de couleur codée
+        // en dur par libellé exact (les libellés viennent tous du modèle Intervention).
+        $donutColors = [
+            'Planifiee' => '#38bdf8', 'Planifiée' => '#38bdf8',
+            'Acceptee' => '#6366f1', 'Acceptée' => '#6366f1',
+            'En cours' => '#f59e0b',
+            'Formulaire rempli' => '#a855f7',
+            'Terminee' => '#10b981', 'Terminée' => '#10b981',
+            'Validee' => '#059669', 'Validée' => '#059669',
+            'Annulee' => '#94a3b8', 'Annulée' => '#94a3b8',
+        ];
+        $fallbackPalette = ['#38bdf8', '#f59e0b', '#a855f7', '#10b981', '#94a3b8', '#f472b6'];
+        $donutLabels = $parStatut->keys()->values();
+        $donutValues = $parStatut->values();
+        $donutBg = $donutLabels->map(function ($label, $i) use ($donutColors, $fallbackPalette) {
+            return $donutColors[$label] ?? $fallbackPalette[$i % count($fallbackPalette)];
+        });
+        $currency = currency_symbol();
+    @endphp
 
     <div class="space-y-6">
 
-        <!-- WELCOME BANNER (METRONIC 8 PREMIUM STYLE) -->
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#181C32] via-[#1E1E2D] to-[#2B2B40] p-6 md:p-8 text-white shadow-xl border border-slate-800/80">
-            <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
-                <div class="space-y-2 max-w-2xl">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[11px] font-bold tracking-wider uppercase">
-                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                        Espace Client Protégé
-                    </div>
-                    <h2 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-snug">
-                        Bienvenue, {{ Auth::user()->name }} 👋
-                    </h2>
-                    <p class="text-xs md:text-sm text-slate-300 leading-relaxed font-medium">
-                        Suivez l'avancement en temps réel de vos chantiers, le statut des interventions et vos comptes-rendus d'interventions validés.
+        <!-- HERO : bannière + carte compte -->
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-500 p-7 md:p-8 text-white">
+                <div class="relative z-10 max-w-md">
+                    <span class="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-emerald-50/80">
+                        <i class="fas fa-circle-check"></i> Espace Client Protégé
+                    </span>
+                    <h2 class="text-2xl md:text-[26px] font-extrabold mt-2 leading-snug">Bienvenue, {{ Auth::user()->prenom ?: Auth::user()->name }}</h2>
+                    <p class="text-sm text-emerald-50/90 mt-2 leading-relaxed">
+                        Retrouvez ici le suivi de vos chantiers, l'avancement de vos interventions et vos documents.
                     </p>
+                    <a href="{{ route('client.demandes.create') }}" class="inline-flex items-center gap-2 mt-5 px-5 py-2.5 rounded-full bg-white text-emerald-600 text-xs font-extrabold hover:bg-emerald-50 transition">
+                        <i class="fas fa-plus"></i> Nouvelle Demande
+                    </a>
                 </div>
-
-                @if(isset($client))
-                    <div class="bg-white/10 backdrop-blur-md border border-white/15 rounded-xl p-4 text-left md:text-right shrink-0 shadow-inner">
-                        <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">Compte Client</span>
-                        <span class="text-sm font-extrabold text-white block mt-1">{{ $client->nom }}</span>
-                    </div>
-                @endif
+                <div class="absolute -right-10 -bottom-16 w-64 h-64 rounded-full bg-white/10"></div>
+                <div class="absolute right-16 -top-10 w-32 h-32 rounded-full bg-white/10"></div>
             </div>
 
-            <!-- Subtle background glow decoration -->
-            <div class="absolute -top-20 -right-20 w-80 h-80 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="rounded-3xl bg-[#1e2530] text-white p-6 flex flex-col justify-between">
+                <div>
+                    <span class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Compte Client</span>
+                    <p class="text-base font-extrabold mt-1">{{ $client->nom ?? Auth::user()->name }}</p>
+                </div>
+                <div class="mt-6 space-y-2">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400">Chantiers suivis</span>
+                        <span class="font-bold">{{ $stats['chantiers'] }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="text-slate-400">Demandes en attente</span>
+                        <span class="font-bold">{{ $stats['demandes_en_attente'] }}</span>
+                    </div>
+                </div>
+                <a href="{{ route('client.support.index') }}" class="mt-5 inline-flex items-center justify-center gap-2 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-xs font-bold transition">
+                    <i class="fas fa-headset"></i> Contacter le support
+                </a>
+            </div>
         </div>
 
-        <!-- METRONIC KPI STATS GRID -->
+        <!-- KPI ROW -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            
-            <!-- Chantiers -->
-            <a href="{{ route('client.chantiers.index') }}" class="kt-card p-5 flex items-center justify-between hover:shadow-lg transition-all duration-200 group border border-slate-100 hover:border-indigo-200">
-                <div class="space-y-1">
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Mes Chantiers</span>
-                    <div class="text-3xl font-extrabold text-slate-900 group-hover:text-indigo-600 transition">{{ $stats['chantiers'] }}</div>
-                    <span class="inline-block text-[11px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-md">Chantiers suivis</span>
-                </div>
-                <div class="h-12 w-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0 group-hover:scale-110 transition">
-                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                    </svg>
-                </div>
-            </a>
-
-            <!-- Total Interventions -->
-            <a href="{{ route('client.interventions.index') }}" class="kt-card p-5 flex items-center justify-between hover:shadow-lg transition-all duration-200 group border border-slate-100 hover:border-purple-200">
-                <div class="space-y-1">
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Interventions</span>
-                    <div class="text-3xl font-extrabold text-slate-900 group-hover:text-purple-600 transition">{{ $stats['interventions'] }}</div>
-                    <span class="inline-block text-[11px] font-bold text-purple-600 bg-purple-50 px-2.5 py-0.5 rounded-md">Total demandes</span>
-                </div>
-                <div class="h-12 w-12 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center text-purple-600 shrink-0 group-hover:scale-110 transition">
-                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 022 2h2a2 2 0 022-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                </div>
-            </a>
-
-            <!-- En cours sur site -->
-            <a href="{{ route('client.interventions.index', ['statut' => 'En cours']) }}" class="kt-card p-5 flex items-center justify-between hover:shadow-lg transition-all duration-200 group border border-slate-100 hover:border-amber-200">
-                <div class="space-y-1">
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">En cours sur site</span>
-                    <div class="text-3xl font-extrabold text-amber-600 group-hover:scale-105 transition">{{ $stats['en_cours'] }}</div>
-                    <span class="inline-block text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-md">Activement traitées</span>
-                </div>
-                <div class="h-12 w-12 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-500 shrink-0 group-hover:scale-110 transition">
-                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-            </a>
-
-            <!-- Terminées -->
-            <a href="{{ route('client.interventions.index', ['statut' => 'Terminee']) }}" class="kt-card p-5 flex items-center justify-between hover:shadow-lg transition-all duration-200 group border border-slate-100 hover:border-emerald-200">
-                <div class="space-y-1">
-                    <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Terminées</span>
-                    <div class="text-3xl font-extrabold text-emerald-600 group-hover:scale-105 transition">{{ $stats['terminees'] }}</div>
-                    <span class="inline-block text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md">Rapports validés</span>
-                </div>
-                <div class="h-12 w-12 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shrink-0 group-hover:scale-110 transition">
-                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                </div>
-            </a>
+            @php
+                $kpiCards = [
+                    ['label' => 'Interventions', 'value' => $stats['interventions'], 'trend' => $stats['trend_interventions'], 'sparkline' => $evolution['creees'], 'color' => '#10b981', 'href' => route('client.interventions.index')],
+                    ['label' => 'Mes Chantiers', 'value' => $stats['chantiers'], 'trend' => null, 'sparkline' => null, 'color' => '#38bdf8', 'href' => route('client.chantiers.index')],
+                    ['label' => 'En cours', 'value' => $stats['en_cours'], 'trend' => null, 'sparkline' => null, 'color' => '#f59e0b', 'href' => route('client.interventions.index', ['statut' => 'En cours'])],
+                    ['label' => 'Terminées', 'value' => $stats['terminees'], 'trend' => $stats['trend_terminees'], 'sparkline' => $evolution['terminees'], 'color' => '#059669', 'href' => route('client.interventions.index', ['statut' => 'Terminee'])],
+                ];
+            @endphp
+            @foreach($kpiCards as $i => $kpi)
+                <a href="{{ $kpi['href'] }}" class="block min-w-0 bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition">
+                    <div class="flex items-start justify-between">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">{{ $kpi['label'] }}</span>
+                        @if(!is_null($kpi['trend']))
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold {{ $kpi['trend'] >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600' }}">
+                                <i class="fas fa-arrow-{{ $kpi['trend'] >= 0 ? 'up' : 'down' }} text-[8px]"></i> {{ abs($kpi['trend']) }}%
+                            </span>
+                        @endif
+                    </div>
+                    <div class="text-3xl font-extrabold text-[#1e2530] mt-2 font-mono">{{ $kpi['value'] }}</div>
+                    <div class="relative mt-3 h-8 overflow-hidden">
+                        @if($kpi['sparkline'])
+                            <canvas id="spark-{{ $i }}"></canvas>
+                        @else
+                            <span class="text-[11px] text-slate-300">Total actuel</span>
+                        @endif
+                    </div>
+                </a>
+            @endforeach
         </div>
 
-        <!-- LOWER SECTION (2 COLS TABLEAU + 1 COL DERNIER RAPPORT) -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <!-- TABLEAU DES INTERVENTIONS RÉCENTES (2/3 width) -->
-            <div class="lg:col-span-2 kt-card p-6 flex flex-col justify-between border border-slate-100 shadow-sm">
-                <div>
-                    <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-                        <div>
-                            <h3 class="text-base font-extrabold text-slate-900">Mes Dernières Interventions</h3>
-                            <p class="text-xs text-slate-400 mt-0.5">Suivi synthétique de l'exécution sur vos chantiers</p>
-                        </div>
-                        <a href="{{ route('client.interventions.index') }}" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition flex items-center gap-1">
-                            Voir tout <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-                        </a>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead>
-                                <tr class="border-b border-slate-100 text-slate-400 uppercase font-extrabold text-[10px] bg-slate-50/70">
-                                    <th class="py-3 px-3.5 rounded-l-lg">Code Ref.</th>
-                                    <th class="py-3 px-3.5">Chantier</th>
-                                    <th class="py-3 px-3.5">Technicien</th>
-                                    <th class="py-3 px-3.5 text-right rounded-r-lg">Statut</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                @forelse($recentInterventions as $interv)
-                                    <tr class="hover:bg-indigo-50/40 transition">
-                                        <td class="py-3.5 px-3.5 font-mono font-bold text-indigo-600">{{ $interv->code_intervention }}</td>
-                                        <td class="py-3.5 px-3.5 font-semibold text-slate-800">{{ $interv->chantier?->nom ?? '—' }}</td>
-                                        <td class="py-3.5 px-3.5 text-slate-600 font-medium">{{ $interv->technicien?->name ?? 'Attribution en cours' }}</td>
-                                        <td class="py-3.5 px-3.5 text-right">
-                                            @php
-                                                $badge = match($interv->statut) {
-                                                    'Terminee' => 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                                                    'En cours' => 'bg-amber-50 text-amber-700 border-amber-200',
-                                                    'Annulee' => 'bg-rose-50 text-rose-700 border-rose-200',
-                                                    default => 'bg-blue-50 text-blue-700 border-blue-200'
-                                                };
-                                            @endphp
-                                            <span class="inline-flex items-center px-2.5 py-1 text-[10px] font-extrabold rounded-md border {{ $badge }}">
-                                                {{ $interv->statut }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="py-8 text-center text-slate-400 italic">Aucune intervention enregistrée.</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+        <!-- DONUT + EVOLUTION -->
+        <div class="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-5">
+            <div class="min-w-0 bg-white rounded-2xl p-6 shadow-sm">
+                <h3 class="text-sm font-extrabold text-[#1e2530] mb-1">Répartition par statut</h3>
+                <p class="text-[11px] text-slate-400 mb-4">{{ $stats['interventions'] }} interventions au total</p>
+                <div class="relative w-44 h-44 mx-auto overflow-hidden">
+                    <canvas id="donutStatuts"></canvas>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                        <span class="text-2xl font-extrabold text-[#1e2530] font-mono">{{ $stats['interventions'] }}</span>
+                        <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Total</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- CARTE DERNIER RAPPORT VALIDÉ (1/3 width) -->
-            <div class="kt-card p-6 flex flex-col justify-between border border-slate-100 shadow-sm">
-                <div>
-                    <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-                        <h3 class="text-base font-extrabold text-slate-900">Dernier Rapport Validé</h3>
-                        <a href="{{ route('client.rapports.index') }}" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition">Tous les rapports →</a>
-                    </div>
-
-                    @if($dernierRapport)
-                        <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-3">
-                            <div class="flex items-center gap-3">
-                                <div class="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 font-extrabold text-xs shadow-md shadow-indigo-600/20">
-                                    PDF
-                                </div>
-                                <div class="min-w-0">
-                                    <span class="text-xs font-extrabold text-slate-900 truncate block">{{ $dernierRapport->intervention?->code_intervention ?? 'Rapport #'.$dernierRapport->id }}</span>
-                                    <span class="text-[11px] font-semibold text-slate-400 block mt-0.5">Généré le {{ $dernierRapport->created_at->format('d/m/Y H:i') }}</span>
-                                </div>
-                            </div>
-                            <div class="border-t border-slate-200/60 pt-3">
-                                <p class="text-xs text-slate-600 leading-relaxed font-medium">
-                                    {{ Str::limit($dernierRapport->travaux_effectues ?? 'Compte-rendu d\'intervention validé et disponible au téléchargement.', 110) }}
-                                </p>
-                            </div>
-                        </div>
-                    @else
-                        <div class="py-12 text-center text-slate-400 italic">
-                            Aucun rapport disponible actuellement.
-                        </div>
+                <div class="mt-5 space-y-2">
+                    @foreach($donutLabels as $i => $label)
+                        <a href="{{ route('client.interventions.index', ['statut' => $label]) }}" class="flex items-center justify-between text-xs hover:bg-slate-50 rounded-lg px-2 py-1.5 transition">
+                            <span class="flex items-center gap-2 text-slate-600 font-medium">
+                                <span class="w-2 h-2 rounded-full" style="background:{{ $donutBg[$i] }}"></span>
+                                {{ $label }}
+                            </span>
+                            <span class="font-bold text-[#1e2530] font-mono">{{ $donutValues[$i] }}</span>
+                        </a>
+                    @endforeach
+                    @if($donutLabels->isEmpty())
+                        <p class="text-xs text-slate-400 italic text-center py-4">Aucune donnée pour le moment.</p>
                     @endif
                 </div>
-
-                @if($dernierRapport)
-                    <div class="mt-6 pt-4 border-t border-slate-100">
-                        <a href="{{ route('client.rapports.show', $dernierRapport) }}" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl transition text-center block shadow-lg shadow-indigo-600/25">
-                            Consulter & Télécharger PDF
-                        </a>
-                    </div>
-                @endif
             </div>
 
+            <div class="min-w-0 bg-white rounded-2xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-extrabold text-[#1e2530]">Évolution des interventions</h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Créées vs terminées — 6 derniers mois</p>
+                    </div>
+                    <div class="flex items-center gap-3 text-[11px] font-semibold">
+                        <span class="flex items-center gap-1.5 text-slate-500"><span class="w-2 h-2 rounded-full bg-emerald-500"></span> Créées</span>
+                        <span class="flex items-center gap-1.5 text-slate-500"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Terminées</span>
+                    </div>
+                </div>
+                <div class="relative h-64 overflow-hidden">
+                    <canvas id="evolutionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROGRESS BARS + FACTURATION -->
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+            <div class="bg-white rounded-2xl p-6 shadow-sm">
+                <h3 class="text-sm font-extrabold text-[#1e2530] mb-5">Suivi des statuts</h3>
+                <div class="space-y-5">
+                    @foreach($donutLabels as $i => $label)
+                        @php $pct = $stats['interventions'] > 0 ? round(($donutValues[$i] / $stats['interventions']) * 100) : 0; @endphp
+                        <div>
+                            <div class="flex items-center justify-between text-xs mb-1.5">
+                                <span class="font-semibold text-slate-600">{{ $label }}</span>
+                                <span class="font-bold text-[#1e2530]">{{ $donutValues[$i] }} <span class="text-slate-400 font-medium">({{ $pct }}%)</span></span>
+                            </div>
+                            <div class="h-2 rounded-full bg-slate-100 overflow-hidden">
+                                <div class="h-full rounded-full" style="width:{{ $pct }}%; background:{{ $donutBg[$i] }}"></div>
+                            </div>
+                        </div>
+                    @endforeach
+                    @if($donutLabels->isEmpty())
+                        <p class="text-xs text-slate-400 italic">Aucune intervention pour le moment.</p>
+                    @endif
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm flex flex-col">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Solde restant dû</span>
+                <div class="text-3xl font-extrabold text-[#1e2530] mt-2 font-mono">{{ number_format($facturation['solde'], 2, ',', ' ') }} {{ $currency }}</div>
+                <p class="text-[11px] text-slate-400 mt-1">sur {{ number_format($facturation['total'], 2, ',', ' ') }} {{ $currency }} facturés</p>
+                <div class="mt-5 flex gap-2">
+                    <a href="{{ route('client.factures.index') }}" class="flex-1 text-center py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition">
+                        Voir mes factures
+                    </a>
+                    <a href="{{ route('client.support.index') }}" class="flex-1 text-center py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold transition">
+                        Support
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- TABLE + À SUIVRE -->
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
+            <div class="bg-white rounded-2xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-extrabold text-[#1e2530]">Mes Dernières Interventions</h3>
+                    <a href="{{ route('client.interventions.index') }}" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">Voir tout →</a>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="text-slate-400 uppercase font-bold text-[10px]">
+                                <th class="py-2.5 pr-4">Technicien</th>
+                                <th class="py-2.5 px-4">Chantier</th>
+                                <th class="py-2.5 px-4">Code</th>
+                                <th class="py-2.5 px-4 text-right">Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-50">
+                            @forelse($recentInterventions as $interv)
+                                <tr class="hover:bg-slate-50 transition cursor-pointer" onclick="window.location='{{ route('client.interventions.show', $interv) }}'">
+                                    <td class="py-3 pr-4">
+                                        <div class="flex items-center gap-2.5">
+                                            <div class="w-7 h-7 rounded-full bg-emerald-50 text-emerald-600 font-bold text-[10px] flex items-center justify-center shrink-0">
+                                                {{ strtoupper(substr($interv->technicien?->name ?? '??', 0, 2)) }}
+                                            </div>
+                                            <span class="font-semibold text-[#1e2530]">{{ $interv->technicien?->name ?? 'Non assigné' }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-3 px-4 text-slate-500">{{ $interv->chantier?->nom ?? '—' }}</td>
+                                    <td class="py-3 px-4 font-mono text-slate-500">{{ $interv->code_intervention }}</td>
+                                    <td class="py-3 px-4 text-right"><x-soft-badge :status="$interv->statut" /></td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="4" class="py-8 text-center text-slate-400 italic">Aucune intervention enregistrée.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm">
+                <h3 class="text-sm font-extrabold text-[#1e2530] mb-4">À suivre prochainement</h3>
+                <div class="space-y-3">
+                    @forelse($prochaines as $interv)
+                        <a href="{{ route('client.interventions.show', $interv) }}" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition">
+                            <div class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+                                <i class="fas fa-calendar-days text-sm"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs font-bold text-[#1e2530] truncate">{{ $interv->chantier?->nom ?? $interv->code_intervention }}</p>
+                                <p class="text-[11px] text-slate-400">{{ $interv->date_prevue_debut ? $interv->date_prevue_debut->format('d/m/Y H:i') : 'Date à confirmer' }}</p>
+                            </div>
+                        </a>
+                    @empty
+                        <p class="text-xs text-slate-400 italic">Aucune intervention planifiée à venir.</p>
+                    @endforelse
+
+                    @if($dernierRapport)
+                        <a href="{{ route('client.rapports.show', $dernierRapport) }}" class="flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-50 transition border-t border-slate-100 pt-4 mt-1">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                <i class="fas fa-file-pdf text-sm"></i>
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs font-bold text-[#1e2530] truncate">Dernier rapport disponible</p>
+                                <p class="text-[11px] text-slate-400">{{ $dernierRapport->created_at->format('d/m/Y') }} · {{ $dernierRapport->estValide() ? 'Validé' : 'En attente de validation' }}</p>
+                            </div>
+                        </a>
+                    @endif
+                </div>
+            </div>
         </div>
 
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        const sparklineOptions = (color) => ({
+            type: 'line',
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                scales: { x: { display: false }, y: { display: false } },
+                elements: { point: { radius: 0 }, line: { tension: 0.4, borderWidth: 2 } },
+            },
+        });
+
+        @foreach($kpiCards as $i => $kpi)
+            @if($kpi['sparkline'])
+                new Chart(document.getElementById('spark-{{ $i }}'), {
+                    ...sparklineOptions('{{ $kpi['color'] }}'),
+                    data: {
+                        labels: {!! json_encode($evolution['labels']) !!},
+                        datasets: [{
+                            data: {!! json_encode($kpi['sparkline']) !!},
+                            borderColor: '{{ $kpi['color'] }}',
+                            backgroundColor: '{{ $kpi['color'] }}22',
+                            fill: true,
+                        }],
+                    },
+                });
+            @endif
+        @endforeach
+
+        new Chart(document.getElementById('donutStatuts'), {
+            type: 'doughnut',
+            data: {
+                labels: {!! json_encode($donutLabels) !!},
+                datasets: [{
+                    data: {!! json_encode($donutValues) !!},
+                    backgroundColor: {!! json_encode($donutBg) !!},
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                cutout: '72%',
+                plugins: { legend: { display: false } },
+            },
+        });
+
+        new Chart(document.getElementById('evolutionChart'), {
+            type: 'line',
+            data: {
+                labels: {!! json_encode($evolution['labels']) !!},
+                datasets: [
+                    {
+                        label: 'Créées',
+                        data: {!! json_encode($evolution['creees']) !!},
+                        borderColor: '#10b981',
+                        backgroundColor: '#10b98122',
+                        fill: true,
+                        tension: 0.4,
+                    },
+                    {
+                        label: 'Terminées',
+                        data: {!! json_encode($evolution['terminees']) !!},
+                        borderColor: '#f59e0b',
+                        backgroundColor: '#f59e0b11',
+                        fill: true,
+                        tension: 0.4,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+                    y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { font: { size: 10 }, precision: 0 } },
+                },
+            },
+        });
+    </script>
 </x-client-layout>

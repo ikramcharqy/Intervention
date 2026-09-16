@@ -9,6 +9,9 @@ class Rapport extends Model
 {
     use HasFactory;
 
+    const STATUT_VALIDATION_EN_ATTENTE = 'en_attente';
+    const STATUT_VALIDATION_VALIDE = 'valide';
+
     protected $fillable = [
         'intervention_id',
 
@@ -27,6 +30,8 @@ class Rapport extends Model
         'duree_reelle',
         'pourcentage_global',
         'statut_validation',
+        'validated_at',
+        'validated_by',
 
         'signature_client',
         'signature_technicien',
@@ -46,6 +51,7 @@ class Rapport extends Model
 
         'duree_reelle' => 'integer',
         'pourcentage_global' => 'integer',
+        'validated_at' => 'datetime',
 
         'gps_latitude'  => 'decimal:7',
         'gps_longitude' => 'decimal:7',
@@ -86,5 +92,16 @@ class Rapport extends Model
     public function reponses()
     {
         return $this->hasMany(Reponse::class);
+    }
+
+    // Utilisateur (Client) ayant validé le rapport
+    public function validateur()
+    {
+        return $this->belongsTo(User::class, 'validated_by');
+    }
+
+    public function estValide(): bool
+    {
+        return $this->statut_validation === self::STATUT_VALIDATION_VALIDE;
     }
 }

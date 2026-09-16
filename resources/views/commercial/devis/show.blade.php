@@ -1,219 +1,261 @@
 <x-commercial-layout>
-    <x-slot name="header">Détail Devis</x-slot>
+    <x-slot name="header"></x-slot>
 
-    @if(session('success'))
-        <div class="kt-alert kt-alert-success" style="margin-bottom:20px;">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            {{ session('success') }}
-        </div>
-    @endif
-
-    <!-- Header Bar -->
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px; flex-wrap:wrap; gap:12px;">
-        <div style="display:flex; align-items:center; gap:16px;">
-            <div style="width:52px; height:52px; border-radius:12px; background:rgba(114,57,234,0.12); color:#7239ea; display:flex; align-items:center; justify-content:center;">
-                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    <div class="space-y-6">
+        @if(session('success'))
+            <div class="metronic-card p-4 text-sm font-medium bg-emerald-50 text-emerald-700 border-emerald-100">
+                {{ session('success') }}
             </div>
-            <div>
-                <h2 style="font-size:20px; font-weight:800; color:#181c32; margin-bottom:4px;">{{ $devis->reference ?? 'DEVIS-'.$devis->id }}</h2>
-                <div style="display:flex; align-items:center; gap:8px;">
-                    @php
-                        $dColor = match($devis->statut) {
-                            'Brouillon' => 'kt-badge-gray',
-                            'Envoyé'    => 'kt-badge-warning',
-                            'Accepté'   => 'kt-badge-success',
-                            'Refusé'    => 'kt-badge-danger',
-                            default     => 'kt-badge-gray'
-                        };
-                    @endphp
-                    <span class="kt-badge {{ $dColor }}">{{ $devis->statut }}</span>
-                    @if($devis->date_emission)
-                        <span style="font-size:12px; color:#a1a5b7;">Émis le {{ $devis->date_emission->format('d/m/Y') }}</span>
+        @endif
+        @if(session('error'))
+            <div class="metronic-card p-4 text-sm font-medium bg-rose-50 text-rose-700 border-rose-100">
+                {{ session('error') }}
+            </div>
+        @endif
+
+        @php
+            $dColor = match($devis->statut) {
+                'Brouillon' => 'bg-[#F5F8FA] text-[#5E6278]',
+                'Envoyé', 'En attente' => 'bg-amber-50 text-amber-600',
+                'Accepté', 'Accepte', 'Validé' => 'bg-emerald-50 text-emerald-600',
+                'Refusé', 'Refuse', 'Annulé' => 'bg-rose-50 text-rose-600',
+                default => 'bg-[#F5F8FA] text-[#5E6278]'
+            };
+        @endphp
+
+        <!-- Header Bar -->
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center shrink-0">
+                    <i class="fas fa-file-invoice-dollar text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold text-[#181C32] font-heading">{{ $devis->reference ?? 'DEVIS-'.$devis->id }}</h1>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-full {{ $dColor }}">{{ $devis->statut }}</span>
+                        @if($devis->date_emission)
+                            <span class="text-xs text-[#A1A5B7]">Émis le {{ $devis->date_emission->format('d/m/Y') }}</span>
+                        @endif
+                    </div>
+                    @php $estAccepte = in_array($devis->statut, ['Accepté', 'Accepte', 'Validé'], true); @endphp
+                    @if($estAccepte && $devis->demandeIntervention)
+                        <div class="mt-2">
+                            @if($devis->demandeIntervention->intervention)
+                                <a href="{{ route('interventions.show', $devis->demandeIntervention->intervention) }}" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-50 text-emerald-600 no-underline">
+                                    <i class="fas fa-arrow-up-right-from-square text-[9px]"></i>
+                                    Voir l'intervention {{ $devis->demandeIntervention->intervention->code_intervention }}
+                                </a>
+                            @else
+                                <a href="{{ route('demande-interventions.show', $devis->demandeIntervention) }}" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-blue-50 text-blue-600 no-underline">
+                                    <i class="fas fa-inbox text-[9px]"></i>
+                                    Voir la demande {{ $devis->demandeIntervention->reference }}
+                                </a>
+                            @endif
+                        </div>
+                    @elseif($estAccepte && !$devis->demandeIntervention && $devis->client_id)
+                        <div class="mt-2">
+                            <form action="{{ route('commercial.devis.creerDemande', $devis) }}" method="POST" onsubmit="return confirm('Créer une demande d\'intervention à partir de ce devis ?');">
+                                @csrf
+                                <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-600 text-white hover:bg-emerald-700 transition">
+                                    <i class="fas fa-plus text-[9px]"></i>
+                                    Créer la demande d'intervention
+                                </button>
+                            </form>
+                        </div>
+                    @elseif($estAccepte && !$devis->client_id)
+                        <div class="mt-2">
+                            <span class="text-[11px] text-[#A1A5B7]">
+                                Convertissez d'abord le prospect en client pour créer une demande d'intervention.
+                            </span>
+                        </div>
+                    @endif
+
+                    @if($estAccepte && $devis->client_id)
+                        <div class="mt-2">
+                            @if($devis->factures->isNotEmpty())
+                                <a href="{{ route('commercial.factures.show', $devis->factures->first()) }}" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-rose-50 text-rose-600 no-underline">
+                                    <i class="fas fa-file-invoice text-[9px]"></i>
+                                    Voir la facture {{ $devis->factures->first()->reference }}
+                                </a>
+                            @else
+                                <form action="{{ route('commercial.devis.genererFacture', $devis) }}" method="POST" onsubmit="return confirm('Générer une facture à partir de ce devis ?');">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-bold rounded-full bg-rose-600 text-white hover:bg-rose-700 transition">
+                                        <i class="fas fa-plus text-[9px]"></i>
+                                        Générer la facture
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
                     @endif
                 </div>
             </div>
+            <div class="flex gap-2 flex-wrap">
+                <a href="{{ route('commercial.devis.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-[#EFF2F5] text-[#5E6278] text-xs font-bold rounded-lg hover:bg-[#F9F9FB] transition">
+                    <i class="fas fa-arrow-left text-[11px]"></i> Retour
+                </a>
+                <a href="{{ route('commercial.devis.edit', $devis) }}" class="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-[#EFF2F5] text-[#5E6278] text-xs font-bold rounded-lg hover:bg-[#F9F9FB] transition">
+                    <i class="fas fa-pen text-[11px]"></i> Modifier
+                </a>
+                <form action="{{ route('commercial.devis.duplicate', $devis) }}" method="POST">
+                    @csrf
+                    <button type="submit" class="inline-flex items-center gap-2 px-3.5 py-2 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg hover:bg-emerald-100 transition">
+                        <i class="fas fa-copy text-[11px]"></i> Dupliquer
+                    </button>
+                </form>
+                <a href="{{ route('commercial.devis.pdf', $devis) }}" target="_blank" class="inline-flex items-center gap-2 px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition">
+                    <i class="fas fa-file-pdf text-[11px]"></i> Imprimer PDF
+                </a>
+                <form action="{{ route('commercial.devis.destroy', $devis) }}" method="POST" onsubmit="return confirm('Supprimer définitivement ce devis ?');">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="inline-flex items-center gap-2 px-3.5 py-2 bg-white border border-[#EFF2F5] text-rose-600 text-xs font-bold rounded-lg hover:bg-rose-50 transition">
+                        <i class="fas fa-trash text-[11px]"></i> Supprimer
+                    </button>
+                </form>
+            </div>
         </div>
-        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-            <a href="{{ route('commercial.devis.index') }}" class="kt-btn kt-btn-light">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                Retour
-            </a>
-            <a href="{{ route('commercial.devis.edit', $devis) }}" class="kt-btn kt-btn-light-primary">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                Modifier
-            </a>
-            <form action="{{ route('commercial.devis.duplicate', $devis) }}" method="POST" class="inline">
-                @csrf
-                <button type="submit" class="kt-btn kt-btn-light-success">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                    Dupliquer
-                </button>
-            </form>
-            <a href="{{ route('commercial.devis.pdf', $devis) }}" target="_blank" class="kt-btn kt-btn-danger">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                Imprimer PDF
-            </a>
-            <form action="{{ route('commercial.devis.destroy', $devis) }}" method="POST" class="inline" onsubmit="return confirm('Supprimer définitivement ce devis ?');">
-                @csrf
-                @method('DELETE')
-                <button type="submit" class="kt-btn kt-btn-light-danger">
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    Supprimer
-                </button>
-            </form>
-        </div>
-    </div>
 
-    <!-- Content -->
-    <div style="display:grid; grid-template-columns:1fr 340px; gap:20px; align-items:start;">
+        <!-- Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6 items-start">
 
-        <!-- Main Devis Card -->
-        <div class="kt-card">
-            <!-- Emetteur & Destinataire -->
-            <div class="kt-card-body" style="padding-bottom:16px;">
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:32px; margin-bottom:24px;">
-                    <!-- Emetteur -->
-                    <div>
-                        <div style="font-size:10px; font-weight:700; color:#a1a5b7; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Émetteur</div>
-                        <div style="font-size:15px; font-weight:800; color:#181c32; margin-bottom:4px;">Intervention CRM</div>
-                        <div style="font-size:12px; color:#a1a5b7; margin-top:2px;">Commercial : {{ $devis->commercial ? $devis->commercial->name : 'N/A' }}</div>
-                    </div>
-
-                    <!-- Destinataire -->
-                    <div>
-                        <div style="font-size:10px; font-weight:700; color:#a1a5b7; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">Destinataire</div>
-                        @if($devis->prospect)
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-                                <span class="kt-badge kt-badge-primary" style="font-size:9px;">Prospect</span>
+            <!-- Main Devis Card -->
+            <div class="space-y-0">
+                <div class="metronic-card overflow-hidden">
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-6">
+                            <!-- Emetteur -->
+                            <div>
+                                <p class="text-[10px] font-bold text-[#A1A5B7] uppercase tracking-wider mb-2.5">Émetteur</p>
+                                <p class="text-sm font-extrabold text-[#181C32]">{{ $company['name'] }}</p>
+                                <p class="text-xs text-[#A1A5B7] mt-1">Commercial : {{ $devis->commercial ? $devis->commercial->name : 'N/A' }}</p>
                             </div>
-                            <div style="font-size:15px; font-weight:800; color:#181c32; margin-bottom:4px;">{{ $devis->prospect->nom_entreprise }}</div>
-                            <div style="font-size:12px; color:#5e6278; margin-top:3px;">{{ $devis->prospect->nom_contact }}</div>
-                            <div style="font-size:12px; color:#a1a5b7; margin-top:2px;">{{ $devis->prospect->email }}</div>
-                            <div style="font-size:12px; color:#a1a5b7;">{{ $devis->prospect->telephone }}</div>
-                        @elseif($devis->client)
-                            <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-                                <span class="kt-badge kt-badge-success" style="font-size:9px;">Client</span>
+
+                            <!-- Destinataire -->
+                            <div>
+                                <p class="text-[10px] font-bold text-[#A1A5B7] uppercase tracking-wider mb-2.5">Destinataire</p>
+                                @if($devis->prospect)
+                                    <span class="inline-block px-2 py-0.5 text-[9px] font-bold rounded-full bg-blue-50 text-blue-600 mb-1.5">Prospect</span>
+                                    <p class="text-sm font-extrabold text-[#181C32]">{{ $devis->prospect->nom_entreprise }}</p>
+                                    <p class="text-xs text-[#5E6278] mt-1">{{ $devis->prospect->nom_contact }}</p>
+                                    <p class="text-xs text-[#A1A5B7] mt-0.5">{{ $devis->prospect->email }}</p>
+                                    <p class="text-xs text-[#A1A5B7]">{{ $devis->prospect->telephone }}</p>
+                                @elseif($devis->client)
+                                    <span class="inline-block px-2 py-0.5 text-[9px] font-bold rounded-full bg-emerald-50 text-emerald-600 mb-1.5">Client</span>
+                                    <p class="text-sm font-extrabold text-[#181C32]">{{ $devis->client->nom }}</p>
+                                    <p class="text-xs text-[#5E6278] mt-1">{{ $devis->client->nom_contact ?? '' }}</p>
+                                    <p class="text-xs text-[#A1A5B7] mt-0.5">{{ $devis->client->email ?? '' }}</p>
+                                    <p class="text-xs text-[#A1A5B7]">{{ $devis->client->telephone ?? '' }}</p>
+                                @else
+                                    <p class="text-sm text-[#A1A5B7]">Non spécifié</p>
+                                @endif
                             </div>
-                            <div style="font-size:15px; font-weight:800; color:#181c32; margin-bottom:4px;">{{ $devis->client->nom }}</div>
-                            <div style="font-size:12px; color:#5e6278; margin-top:3px;">{{ $devis->client->nom_contact ?? '' }}</div>
-                            <div style="font-size:12px; color:#a1a5b7; margin-top:2px;">{{ $devis->client->email ?? '' }}</div>
-                            <div style="font-size:12px; color:#a1a5b7;">{{ $devis->client->telephone ?? '' }}</div>
-                        @else
-                            <div style="font-size:13px; color:#a1a5b7;">Non spécifié</div>
-                        @endif
-                    </div>
-                </div>
+                        </div>
 
-                <!-- Info Strips -->
-                <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; background:#f5f8fa; border-radius:10px; padding:16px;">
-                    <div>
-                        <div style="font-size:10px; font-weight:700; color:#a1a5b7; text-transform:uppercase; margin-bottom:4px;">Statut</div>
-                        <span class="kt-badge {{ $dColor }}" style="font-size:11px;">{{ $devis->statut }}</span>
+                        <!-- Info Strips -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-[#F5F8FA] rounded-xl p-4">
+                            <div>
+                                <p class="text-[10px] font-bold text-[#A1A5B7] uppercase mb-1">Statut</p>
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded-full {{ $dColor }}">{{ $devis->statut }}</span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-[#A1A5B7] uppercase mb-1">Date émission</p>
+                                <p class="text-xs font-semibold text-[#181C32]">{{ $devis->date_emission ? $devis->date_emission->format('d/m/Y') : '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-[#A1A5B7] uppercase mb-1">Date expiration</p>
+                                <p class="text-xs font-semibold text-[#181C32]">{{ $devis->date_expiration ? $devis->date_expiration->format('d/m/Y') : '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-bold text-[#A1A5B7] uppercase mb-1">Taux TVA</p>
+                                <p class="text-xs font-semibold text-[#181C32]">{{ $devis->taux_tva }}%</p>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <div style="font-size:10px; font-weight:700; color:#a1a5b7; text-transform:uppercase; margin-bottom:4px;">Date émission</div>
-                        <div style="font-size:13px; font-weight:600; color:#181c32;">{{ $devis->date_emission ? $devis->date_emission->format('d/m/Y') : '—' }}</div>
+
+                    <hr class="border-[#EFF2F5]">
+
+                    <!-- Lignes Table -->
+                    <div class="p-6">
+                        <p class="text-sm font-bold text-[#181C32] mb-4">Détail des prestations</p>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="bg-[#F9F9FB] text-[#A1A5B7] uppercase font-bold text-[10px]">
+                                        <th class="py-3 px-3">Désignation</th>
+                                        <th class="py-3 px-3">Description</th>
+                                        <th class="py-3 px-3 text-center">Qté</th>
+                                        <th class="py-3 px-3 text-right">Prix Unit. HT</th>
+                                        <th class="py-3 px-3 text-right">Total HT</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-[#EFF2F5]">
+                                    @foreach($devis->lignes as $ligne)
+                                        <tr>
+                                            <td class="py-3 px-3 font-semibold text-[#181C32]">{{ $ligne->designation }}</td>
+                                            <td class="py-3 px-3 text-[#7E8299]">{{ $ligne->description ?? '—' }}</td>
+                                            <td class="py-3 px-3 text-center font-medium">{{ number_format($ligne->quantite, 2, ',', ' ') }}</td>
+                                            <td class="py-3 px-3 text-right font-medium">{{ number_format($ligne->prix_unitaire, 2, ',', ' ') }} {{ $currency }}</td>
+                                            <td class="py-3 px-3 text-right font-bold text-[#181C32]">{{ number_format($ligne->montant_ht, 2, ',', ' ') }} {{ $currency }}</td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div>
-                        <div style="font-size:10px; font-weight:700; color:#a1a5b7; text-transform:uppercase; margin-bottom:4px;">Date expiration</div>
-                        <div style="font-size:13px; font-weight:600; color:#181c32;">{{ $devis->date_expiration ? $devis->date_expiration->format('d/m/Y') : '—' }}</div>
-                    </div>
-                    <div>
-                        <div style="font-size:10px; font-weight:700; color:#a1a5b7; text-transform:uppercase; margin-bottom:4px;">Taux TVA</div>
-                        <div style="font-size:13px; font-weight:600; color:#181c32;">{{ $devis->taux_tva }}%</div>
-                    </div>
+
+                    @if($devis->observations)
+                        <hr class="border-[#EFF2F5]">
+                        <div class="p-6">
+                            <div class="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                                <p class="text-[10px] font-bold text-amber-700 uppercase tracking-wide mb-1.5">Observations</p>
+                                <p class="text-xs text-[#5E6278] leading-relaxed whitespace-pre-wrap">{{ $devis->observations }}</p>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
 
-            <hr class="kt-separator">
-
-            <!-- Lignes Table -->
-            <div class="kt-card-body">
-                <div style="font-size:13px; font-weight:700; color:#181c32; margin-bottom:14px;">Détail des prestations</div>
-                <table class="kt-table">
-                    <thead>
-                        <tr>
-                            <th>Désignation</th>
-                            <th>Description</th>
-                            <th style="text-align:center;">Qté</th>
-                            <th style="text-align:right;">Prix Unit. HT</th>
-                            <th style="text-align:right;">Total HT</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($devis->lignes as $ligne)
-                            <tr>
-                                <td style="font-weight:600; color:#181c32;">{{ $ligne->designation }}</td>
-                                <td style="color:#7e8299; font-size:12px;">{{ $ligne->description ?? '—' }}</td>
-                                <td style="text-align:center; font-weight:500;">{{ number_format($ligne->quantite, 2, ',', ' ') }}</td>
-                                <td style="text-align:right; font-weight:500;">{{ number_format($ligne->prix_unitaire, 2, ',', ' ') }} €</td>
-                                <td style="text-align:right; font-weight:700; color:#181c32;">{{ number_format($ligne->montant_ht, 2, ',', ' ') }} €</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-
-            @if($devis->observations)
-                <hr class="kt-separator">
-                <div class="kt-card-body" style="padding-top:16px;">
-                    <div style="background:rgba(255,199,0,0.06); border:1px solid rgba(255,199,0,0.2); border-radius:10px; padding:14px 16px;">
-                        <div style="font-size:11px; font-weight:700; color:#e9b500; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;">Observations</div>
-                        <p style="font-size:13px; color:#5e6278; line-height:1.6; margin:0; white-space:pre-wrap;">{{ $devis->observations }}</p>
-                    </div>
-                </div>
-            @endif
-        </div>
-
-        <!-- Sidebar: Totaux -->
-        <div>
-            <div class="kt-card">
-                <div class="kt-card-header" style="min-height:50px;">
-                    <div class="kt-card-title">Récapitulatif</div>
-                </div>
-                <div class="kt-card-body">
-                    <div style="display:grid; gap:14px;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:13px; color:#7e8299;">Sous-total HT</span>
-                            <span style="font-size:13px; font-weight:600; color:#181c32;">{{ number_format($devis->montant_ht, 2, ',', ' ') }} €</span>
+            <!-- Sidebar: Totaux -->
+            <div class="space-y-4">
+                <div class="metronic-card p-6">
+                    <p class="text-sm font-bold text-[#181C32] mb-4">Récapitulatif</p>
+                    <div class="space-y-3.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-[#7E8299]">Sous-total HT</span>
+                            <span class="text-xs font-semibold text-[#181C32]">{{ number_format($devis->montant_ht, 2, ',', ' ') }} {{ $currency }}</span>
                         </div>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:13px; color:#7e8299;">TVA ({{ $devis->taux_tva }}%)</span>
-                            <span style="font-size:13px; font-weight:600; color:#181c32;">{{ number_format($devis->montant_tva, 2, ',', ' ') }} €</span>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-[#7E8299]">TVA ({{ $devis->taux_tva }}%)</span>
+                            <span class="text-xs font-semibold text-[#181C32]">{{ number_format($devis->montant_tva, 2, ',', ' ') }} {{ $currency }}</span>
                         </div>
-                        <hr class="kt-separator">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:14px; font-weight:700; color:#181c32;">Total TTC</span>
-                            <span style="font-size:18px; font-weight:800; color:#3e97ff;">{{ number_format($devis->montant_ttc, 2, ',', ' ') }} €</span>
+                        <hr class="border-[#EFF2F5]">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm font-bold text-[#181C32]">Total TTC</span>
+                            <span class="text-lg font-extrabold text-emerald-600">{{ number_format($devis->montant_ttc, 2, ',', ' ') }} {{ $currency }}</span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Quick Actions -->
-            <div class="kt-card" style="margin-top:16px;">
-                <div class="kt-card-header" style="min-height:50px;">
-                    <div class="kt-card-title">Actions rapides</div>
-                </div>
-                <div class="kt-card-body" style="display:grid; gap:8px;">
-                    <a href="{{ route('commercial.devis.pdf', $devis) }}" target="_blank" class="kt-btn kt-btn-danger" style="width:100%; justify-content:center;">
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-                        Télécharger PDF
-                    </a>
-                    <a href="{{ route('commercial.devis.edit', $devis) }}" class="kt-btn kt-btn-light-primary" style="width:100%; justify-content:center;">
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-                        Modifier le devis
-                    </a>
-                    <form action="{{ route('commercial.devis.duplicate', $devis) }}" method="POST">
-                        @csrf
-                        <button type="submit" class="kt-btn kt-btn-light-success" style="width:100%; justify-content:center;">
-                            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                            Dupliquer ce devis
-                        </button>
-                    </form>
+                <!-- Quick Actions -->
+                <div class="metronic-card p-6">
+                    <p class="text-sm font-bold text-[#181C32] mb-4">Actions rapides</p>
+                    <div class="space-y-2">
+                        <a href="{{ route('commercial.devis.pdf', $devis) }}" target="_blank" class="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-lg transition">
+                            <i class="fas fa-file-pdf text-[11px]"></i> Télécharger PDF
+                        </a>
+                        <a href="{{ route('commercial.devis.edit', $devis) }}" class="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-white border border-[#EFF2F5] text-[#5E6278] text-xs font-bold rounded-lg hover:bg-[#F9F9FB] transition">
+                            <i class="fas fa-pen text-[11px]"></i> Modifier le devis
+                        </a>
+                        <form action="{{ route('commercial.devis.duplicate', $devis) }}" method="POST">
+                            @csrf
+                            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg hover:bg-emerald-100 transition">
+                                <i class="fas fa-copy text-[11px]"></i> Dupliquer ce devis
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-
 </x-commercial-layout>

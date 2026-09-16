@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\ClientParticulier;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,6 +11,31 @@ class UpdateClientRequest extends FormRequest
     public function authorize(): bool
     {
         return true;
+    }
+
+    /**
+     * Les champs entreprise (ICE, IF, RC, Patente) n'ont de sens que pour un client
+     * de type Entreprise, et les champs d'identité (CIN, date de naissance) que pour
+     * un client Particulier. On les nullifie ici avant validation pour empêcher toute
+     * incohérence forcée (ex: appel API direct envoyant ICE avec type_client=Particulier).
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('type_client') !== 'Entreprise') {
+            $this->merge([
+                'ice' => null,
+                'if' => null,
+                'rc' => null,
+                'patente' => null,
+            ]);
+        }
+
+        if ($this->input('type_client') !== 'Particulier') {
+            $this->merge([
+                'numero_cin' => null,
+                'date_naissance' => null,
+            ]);
+        }
     }
 
     public function rules(): array
@@ -55,11 +81,39 @@ class UpdateClientRequest extends FormRequest
             'is_active'           => ['boolean'],
             'commercial_id'       => ['nullable', 'exists:users,id'],
 
-            // Données entreprise (colonnes conformes aux migrations)
-            'ice'     => ['nullable', 'string', 'max:15'],
+            // Données entreprise (colonnes conformes aux migrations) : ICE obligatoire
+            // uniquement pour un client Entreprise (identifiant légalement requis au Maroc).
+            'ice'     => [
+                Rule::requiredIf(fn () => $this->input('type_client') === 'Entreprise'),
+                'nullable', 'string', 'max:15',
+                Rule::unique('client_entreprises', 'ice')->ignore($client?->clientEntreprise?->id),
+            ],
             'if'      => ['nullable', 'string', 'max:20'],
             'rc'      => ['nullable', 'string', 'max:20'],
             'patente' => ['nullable', 'string', 'max:20'],
+
+            // Identité du client Particulier (loi 09-08) : CIN obligatoire, format
+            // souple (1-2 lettres + chiffres, variable selon la préfecture d'émission).
+            'numero_cin' => [
+                Rule::requiredIf(fn () => $this->input('type_client') === 'Particulier'),
+                'nullable', 'string', 'max:20',
+                'regex:/^[A-Za-z]{1,2}[0-9]{1,8}$/',
+                function ($attribute, $value, $fail) use ($client) {
+                    if (!$value) {
+                        return;
+                    }
+                    $query = ClientParticulier::where('numero_cin_hash', ClientParticulier::hashCin($value));
+                    if ($client?->clientParticulier) {
+                        $query->where('id', '!=', $client->clientParticulier->id);
+                    }
+                    if ($query->exists()) {
+                        $fail('Ce numéro CIN est déjà enregistré pour un autre client.');
+                    }
+                },
+            ],
+            'date_naissance' => ['nullable', 'date', 'before:today'],
+            'cin_recto' => ['nullable', 'prohibited_unless:type_client,Particulier', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
+            'cin_verso' => ['nullable', 'prohibited_unless:type_client,Particulier', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:10240'],
         ];
     }
 
@@ -80,6 +134,13 @@ class UpdateClientRequest extends FormRequest
             'email.email'           => 'L\'adresse e-mail n\'est pas valide.',
             'email.unique'          => 'Cette adresse e-mail est déjà utilisée par un autre client.',
             'ville.required'        => 'La ville est obligatoire.',
+            'ice.required'          => 'L\'ICE est obligatoire pour un client de type Entreprise.',
+            'ice.unique'            => 'Cet ICE est déjà enregistré pour un autre client.',
+            'numero_cin.required'   => 'Le numéro CIN est obligatoire pour un client Particulier.',
+            'numero_cin.regex'      => 'Le format du numéro CIN est invalide (ex: AB123456).',
+            'date_naissance.before' => 'La date de naissance doit être antérieure à aujourd\'hui.',
+            'cin_recto.mimes'       => 'Le recto de la CIN doit être un PDF, JPG ou PNG.',
+            'cin_verso.mimes'       => 'Le verso de la CIN doit être un PDF, JPG ou PNG.',
         ];
     }
 
@@ -102,6 +163,10 @@ class UpdateClientRequest extends FormRequest
             'if'                   => 'identifiant fiscal (IF)',
             'rc'                   => 'registre de commerce',
             'patente'              => 'patente',
+            'numero_cin'           => 'numéro CIN',
+            'date_naissance'       => 'date de naissance',
+            'cin_recto'            => 'scan CIN recto',
+            'cin_verso'            => 'scan CIN verso',
         ];
     }
 }

@@ -43,7 +43,13 @@ class RapportController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('rapports.index', compact('rapports', 'search'));
+        $rapports->getCollection()->each(function (Rapport $rapport) {
+            $rapport->statutBadge = $this->rapportService->statutBadge($rapport);
+        });
+
+        $stats = $this->rapportService->statsCertification();
+
+        return view('rapports.index', compact('rapports', 'search', 'stats'));
     }
 
     /**
@@ -88,7 +94,9 @@ class RapportController extends Controller
 
         $rapport->load(['intervention.technicien', 'intervention.chantier.client', 'intervention.materiaux.materiau', 'photos', 'videos', 'documents', 'reponses.question']);
 
-        return view('rapports.show', compact('rapport'));
+        $statutBadge = $this->rapportService->statutBadge($rapport);
+
+        return view('rapports.show', compact('rapport', 'statutBadge'));
     }
 
     /**

@@ -225,7 +225,7 @@
         }
         .sig-img {
             max-width: 100%;
-            max-height: 65px;
+            max-height: 85px;
         }
 
         /* Footer Fixed */
@@ -376,56 +376,22 @@
     </div>
 
     <!-- 3. Formulaire Technique Terrain -->
-    @if($rapport->reponses && $rapport->reponses->isNotEmpty())
-        <div class="section">
-            <div class="section-header">3. Réponses au Formulaire Dynamique Terrain</div>
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th style="width: 45%;">Point de Contrôle / Question</th>
-                        <th style="width: 55%;">Constat / Réponse Technicien</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($rapport->reponses as $reponse)
-                        @php $q = $reponse->question; if(!$q || $q->type_reponse === 'Materiaux') continue; @endphp
-                        <tr>
-                            <td><strong>{{ $q->question }}</strong></td>
-                            <td>
-                                @if(in_array($q->type_reponse, ['Photo', 'Signature']))
-                                    @if($reponse->reponse_fichier)
-                                        @php
-                                            $filePath = storage_path('app/public/' . $reponse->reponse_fichier);
-                                            $exists = file_exists($filePath);
-                                        @endphp
-                                        @if($exists)
-                                            <img src="data:image/jpeg;base64,{{ base64_encode(file_get_contents($filePath)) }}" style="max-height: 90px; border-radius: 3px; border: 1px solid #cbd5e1;">
-                                        @else
-                                            [Fichier enregistré : {{ basename($reponse->reponse_fichier) }}]
-                                        @endif
-                                    @else
-                                        <span style="color:#94a3b8;">Non fournie</span>
-                                    @endif
-                                @elseif(in_array($q->type_reponse, ['OuiNon', 'Oui_Non']))
-                                    <span style="font-weight: bold; color: {{ in_array(strtolower($reponse->reponse_texte), ['1','oui','true']) ? '#059669' : '#dc2626' }};">
-                                        {{ in_array(strtolower($reponse->reponse_texte), ['1','oui','true']) ? '✔ OUI / CONFORME' : '✖ NON / ANOMALIE' }}
-                                    </span>
-                                @else
-                                    {{ $reponse->reponse_texte ?? $reponse->reponse_nombre ?? '-' }}
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
+    <div class="section">
+        <div class="section-header">3. Réponses au Formulaire Dynamique Terrain</div>
+        <x-rapport-formulaire :rapport="$rapport" :pdf-mode="true" />
+    </div>
 
-    <!-- 4. Photos Terrain (Avant / Après / Problèmes Détectés) -->
-    @if($rapport->photos && $rapport->photos->isNotEmpty())
-        <div class="section">
-            <div class="section-header">4. Galerie Photos Terrain Labellisées</div>
+    {{-- 4. Distincte de la section 3 : ces photos/documents sont attachés
+         directement au Rapport (RapportController::storeOrUpdate, workflow
+         Admin/Commercial), PAS aux réponses du Formulaire dynamique — les
+         deux sources de médias sont réellement indépendantes en base
+         (Rapport::photos()/documents() vs Reponse::reponse_fichier), d'où le
+         titre explicite pour ne pas laisser croire à une contradiction avec
+         les médias déjà visibles en section 3. --}}
+    <div class="section">
+        <div class="section-header">4. Documents Complémentaires (hors formulaire)</div>
 
+        @if($rapport->photos && $rapport->photos->isNotEmpty())
             @php
                 $photosAvant = $rapport->photos->filter(fn($p) => $p->type_photo === 'avant');
                 $photosApres = $rapport->photos->filter(fn($p) => $p->type_photo === 'apres');
@@ -436,16 +402,7 @@
                 <div class="photo-category-title">📷 Photos AVANT Intervention</div>
                 <div>
                     @foreach($photosAvant as $photo)
-                        @php
-                            $path = storage_path('app/public/' . $photo->chemin);
-                            $b64 = file_exists($path) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($path)) : null;
-                        @endphp
-                        @if($b64)
-                            <div class="photo-card">
-                                <img src="{{ $b64 }}">
-                                <div class="photo-caption">{{ $photo->description ?? 'Vue Avant' }}</div>
-                            </div>
-                        @endif
+                        <x-rapport-photo-card :photo="$photo" caption-par-defaut="Vue Avant" />
                     @endforeach
                 </div>
             @endif
@@ -454,16 +411,7 @@
                 <div class="photo-category-title">📸 Photos APRÈS Intervention (Travaux Finalisés)</div>
                 <div>
                     @foreach($photosApres as $photo)
-                        @php
-                            $path = storage_path('app/public/' . $photo->chemin);
-                            $b64 = file_exists($path) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($path)) : null;
-                        @endphp
-                        @if($b64)
-                            <div class="photo-card">
-                                <img src="{{ $b64 }}">
-                                <div class="photo-caption">{{ $photo->description ?? 'Vue Après' }}</div>
-                            </div>
-                        @endif
+                        <x-rapport-photo-card :photo="$photo" caption-par-defaut="Vue Après" />
                     @endforeach
                 </div>
             @endif
@@ -472,30 +420,55 @@
                 <div class="photo-category-title">⚠️ Photos Problèmes & Constats Spécifiques</div>
                 <div>
                     @foreach($photosProbleme as $photo)
-                        @php
-                            $path = storage_path('app/public/' . $photo->chemin);
-                            $b64 = file_exists($path) ? 'data:image/jpeg;base64,' . base64_encode(file_get_contents($path)) : null;
-                        @endphp
-                        @if($b64)
-                            <div class="photo-card">
-                                <img src="{{ $b64 }}">
-                                <div class="photo-caption">{{ $photo->description ?? 'Constat Terrain' }}</div>
-                            </div>
-                        @endif
+                        <x-rapport-photo-card :photo="$photo" caption-par-defaut="Constat Terrain" />
                     @endforeach
                 </div>
             @endif
-        </div>
-    @endif
+        @else
+            <p style="color:#94a3b8; font-style:italic; font-size:11px;">Aucune photo complémentaire hors formulaire pour cette intervention.</p>
+        @endif
 
-    <!-- 5. QR Code Équipement & Localisation GPS -->
+        @if($rapport->documents && $rapport->documents->isNotEmpty())
+            <div class="photo-category-title">📄 Documents Complémentaires</div>
+            <table class="data-table">
+                <tbody>
+                    @foreach($rapport->documents as $document)
+                        <tr>
+                            <td>{{ $document->nom_original ?? basename($document->chemin) }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <p style="color:#94a3b8; font-style:italic; font-size:11px; margin-top: 6px;">Aucun document complémentaire hors formulaire pour cette intervention.</p>
+        @endif
+    </div>
+
+    {{-- 5. GPS : $rapport->gps_latitude/longitude ne sont renseignés QUE via
+         RapportController::storeOrUpdate (workflow Admin/Commercial) — jamais
+         par la soumission du Formulaire dynamique depuis l'app Technicien.
+         Si le Formulaire de ce TypeIntervention contient une Question de type
+         GPS (ex: Installation Fibre/WiFi/Caméra), la position capturée par le
+         technicien vit dans Reponse::reponse_texte ("lat,lng"), pas dans ces
+         colonnes — d'où le repli ci-dessous plutôt que la phrase générique
+         précédente qui masquait une donnée pourtant déjà présente. --}}
+    @php
+        $gpsReponse = $rapport->reponses->first(fn($r) => $r->question?->type_reponse === 'GPS' && !empty($r->reponse_texte));
+        $gpsFormulaire = null;
+        if ($gpsReponse) {
+            $parts = explode(',', $gpsReponse->reponse_texte);
+            if (count($parts) === 2 && is_numeric(trim($parts[0])) && is_numeric(trim($parts[1]))) {
+                $gpsFormulaire = ['lat' => (float) trim($parts[0]), 'lng' => (float) trim($parts[1])];
+            }
+        }
+    @endphp
     <div class="section">
-        <div class="section-header">5. Géolocalisation GPS & Traçabilité Équipement</div>
+        <div class="section-header">5. Géolocalisation & Emplacement Scanné</div>
         <table class="grid-cards">
             <tr>
                 <td style="width: 50%;">
                     <div class="card-box">
-                        <div class="card-label">QR Code / Identifiant Équipement Scanné</div>
+                        <div class="card-label">QR Code / Référence Emplacement Scanné</div>
                         <div class="card-value" style="font-family: monospace; color: #4338ca;">
                             {{ $rapport->qrcode_scanne ?: ($rapport->intervention->emplacement->qr_code ?? 'Non scanné / Saisie directe') }}
                         </div>
@@ -510,8 +483,11 @@
                                 @if($rapport->gps_adresse)
                                     <br><span style="font-size: 8px; font-weight: normal; color: #475569;">{{ $rapport->gps_adresse }}</span>
                                 @endif
+                            @elseif($gpsFormulaire)
+                                Lat: {{ number_format($gpsFormulaire['lat'], 5) }}, Long: {{ number_format($gpsFormulaire['lng'], 5) }}
+                                <br><span style="font-size: 8px; font-weight: normal; color: #475569;">Capturée via le champ GPS du formulaire</span>
                             @else
-                                Position enregistrée via session de suivi mobile
+                                Aucune position GPS enregistrée pour cette intervention.
                             @endif
                         </div>
                     </div>
@@ -561,49 +537,73 @@
         </div>
     @endif
 
-    <!-- 7. Visas & Signatures Réciproques -->
-    <table class="signatures-table">
-        <tr>
-            <td class="sig-cell" style="margin-right: 4%;">
-                <div class="sig-title">Visa & Signature du Technicien</div>
-                @if($rapport->signature_technicien)
-                    @php
-                        $techPath = storage_path('app/public/' . $rapport->signature_technicien);
-                        $techB64 = file_exists($techPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($techPath)) : null;
-                    @endphp
-                    @if($techB64)
-                        <img src="{{ $techB64 }}" class="sig-img">
+    {{-- 7. Distincte de toute Question de type Signature en section 3 (ex:
+         "Signature du client — réception de l'installation", une preuve
+         ponctuelle rattachée à un point précis de la checklist terrain) :
+         cette section valide le DOCUMENT DANS SON ENSEMBLE, une fois le
+         rapport clôturé. Renseignée exclusivement via
+         RapportController::storeOrUpdate (workflow Admin/Commercial) — pas
+         par la soumission du Formulaire dynamique technicien, d'où
+         "non renseignée" pour tout rapport créé uniquement depuis l'app
+         Technicien. Pas de capture ajoutée ici : l'app Technicien mobile n'a
+         actuellement qu'un flux de soumission du Formulaire, pas de flux de
+         clôture distinct — à arbitrer séparément si une signature de
+         clôture doit être ajoutée à l'app. --}}
+    @php
+        $signatureReponse = $rapport->reponses->first(fn($r) => $r->question?->type_reponse === 'Signature' && !empty($r->reponse_fichier));
+    @endphp
+    <div class="section">
+        <div class="section-header">7. Visa & Signature de Clôture du Rapport</div>
+        <p style="font-size: 9px; color: #64748b; margin: 0 0 8px;">
+            Validation finale du document par les deux parties — distincte de toute signature de
+            réception déjà capturée comme réponse du Formulaire en section 3.
+        </p>
+        <table class="signatures-table">
+            <tr>
+                <td class="sig-cell" style="margin-right: 4%;">
+                    <div class="sig-title">Visa & Signature du Technicien</div>
+                    @if($rapport->signature_technicien)
+                        @php
+                            $techPath = storage_path('app/public/' . $rapport->signature_technicien);
+                            $techB64 = file_exists($techPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($techPath)) : null;
+                        @endphp
+                        @if($techB64)
+                            <img src="{{ $techB64 }}" class="sig-img">
+                        @else
+                            <div style="font-family: monospace; color: #4338ca; font-weight: bold;">{{ $rapport->signature_technicien }}</div>
+                        @endif
                     @else
-                        <div style="font-family: monospace; color: #4338ca; font-weight: bold;">{{ $rapport->signature_technicien }}</div>
+                        <div style="color: #dc2626; font-style: italic; margin-top: 15px; font-weight: bold;">Signature de clôture non renseignée</div>
+                        @if($signatureReponse)
+                            <div style="font-size: 7.5px; color: #94a3b8; margin-top: 2px;">(Une signature de réception distincte a été capturée en section 3)</div>
+                        @endif
                     @endif
-                @else
-                    <div style="color: #dc2626; font-style: italic; margin-top: 15px; font-weight: bold;">Signature non renseignée</div>
-                @endif
-                <div style="font-size: 7.5px; color: #64748b; margin-top: 4px;">
-                    Technicien : {{ $rapport->intervention->technicien->name ?? 'N/A' }}
-                </div>
-            </td>
-            <td class="sig-cell">
-                <div class="sig-title">Visa & Signature du Client</div>
-                @if($rapport->signature_client)
-                    @php
-                        $clientPath = storage_path('app/public/' . $rapport->signature_client);
-                        $clientB64 = file_exists($clientPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($clientPath)) : null;
-                    @endphp
-                    @if($clientB64)
-                        <img src="{{ $clientB64 }}" class="sig-img">
+                    <div style="font-size: 7.5px; color: #64748b; margin-top: 4px;">
+                        Technicien : {{ $rapport->intervention->technicien->name ?? 'N/A' }}
+                    </div>
+                </td>
+                <td class="sig-cell">
+                    <div class="sig-title">Visa & Signature du Client</div>
+                    @if($rapport->signature_client)
+                        @php
+                            $clientPath = storage_path('app/public/' . $rapport->signature_client);
+                            $clientB64 = file_exists($clientPath) ? 'data:image/png;base64,' . base64_encode(file_get_contents($clientPath)) : null;
+                        @endphp
+                        @if($clientB64)
+                            <img src="{{ $clientB64 }}" class="sig-img">
+                        @else
+                            <div style="font-family: monospace; color: #4338ca; font-weight: bold;">{{ $rapport->signature_client }}</div>
+                        @endif
                     @else
-                        <div style="font-family: monospace; color: #4338ca; font-weight: bold;">{{ $rapport->signature_client }}</div>
+                        <div style="color: #94a3b8; font-style: italic; margin-top: 15px;">Accusé de réception client digital</div>
                     @endif
-                @else
-                    <div style="color: #94a3b8; font-style: italic; margin-top: 15px;">Accusé de réception client digital</div>
-                @endif
-                <div style="font-size: 7.5px; color: #64748b; margin-top: 4px;">
-                    Représentant Client : {{ $rapport->intervention->chantier->client->nom ?? 'Client' }}
-                </div>
-            </td>
-        </tr>
-    </table>
+                    <div style="font-size: 7.5px; color: #64748b; margin-top: 4px;">
+                        Représentant Client : {{ $rapport->intervention->chantier->client->nom ?? 'Client' }}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
 
     <!-- Footer Fixe sur toutes les pages -->
     <div class="pdf-footer">

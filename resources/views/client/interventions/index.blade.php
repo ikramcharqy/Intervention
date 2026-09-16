@@ -1,122 +1,109 @@
 <x-client-layout>
     <x-slot name="header">Mes Interventions</x-slot>
 
-    <!-- Filter Buttons -->
-    <div style="display:flex; align-items:center; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
-        <a href="{{ route('client.interventions.index', ['statut' => 'tous']) }}" class="kt-btn {{ $statutFiltre === 'tous' ? 'kt-btn-primary' : 'kt-btn-light' }}">
-            Toutes
-        </a>
-        <a href="{{ route('client.interventions.index', ['statut' => 'Planifiee']) }}" class="kt-btn {{ $statutFiltre === 'Planifiee' ? 'kt-btn-primary' : 'kt-btn-light' }}">
-            Planifiées
-        </a>
-        <a href="{{ route('client.interventions.index', ['statut' => 'En cours']) }}" class="kt-btn {{ $statutFiltre === 'En cours' ? 'kt-btn-primary' : 'kt-btn-light' }}">
-            En cours
-        </a>
-        <a href="{{ route('client.interventions.index', ['statut' => 'Terminee']) }}" class="kt-btn {{ $statutFiltre === 'Terminee' ? 'kt-btn-primary' : 'kt-btn-light' }}">
-            Terminées
-        </a>
-        <a href="{{ route('client.interventions.index', ['statut' => 'Annulee']) }}" class="kt-btn {{ $statutFiltre === 'Annulee' ? 'kt-btn-primary' : 'kt-btn-light' }}">
-            Annulées
-        </a>
-    </div>
+    <div class="space-y-6">
+        <!-- Filtres par catégorie (vocabulaire client — les statuts internes du workflow
+             ne sont jamais exposés tels quels ici, voir InterventionService::GROUPES_STATUT_CLIENT) -->
+        <div class="flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-2 flex-wrap">
+                @foreach(\App\Services\InterventionService::LIBELLES_GROUPE_CLIENT as $value => $label)
+                    <a href="{{ route('client.interventions.index', array_filter(['statut' => $value, 'chantier_id' => $chantierFiltre, 'q' => $recherche, 'avec_rapport' => $avecRapport ? 1 : null])) }}"
+                       class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-bold transition {{ $statutFiltre === $value ? 'bg-emerald-500 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50' }}">
+                        {{ $label }}
+                    </a>
+                @endforeach
+            </div>
 
-    <!-- Table Card -->
-    <div class="kt-card">
-        <div class="kt-card-header" style="display:flex; justify-content:space-between; align-items:center;">
-            <div>
-                <div class="kt-card-title">Interventions</div>
-                <div style="font-size:12px; color:#a1a5b7; margin-top:3px;">Consultation et suivi de vos interventions</div>
-            </div>
-            <div>
-                <a href="{{ route('client.demandes.create') }}" class="kt-btn kt-btn-primary" style="display:inline-flex; align-items:center; gap:6px;">
-                    <i class="fa-solid fa-paper-plane"></i>
-                    <span>Demander une Intervention</span>
-                </a>
-            </div>
+            <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 cursor-pointer">
+                <input type="checkbox" onchange="window.location='{{ route('client.interventions.index', array_filter(['statut' => $statutFiltre, 'chantier_id' => $chantierFiltre, 'q' => $recherche])) }}' + (this.checked ? '&avec_rapport=1' : '')"
+                       {{ $avecRapport ? 'checked' : '' }}
+                       class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500/40">
+                Avec rapport disponible uniquement
+            </label>
         </div>
 
-        <div style="overflow-x: auto;">
-            <table class="kt-table">
-                <thead>
-                    <tr>
-                        <th style="padding-left:24px;">Code</th>
-                        <th>Type</th>
-                        <th>Chantier</th>
-                        <th>Priorité</th>
-                        <th>Date</th>
-                        <th>Statut</th>
-                        <th>Technicien</th>
-                        <th style="text-align:right; padding-right:24px;">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($interventions as $interv)
-                        <tr>
-                            <td style="padding-left:24px; font-weight:700; color:#181c32;">
-                                {{ $interv->code_intervention }}
-                            </td>
-                            <td>{{ $interv->typeIntervention?->nom ?? '—' }}</td>
-                            <td>
-                                <div style="font-weight:600; color:#181c32;">{{ $interv->chantier?->nom ?? '—' }}</div>
-                                @if($interv->chantier?->ville)<div style="font-size:11px; color:#a1a5b7;">{{ $interv->chantier->ville }}</div>@endif
-                            </td>
-                            <td>
-                                @php
-                                    $prioColor = match($interv->priorite) {
-                                        'Urgente' => 'kt-badge-danger',
-                                        'Haute'   => 'kt-badge-warning',
-                                        'Normale' => 'kt-badge-primary',
-                                        'Faible'  => 'kt-badge-gray',
-                                        default   => 'kt-badge-gray'
-                                    };
-                                @endphp
-                                <span class="kt-badge {{ $prioColor }}">{{ $interv->priorite }}</span>
-                            </td>
-                            <td>
-                                <div style="font-size:12px; color:#181c32; font-weight:500;">
+        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div class="flex flex-wrap items-center justify-between gap-3 p-6 pb-4">
+                <div>
+                    <h1 class="text-base font-bold text-slate-900">Interventions</h1>
+                    <p class="text-xs text-slate-400 mt-1">Consultation et suivi de vos interventions, rapports compris</p>
+                </div>
+
+                <form method="GET" class="flex items-center gap-2">
+                    <input type="hidden" name="statut" value="{{ $statutFiltre }}">
+                    @if($avecRapport)<input type="hidden" name="avec_rapport" value="1">@endif
+                    <select name="chantier_id" onchange="this.form.submit()" class="text-xs rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500/40">
+                        <option value="">Tous les chantiers</option>
+                        @foreach($chantiersDuClient as $c)
+                            <option value="{{ $c->id }}" {{ (string) $chantierFiltre === (string) $c->id ? 'selected' : '' }}>{{ $c->nom }}</option>
+                        @endforeach
+                    </select>
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" name="q" value="{{ $recherche }}" placeholder="Code, chantier…"
+                               class="pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition w-48">
+                    </div>
+                </form>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-400 uppercase font-bold text-[10px]">
+                            <th class="py-3 pl-6 pr-4">Code</th>
+                            <th class="py-3 px-4">Type</th>
+                            <th class="py-3 px-4">Chantier</th>
+                            <th class="py-3 px-4">Priorité</th>
+                            <th class="py-3 px-4">Date</th>
+                            <th class="py-3 px-4">Statut</th>
+                            <th class="py-3 px-4">Technicien</th>
+                            <th class="py-3 pr-6 pl-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @forelse($interventions as $interv)
+                            <tr class="hover:bg-slate-50 transition">
+                                <td class="py-3.5 pl-6 pr-4 font-bold text-slate-900">{{ $interv->code_intervention }}</td>
+                                <td class="py-3.5 px-4 text-slate-600">{{ $interv->typeIntervention?->nom ?? '—' }}</td>
+                                <td class="py-3.5 px-4">
+                                    <div class="font-semibold text-slate-800">{{ $interv->chantier?->nom ?? '—' }}</div>
+                                    @if($interv->chantier?->ville)<div class="text-[11px] text-slate-400">{{ $interv->chantier->ville }}</div>@endif
+                                </td>
+                                <td class="py-3.5 px-4"><x-soft-badge :status="$interv->priorite" /></td>
+                                <td class="py-3.5 px-4 text-slate-600">
                                     {{ $interv->date_prevue_debut ? $interv->date_prevue_debut->format('d/m/Y H:i') : '—' }}
-                                </div>
-                            </td>
-                            <td>
-                                @php
-                                    $badgeColor = match($interv->statut) {
-                                        'Planifiee' => 'kt-badge-primary',
-                                        'En cours'  => 'kt-badge-warning',
-                                        'Terminee'  => 'kt-badge-success',
-                                        'Annulee'   => 'kt-badge-danger',
-                                        default     => 'kt-badge-gray'
-                                    };
-                                @endphp
-                                <span class="kt-badge {{ $badgeColor }}">{{ $interv->statut }}</span>
-                            </td>
-                            <td>
-                                <span style="font-size:13px; color:#3f4254;">{{ $interv->technicien?->name ?? 'Non assigné' }}</span>
-                            </td>
-                            <td style="padding-right:24px; text-align:right;">
-                                <a href="{{ route('client.interventions.show', $interv) }}" class="kt-btn kt-btn-light-primary kt-btn-sm">
-                                    Consulter
-                                </a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="8">
-                                <div class="kt-empty-state">
-                                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/></svg>
-                                    <p>Aucune intervention trouvée.</p>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-
-        @if(method_exists($interventions, 'hasPages') && $interventions->hasPages())
-            <div style="padding:16px 24px; border-top:1px dashed #eff2f5;">
-                {{ $interventions->links() }}
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <div class="flex items-center gap-1.5 flex-wrap">
+                                        <x-soft-badge :status="$interv->statut" />
+                                        @if($interv->rapport)
+                                            <a href="{{ route('client.rapports.show', $interv->rapport) }}" title="Rapport disponible pour cette intervention" class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition">
+                                                <i class="fas fa-file-pdf text-[10px]"></i>
+                                            </a>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="py-3.5 px-4 text-slate-600">{{ $interv->technicien?->name ?? 'Non assigné' }}</td>
+                                <td class="py-3.5 pr-6 pl-4 text-right">
+                                    <a href="{{ route('client.interventions.show', $interv) }}" class="text-xs font-bold text-emerald-600 hover:text-emerald-700">
+                                        Consulter <i class="fas fa-arrow-right text-[10px]"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="8" class="py-12 text-center text-slate-400 italic">Aucune intervention trouvée.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
-        @endif
-    </div>
 
+            @if(method_exists($interventions, 'hasPages') && $interventions->hasPages())
+                <div class="p-4 border-t border-slate-100">
+                    {{ $interventions->links() }}
+                </div>
+            @endif
+        </div>
+    </div>
 </x-client-layout>

@@ -4,12 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\ClientContact;
 use App\Models\Client;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 
 class ClientContactController extends Controller
 {
+    use AuthorizesRequests;
+
+
     public function store(Request $request, Client $client)
     {
+        $this->authorize('update', $client);
+
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'prenom' => 'nullable|string|max:255',
@@ -30,6 +36,8 @@ class ClientContactController extends Controller
 
     public function update(Request $request, ClientContact $contact)
     {
+        $this->authorize('update', $contact->client);
+
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'prenom' => 'nullable|string|max:255',
@@ -50,6 +58,8 @@ class ClientContactController extends Controller
 
     public function destroy(ClientContact $contact)
     {
+        $this->authorize('update', $contact->client);
+
         $clientId = $contact->client_id;
         $contact->delete();
         return redirect()->route('clients.show', $clientId)->with('success', 'Contact supprimé.');

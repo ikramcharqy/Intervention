@@ -1,0 +1,499 @@
+/* ==========================================================================
+   DESIGN SYSTEM — extracted from Figma "Modernize" UI Kit
+   Component classes only. Not imported anywhere yet — wire it up
+   (import into app.css, or per-view) once views are ready to adopt it.
+   Tokens live in tailwind.config.js under the `ds` / `inter` / `control` /
+   `card` namespaces so these classes and raw Tailwind utilities stay in sync.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   BUTTONS
+   Sizes: lg (48px / text-ds-body), md (40px / text-ds-body), sm (36px / text-ds-small)
+   Variants: primary, secondary, white, danger, danger-secondary
+   -------------------------------------------------------------------------- */
+.ds-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-weight: 400;
+    border-radius: theme(borderRadius.control);
+    white-space: nowrap;
+    transition: opacity 0.15s ease, box-shadow 0.15s ease;
+}
+
+.ds-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.ds-btn:focus-visible {
+    outline: 2px solid theme(colors.ds.primary.DEFAULT);
+    outline-offset: 2px;
+}
+
+/* Sizes */
+.ds-btn-lg { height: theme(height.control-lg); padding: 0 1.5rem; font-size: 16px; line-height: 24px; }
+.ds-btn-md { height: theme(height.control-md); padding: 0 1.25rem; font-size: 16px; line-height: 24px; }
+.ds-btn-sm { height: theme(height.control-sm); padding: 0 1rem; font-size: 14px; line-height: 20px; }
+
+/* Variants */
+.ds-btn-primary {
+    background-color: theme(colors.ds.primary.DEFAULT);
+    color: #ffffff;
+}
+.ds-btn-primary:hover:not(:disabled) { opacity: 0.9; }
+
+.ds-btn-secondary {
+    background-color: theme(colors.ds.primary.light);
+    color: theme(colors.ds.primary.DEFAULT);
+}
+.ds-btn-secondary:hover:not(:disabled) { opacity: 0.85; }
+
+.ds-btn-white {
+    background-color: #ffffff;
+    color: theme(colors.ds.primary.DEFAULT);
+    border: 1px solid theme(colors.ds.border.DEFAULT);
+}
+.ds-btn-white:hover:not(:disabled) { background-color: theme(colors.ds.surface.disabled); }
+
+.ds-btn-danger {
+    background-color: theme(colors.ds.danger.DEFAULT);
+    color: #ffffff;
+}
+.ds-btn-danger:hover:not(:disabled) { opacity: 0.9; }
+
+.ds-btn-danger-secondary {
+    background-color: theme(colors.ds.danger.light);
+    color: theme(colors.ds.danger.DEFAULT);
+}
+.ds-btn-danger-secondary:hover:not(:disabled) { opacity: 0.85; }
+
+/* --------------------------------------------------------------------------
+   CARDS
+   -------------------------------------------------------------------------- */
+.ds-card {
+    background-color: #ffffff;
+    border: 1px solid theme(colors.ds.border.DEFAULT);
+    border-radius: theme(borderRadius.card);
+}
+
+/* Elevated variant — shadow value is an approximation, see tailwind.config.js note */
+.ds-card-elevated {
+    background-color: #ffffff;
+    border: 1px solid theme(colors.ds.border.DEFAULT);
+    border-radius: theme(borderRadius.card);
+    box-shadow: theme(boxShadow.card);
+}
+
+.ds-card-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid theme(colors.ds.border.DEFAULT);
+}
+
+.ds-card-title {
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 24px;
+    line-height: 36px;
+    font-weight: 700;
+    color: theme(colors.ds.text.heading);
+}
+
+.ds-card-body {
+    padding: 1.5rem;
+}
+
+/* --------------------------------------------------------------------------
+   FORM INPUTS
+   -------------------------------------------------------------------------- */
+.ds-label {
+    display: block;
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 14px;
+    line-height: 20px;
+    color: theme(colors.ds.text.label);
+    margin-bottom: 0.25rem;
+}
+
+.ds-input {
+    width: 100%;
+    height: theme(height.control-lg);
+    padding: 0 1rem;
+    background-color: #ffffff;
+    border: 1px solid theme(colors.ds.border.input);
+    border-radius: theme(borderRadius.control);
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 16px;
+    line-height: 24px;
+    color: theme(colors.ds.text.body);
+}
+
+.ds-input::placeholder {
+    color: theme(colors.ds.text.muted);
+}
+
+.ds-input:focus {
+    outline: none;
+    border-color: theme(colors.ds.primary.DEFAULT);
+    box-shadow: 0 0 0 3px theme(colors.ds.primary.light);
+}
+
+.ds-input:disabled {
+    background-color: theme(colors.ds.surface.disabled);
+    color: theme(colors.ds.text.label);
+    cursor: not-allowed;
+}
+
+/* --------------------------------------------------------------------------
+   STATUS BADGES
+   Sizes: md (28px), sm (24px) — Light and Solid styles
+   Colors: primary, secondary, success, danger, warning
+   -------------------------------------------------------------------------- */
+.ds-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 14px;
+    line-height: 20px;
+    border-radius: theme(borderRadius.control);
+    padding: 0 0.75rem;
+    white-space: nowrap;
+}
+
+.ds-badge-md { height: 28px; }
+.ds-badge-sm { height: 24px; }
+
+/* Light style */
+.ds-badge-light-primary   { background-color: theme(colors.ds.primary.light);   color: theme(colors.ds.primary.DEFAULT); }
+.ds-badge-light-secondary { background-color: theme(colors.ds.secondary.light); color: theme(colors.ds.secondary.DEFAULT); }
+.ds-badge-light-success   { background-color: theme(colors.ds.success.light);   color: theme(colors.ds.success.text); }
+.ds-badge-light-danger    { background-color: theme(colors.ds.danger.light);    color: theme(colors.ds.danger.DEFAULT); }
+.ds-badge-light-warning   { background-color: theme(colors.ds.warning.light);   color: theme(colors.ds.warning.DEFAULT); }
+
+/* Solid style */
+.ds-badge-solid-primary   { background-color: theme(colors.ds.primary.DEFAULT);   color: #ffffff; }
+.ds-badge-solid-secondary { background-color: theme(colors.ds.secondary.DEFAULT); color: #ffffff; }
+.ds-badge-solid-success   { background-color: theme(colors.ds.success.DEFAULT);   color: #ffffff; }
+.ds-badge-solid-danger    { background-color: theme(colors.ds.danger.solid);      color: #ffffff; }
+.ds-badge-solid-warning   { background-color: theme(colors.ds.warning.DEFAULT);   color: #ffffff; }
+
+/* --------------------------------------------------------------------------
+   NAVBAR (top bar)
+   Real dimensions verified against the Figma "01 dashboard" node.
+   -------------------------------------------------------------------------- */
+.ds-navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 68px;
+    padding: 0 1.5rem;
+    background-color: #ffffff;
+    box-shadow: theme(boxShadow.card);
+}
+
+.ds-navbar-brand {
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 16px;
+    line-height: 24px;
+    font-weight: 700;
+    color: theme(colors.ds.text.heading);
+}
+
+.ds-navbar-link {
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 14px;
+    line-height: 20px;
+    color: theme(colors.ds.text.label);
+    padding: 0.5rem 0.75rem;
+    border-radius: theme(borderRadius.control);
+}
+
+.ds-navbar-link:hover {
+    background-color: theme(colors.ds.surface.disabled);
+    color: theme(colors.ds.text.heading);
+}
+
+.ds-navbar-link-active {
+    background-color: theme(colors.ds.primary.light);
+    color: theme(colors.ds.primary.DEFAULT);
+}
+
+/* --------------------------------------------------------------------------
+   SIDEBAR
+   Real dimensions verified against the Figma "01 dashboard" node.
+   -------------------------------------------------------------------------- */
+.ds-sidebar {
+    display: flex;
+    flex-direction: column;
+    width: 250px;
+    height: 100%;
+    background-color: #ffffff;
+    border-right: 1px solid theme(colors.ds.border.DEFAULT);
+    padding: 1rem 0.75rem;
+}
+
+.ds-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: 40px;
+    padding: 0 0.75rem;
+    border-radius: theme(borderRadius.control);
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 14px;
+    line-height: 20px;
+    color: theme(colors.ds.text.label);
+}
+
+.ds-sidebar-item:hover {
+    background-color: theme(colors.ds.surface.disabled);
+    color: theme(colors.ds.text.heading);
+}
+
+.ds-sidebar-item-active {
+    background-color: theme(colors.ds.primary.light);
+    color: theme(colors.ds.primary.DEFAULT);
+    font-weight: 600;
+}
+
+.ds-sidebar-section-title {
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: theme(colors.ds.text.muted);
+    padding: 0.5rem 0.75rem;
+}
+
+/* Counter badge next to a sidebar item (e.g. pending count) */
+.ds-nav-counter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 0.4rem;
+    border-radius: 9999px;
+    background-color: theme(colors.ds.text.heading);
+    color: #ffffff;
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* --------------------------------------------------------------------------
+   KPI STAT BAR
+   Single card holding N stat blocks separated by vertical dividers, with a
+   colored icon circle on the right of each block. Verified against the
+   Figma "01 dashboard" node ("stats" frame).
+   -------------------------------------------------------------------------- */
+.ds-stat-bar {
+    display: grid;
+    background-color: #ffffff;
+    border-radius: theme(borderRadius.card);
+    box-shadow: theme(boxShadow.card);
+    overflow: hidden;
+}
+
+@media (min-width: 640px) {
+    .ds-stat-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+    .ds-stat-bar { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.ds-stat-block {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.75rem;
+    border-top: 1px solid theme(colors.ds.border.DEFAULT);
+}
+
+@media (min-width: 640px) {
+    .ds-stat-block { border-top: 0; border-left: 1px solid theme(colors.ds.border.DEFAULT); }
+    .ds-stat-block:nth-child(2n+1) { border-left: 0; }
+}
+@media (min-width: 1024px) {
+    .ds-stat-block { border-left: 1px solid theme(colors.ds.border.DEFAULT); }
+    .ds-stat-block:nth-child(4n+1) { border-left: 0; }
+}
+
+.ds-stat-label {
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 14px;
+    line-height: 20px;
+    color: theme(colors.ds.text.label);
+    margin-bottom: 0.25rem;
+}
+
+.ds-stat-value {
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 20px;
+    line-height: 28px;
+    font-weight: 700;
+    color: theme(colors.ds.text.heading);
+}
+
+.ds-stat-subtitle {
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 12px;
+    line-height: 16px;
+    color: theme(colors.ds.text.muted);
+    margin-top: 0.25rem;
+}
+
+/* Icône dans une pastille circulaire teintée — conforme au composant
+   "stat card" du Figma Modernize (icône colorée sur fond clair rond). */
+.ds-stat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 9999px;
+    flex-shrink: 0;
+    font-size: 22px;
+}
+
+.ds-stat-icon-primary   { background-color: theme(colors.ds.primary.light);   color: theme(colors.ds.primary.DEFAULT); }
+.ds-stat-icon-success   { background-color: theme(colors.ds.success.light);   color: theme(colors.ds.success.text); }
+.ds-stat-icon-danger    { background-color: theme(colors.ds.danger.light);    color: theme(colors.ds.danger.DEFAULT); }
+.ds-stat-icon-warning   { background-color: theme(colors.ds.warning.light);   color: theme(colors.ds.warning.DEFAULT); }
+.ds-stat-icon-secondary { background-color: theme(colors.ds.secondary.light); color: theme(colors.ds.secondary.DEFAULT); }
+
+/* --------------------------------------------------------------------------
+   TABLE
+   NOTE: inferred from surface/border/text tokens — not yet re-verified
+   directly against the Figma node. Follows the same pattern as the
+   already-confirmed card tokens, but treat exact paddings as approximate.
+   -------------------------------------------------------------------------- */
+.ds-table-container {
+    background-color: #ffffff;
+    border: 1px solid theme(colors.ds.border.DEFAULT);
+    border-radius: theme(borderRadius.card);
+    overflow: hidden;
+}
+
+.ds-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    text-align: left;
+    font-family: 'Inter', theme(fontFamily.sans);
+}
+
+.ds-table thead th {
+    background-color: theme(colors.ds.surface.disabled);
+    color: theme(colors.ds.text.label);
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid theme(colors.ds.border.DEFAULT);
+    white-space: nowrap;
+}
+
+.ds-table tbody td {
+    padding: 0.875rem 1.25rem;
+    font-size: 14px;
+    line-height: 20px;
+    color: theme(colors.ds.text.body);
+    border-bottom: 1px solid theme(colors.ds.border.DEFAULT);
+    vertical-align: middle;
+}
+
+.ds-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.ds-table tbody tr:hover td {
+    background-color: theme(colors.ds.surface.disabled);
+}
+
+/* --------------------------------------------------------------------------
+   FUNNEL (horizontal proportional bars, e.g. intervention pipeline)
+   -------------------------------------------------------------------------- */
+.ds-funnel-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.ds-funnel-row + .ds-funnel-row {
+    margin-top: 1rem;
+}
+
+.ds-funnel-label {
+    width: 130px;
+    flex-shrink: 0;
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 13px;
+    color: theme(colors.ds.text.label);
+}
+
+.ds-funnel-track {
+    flex: 1;
+    height: 12px;
+    border-radius: 9999px;
+    background-color: theme(colors.ds.surface.disabled);
+    overflow: hidden;
+}
+
+.ds-funnel-fill {
+    height: 100%;
+    border-radius: 9999px;
+    transition: width 0.5s ease;
+}
+
+.ds-funnel-value {
+    width: 44px;
+    flex-shrink: 0;
+    text-align: right;
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 13px;
+    font-weight: 700;
+    color: theme(colors.ds.text.heading);
+}
+
+/* --------------------------------------------------------------------------
+   PROGRESS RING (doughnut with a centered percentage label)
+   -------------------------------------------------------------------------- */
+.ds-progress-ring {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto;
+}
+
+.ds-progress-ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.ds-progress-ring-value {
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 24px;
+    line-height: 28px;
+    font-weight: 700;
+    color: theme(colors.ds.text.heading);
+}
+
+.ds-progress-ring-caption {
+    font-family: 'Inter', theme(fontFamily.sans);
+    font-size: 11px;
+    color: theme(colors.ds.text.muted);
+}
