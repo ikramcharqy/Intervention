@@ -41,6 +41,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+
+        if (config('app.env') !== 'local') {
+          URL::forceScheme('https');
+        }
+        
         // ── Enregistrement des Policies Laravel ──
         Gate::policy(Intervention::class, InterventionPolicy::class);
         Gate::policy(Rapport::class, RapportPolicy::class);
