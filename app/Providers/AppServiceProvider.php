@@ -43,9 +43,9 @@ class AppServiceProvider extends ServiceProvider
     {
 
         if (config('app.env') !== 'local') {
-          URL::forceScheme('https');
+          \Illuminate\Support\Facades\URL::forceScheme('https');
         }
-        
+
         // ── Enregistrement des Policies Laravel ──
         Gate::policy(Intervention::class, InterventionPolicy::class);
         Gate::policy(Rapport::class, RapportPolicy::class);
