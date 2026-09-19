@@ -30,22 +30,28 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
 
+        // Redirection directe par rôle (pas de redirect()->intended()) : une URL "intended"
+        // mémorisée en session peut appartenir à un espace réservé à un autre rôle (ex.
+        // /superadmin/dashboard visité sans être connecté), ce qui renvoyait l'utilisateur
+        // vers une page qu'il n'a pas le droit de voir (403) au lieu de son propre dashboard.
+        $request->session()->forget('url.intended');
+
         if ($user) {
             if ($user->hasRole('Super Admin')) {
-                return redirect()->intended(route('superadmin.dashboard', absolute: false));
+                return redirect()->route('superadmin.dashboard');
             }
             if ($user->hasRole('Commercial')) {
-                return redirect()->intended(route('commercial.dashboard', absolute: false));
+                return redirect()->route('commercial.dashboard');
             }
             if ($user->hasRole('Client')) {
-                return redirect()->intended(route('client.dashboard', absolute: false));
+                return redirect()->route('client.dashboard');
             }
             if ($user->hasRole('technicien') || $user->hasRole('Technicien')) {
-                return redirect()->intended(route('technicien.dashboard', absolute: false));
+                return redirect()->route('technicien.dashboard');
             }
         }
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->route('dashboard');
     }
 
     /**

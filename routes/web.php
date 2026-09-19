@@ -767,4 +767,35 @@ Route::get('/mobile/{any?}', function () {
     return view('mobile.app');
 })->where('any', '.*')->name('mobile.app');
 
+// Outil temporaire : relance manuelle du seeding depuis le navigateur, pour les
+// hébergements sans accès Shell (ex. Render plan gratuit). Volontairement hors de
+// tout middleware d'authentification — protégé uniquement par SEED_SECRET_TOKEN.
+// Échec fermé : si la variable d'env n'est pas définie, l'accès est toujours refusé.
+// À SUPPRIMER une fois le besoin ponctuel de reseed passé (surface non authentifiée
+// exposée en permanence sinon).
+Route::get('/admin-tools/reseed', function (\Illuminate\Http\Request $request) {
+    $expectedToken = env('SEED_SECRET_TOKEN');
+    $providedToken = (string) $request->query('token', '');
+
+    if (empty($expectedToken) || !hash_equals($expectedToken, $providedToken)) {
+        abort(403, 'Forbidden');
+    }
+
+    try {
+        \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+
+        return response(
+            "Seeding terminé avec succès.\n\n" . \Illuminate\Support\Facades\Artisan::output(),
+            200,
+            ['Content-Type' => 'text/plain']
+        );
+    } catch (\Throwable $e) {
+        return response(
+            "Erreur pendant le seeding : {$e->getMessage()}",
+            500,
+            ['Content-Type' => 'text/plain']
+        );
+    }
+});
+
 require __DIR__.'/auth.php';
