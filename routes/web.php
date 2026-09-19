@@ -660,6 +660,10 @@ Route::middleware(['auth', 'no-back-cache'])->group(function () {
     Route::post('/2fa/confirm', [\App\Http\Controllers\Auth\TwoFactorController::class, 'confirm'])->name('two-factor.confirm');
     Route::get('/2fa/recovery-codes', [\App\Http\Controllers\Auth\TwoFactorController::class, 'recoveryCodes'])->name('two-factor.recoveryCodes');
     Route::get('/2fa/challenge', [\App\Http\Controllers\Auth\TwoFactorController::class, 'challenge'])->name('two-factor.challenge');
+    // GET de secours : un F5 / accès direct à /2fa/verify (URL réservée au POST de
+    // vérification) ne doit jamais renvoyer un 405, on renvoie simplement vers le
+    // formulaire d'affichage plutôt que de dupliquer la vue sous deux routes.
+    Route::get('/2fa/verify', fn () => redirect()->route('two-factor.challenge'));
     Route::post('/2fa/verify', [\App\Http\Controllers\Auth\TwoFactorController::class, 'verify'])->name('two-factor.verify');
 
     // Réinitialisation : step-up auth (re-confirmation du mot de passe) obligatoire.
