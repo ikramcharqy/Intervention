@@ -29,13 +29,16 @@ return new class extends Migration
     {
         $columns = implode(', ', $groupByColumns);
 
-        DB::table($tableName)
-            ->whereNotIn('id', function ($query) use ($tableName, $columns) {
-                $query->selectRaw('MAX(id)')
-                    ->from($tableName)
-                    ->groupByRaw($columns);
-            })
-            ->delete();
+        DB::statement("
+            DELETE FROM {$tableName}
+            WHERE id NOT IN (
+                SELECT id FROM (
+                    SELECT MAX(id) AS id
+                    FROM {$tableName}
+                    GROUP BY {$columns}
+                ) AS keep_ids
+            )
+        ");
     }
 
     /**
