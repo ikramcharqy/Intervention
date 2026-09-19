@@ -42,6 +42,7 @@ class User extends Authenticatable
             'en_service' => 'boolean',
             'en_service_maj_le' => 'datetime',
             'notification_preferences' => 'array',
+            'two_factor_recovery_codes' => 'array',
         ];
     }
 
@@ -104,4 +105,5 @@ class User extends Authenticatable
     {
         return $this->hasOne(Client::class);
     }
+    
 }
