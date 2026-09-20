@@ -105,5 +105,22 @@ class User extends Authenticatable
     {
         return $this->hasOne(Client::class);
     }
-    
+
+    /**
+     * Nom de la route dashboard correspondant au rôle de cet utilisateur — mapping
+     * unique réutilisé par AuthenticatedSessionController (login direct) et
+     * TwoFactorController (après validation du code 2FA), pour éviter que l'un des
+     * deux ne retombe sur un dashboard réservé à un autre rôle.
+     */
+    public function dashboardRouteName(): string
+    {
+        return match (true) {
+            $this->hasRole('Super Admin') => 'superadmin.dashboard',
+            $this->hasRole('Commercial') => 'commercial.dashboard',
+            $this->hasRole('Client') => 'client.dashboard',
+            $this->hasRole('technicien') || $this->hasRole('Technicien') => 'technicien.dashboard',
+            default => 'dashboard',
+        };
+    }
+
 }

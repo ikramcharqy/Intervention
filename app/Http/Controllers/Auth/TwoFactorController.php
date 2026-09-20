@@ -105,7 +105,12 @@ class TwoFactorController extends Controller
 
         $request->session()->put('2fa_passed_at', time());
 
-        return redirect()->intended(route('superadmin.dashboard'));
+        // Pas de redirect()->intended() : le fallback était câblé en dur vers
+        // superadmin.dashboard, envoyant aussi les comptes 'admin' (soumis à la même
+        // 2FA obligatoire) vers une page qu'ils n'ont pas le droit de voir (403).
+        $request->session()->forget('url.intended');
+
+        return redirect()->route($user->dashboardRouteName());
     }
 
     /**

@@ -36,22 +36,7 @@ class AuthenticatedSessionController extends Controller
         // vers une page qu'il n'a pas le droit de voir (403) au lieu de son propre dashboard.
         $request->session()->forget('url.intended');
 
-        if ($user) {
-            if ($user->hasRole('Super Admin')) {
-                return redirect()->route('superadmin.dashboard');
-            }
-            if ($user->hasRole('Commercial')) {
-                return redirect()->route('commercial.dashboard');
-            }
-            if ($user->hasRole('Client')) {
-                return redirect()->route('client.dashboard');
-            }
-            if ($user->hasRole('technicien') || $user->hasRole('Technicien')) {
-                return redirect()->route('technicien.dashboard');
-            }
-        }
-
-        return redirect()->route('dashboard');
+        return redirect()->route($user->dashboardRouteName());
     }
 
     /**
