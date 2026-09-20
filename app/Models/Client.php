@@ -48,6 +48,12 @@ class Client extends Model
         return $this->hasMany(ClientContact::class);
     }
 
+    // Journal d'activité CRM (créations/modifications), alimenté par ClientObserver
+    public function activites()
+    {
+        return $this->hasMany(ClientActivite::class)->latest();
+    }
+
     /**
      * Compte utilisateur du portail Client lié à ce client (users.client_id —
      * même lien que ClientModule\DashboardController::getClient()). Référencé

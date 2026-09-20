@@ -51,4 +51,9 @@ class Devis extends Model
     {
         return $this->hasMany(DevisLigne::class, 'devis_id');
     }
+
+    public function factures()
+    {
+        return $this->hasMany(Facture::class);
+    }
 }
