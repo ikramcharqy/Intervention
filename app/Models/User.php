@@ -123,4 +123,22 @@ class User extends Authenticatable
         };
     }
 
+    /**
+     * Libellé lisible d'un nom de rôle Spatie technique (ex: "admin" → "Administrateur").
+     * Statique et prend le nom en paramètre — plusieurs vues l'appellent déjà ainsi
+     * sur un rôle qui n'est pas forcément celui de l'utilisateur courant (ex: rôle
+     * affiché dans un select, ou rôle d'un autre utilisateur consulté par un Super Admin).
+     */
+    public static function roleLabel(?string $roleName): string
+    {
+        return match ($roleName) {
+            'Super Admin' => 'Super Admin',
+            'admin', 'Administrateur' => 'Administrateur',
+            'technicien', 'Technicien' => 'Technicien',
+            'Commercial' => 'Commercial',
+            'Client' => 'Client',
+            default => $roleName ? ucfirst($roleName) : 'Utilisateur',
+        };
+    }
+
 }
