@@ -8,11 +8,24 @@ use App\Models\Chantier;
 use App\Models\DemandeIntervention;
 use App\Models\Prospect;
 use App\Models\Devis;
+use App\Services\CommercialDashboardService;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function index(): View
+    // Seuil de relance d'un devis Envoyé/En attente sans réponse (référencé aussi par
+    // Commercial\DevisController pour le filtre "relance").
+    public const DEVIS_RELANCE_JOURS = 7;
+
+    // Seuil d'inactivité d'un prospect (aucune mise à jour depuis N jours).
+    public const PROSPECT_INACTIVITE_JOURS = 14;
+
+    public function __construct(private CommercialDashboardService $commercialDashboardService)
+    {
+    }
+
+    public function index(Request $request): View
     {
         $commercialId = auth()->id();
 
@@ -42,6 +55,16 @@ class DashboardController extends Controller
         $prospectsRecents = $recentProspects;
         $devisRecents = $recentDevis;
 
-        return view('commercial.dashboard', compact('stats', 'recentProspects', 'recentDevis', 'prospectsRecents', 'devisRecents'));
+        $dashboardData = $this->commercialDashboardService->buildDashboardData(
+            $commercialId,
+            $request->query('period'),
+            $request->query('from'),
+            $request->query('to'),
+        );
+
+        return view('commercial.dashboard', array_merge(
+            compact('stats', 'recentProspects', 'recentDevis', 'prospectsRecents', 'devisRecents'),
+            $dashboardData
+        ));
     }
 }
