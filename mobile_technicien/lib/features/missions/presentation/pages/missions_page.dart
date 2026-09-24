@@ -143,7 +143,7 @@ class _FilterChips extends StatelessWidget {
               fontSize: 12,
             ),
             backgroundColor: Colors.white,
-            side: BorderSide(color: selected ? AppColors.brand : const Color(0xFFE6E9F4)),
+            side: BorderSide(color: selected ? AppColors.brand : AppColors.border),
           );
         },
       ),

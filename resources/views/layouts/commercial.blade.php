@@ -7,6 +7,8 @@
 
     <title>Espace Commercial & Ventes — {{ config('app.name', 'TechniTrack') }}</title>
 
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-technitrack-icon.png') }}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -33,8 +35,8 @@
             <!-- Brand -->
             <div class="h-16 flex items-center justify-between px-5 border-b border-slate-100">
                 <a href="{{ route('commercial.dashboard') }}" class="flex items-center gap-2.5 group">
-                    <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-bold shadow-sm">
-                        <i class="fas fa-handshake text-xs"></i>
+                    <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shadow-sm p-1.5">
+                        <img src="{{ asset('images/logo-technitrack-icon.png') }}" alt="TechniTrack" class="w-full h-full object-contain">
                     </div>
                     <span class="font-bold text-sm text-slate-900 tracking-tight">Techni<span class="text-emerald-600">Track</span></span>
                 </a>

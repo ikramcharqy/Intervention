@@ -322,7 +322,7 @@ class _MissionDetailView extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE6E9F4)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Column(
                     children: [
@@ -651,7 +651,7 @@ class _ChantierContactCardState extends State<_ChantierContactCard> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE6E9F4)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [

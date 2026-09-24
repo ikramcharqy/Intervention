@@ -194,7 +194,7 @@ class _ProgressHeader extends StatelessWidget {
             child: LinearProgressIndicator(
               value: ratio,
               minHeight: 8,
-              backgroundColor: const Color(0xFFE6E9F4),
+              backgroundColor: AppColors.surfaceMuted,
               valueColor: AlwaysStoppedAnimation(ratio >= 1.0 ? AppColors.success : AppColors.brand),
             ),
           ),
@@ -275,7 +275,7 @@ class _FormRecapScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFE6E9F4)),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Column(
                         children: [

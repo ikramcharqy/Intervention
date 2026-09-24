@@ -7,6 +7,8 @@
 
     <title>Espace Client — {{ config('app.name', 'TechniTrack') }}</title>
 
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-technitrack-icon.png') }}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -64,8 +66,8 @@
             <!-- Brand -->
             <div class="h-20 flex items-center justify-between px-6 shrink-0">
                 <a href="{{ route('client.dashboard') }}" class="flex items-center gap-2.5 group min-w-0">
-                    <div class="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center text-white shadow-sm shadow-emerald-500/30 shrink-0">
-                        <x-icon name="bolt" class="w-[18px] h-[18px]" />
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center shadow-sm shadow-emerald-500/30 shrink-0 p-1.5">
+                        <img src="{{ asset('images/logo-technitrack-icon.png') }}" alt="TechniTrack" class="w-full h-full object-contain">
                     </div>
                     <div class="flex flex-col min-w-0" x-show="!sidebarCompact" x-cloak>
                         <span class="font-extrabold text-base text-[#1e2530] tracking-tight truncate leading-none">Techni<span class="text-emerald-500">Track</span></span>

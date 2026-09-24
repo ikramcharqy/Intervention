@@ -62,6 +62,12 @@ dependencies:
   latlong2: ^0.9.1
   url_launcher: ^6.3.0
 
+  # Identité visuelle — police Plus Jakarta Sans (même famille que le design
+  # system web resources/css/design-system.css), chargée via Google Fonts
+  # pour rester cohérente entre web et mobile sans embarquer de fichiers de
+  # police statiques.
+  google_fonts: ^6.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -71,3 +77,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/

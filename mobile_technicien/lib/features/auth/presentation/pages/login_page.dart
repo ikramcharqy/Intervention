@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile_technicien/core/theme/app_theme.dart';
+import 'package:mobile_technicien/core/widgets/app_logo.dart';
 import 'package:mobile_technicien/features/auth/presentation/bloc/auth_bloc.dart';
 
 /// Écran de connexion — reprend la mise en page du mockup fourni (champs
@@ -56,34 +57,27 @@ class _LoginPageState extends State<LoginPage> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 32),
+                        const Center(
+                          child: AppLogo(height: 52),
+                        ),
+                        const SizedBox(height: 10),
                         Center(
                           child: Container(
-                            width: 72,
-                            height: 72,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF14162B),
-                              borderRadius: BorderRadius.circular(20),
+                              color: AppColors.brandLight,
+                              borderRadius: BorderRadius.circular(AppRadius.pill),
                             ),
-                            child: const Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                Icon(Icons.settings, color: AppColors.brand, size: 54),
-                                Icon(Icons.build_rounded, color: Colors.white, size: 24),
-                              ],
+                            child: const Text(
+                              'ESPACE TECHNICIEN',
+                              style: TextStyle(
+                                color: AppColors.brandDark,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(height: 14),
-                        Text(
-                          'TechniTrack',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 2),
-                        const Text(
-                          'Technicien',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(color: AppColors.neutral, fontSize: 13),
                         ),
                         const SizedBox(height: 32),
                         if (errorMessage != null) ...[
@@ -212,7 +206,7 @@ class _LoginField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderColor = hasError ? AppColors.danger : const Color(0xFFE0E2EC);
+    final borderColor = hasError ? AppColors.danger : AppColors.border;
     return TextFormField(
       controller: controller,
       obscureText: obscureText,
@@ -229,19 +223,19 @@ class _LoginField extends StatelessWidget {
         isDense: true,
         contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide(color: borderColor),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: BorderSide(color: hasError ? AppColors.danger : AppColors.brand, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           borderSide: const BorderSide(color: AppColors.danger),
         ),
       ),
@@ -272,12 +266,12 @@ class _PlaceholderLinksRow extends StatelessWidget {
         ),
         const Row(
           children: [
-            Expanded(child: Divider(color: Color(0xFFE0E2EC))),
+            Expanded(child: Divider(color: AppColors.border)),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 10),
               child: Text('Ou', style: TextStyle(color: AppColors.neutral, fontSize: 12)),
             ),
-            Expanded(child: Divider(color: Color(0xFFE0E2EC))),
+            Expanded(child: Divider(color: AppColors.border)),
           ],
         ),
         TextButton.icon(

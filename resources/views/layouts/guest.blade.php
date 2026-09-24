@@ -7,6 +7,8 @@
 
         <title>{{ config('app.name', 'TechniTrack') }} — Authentification</title>
 
+        <link rel="icon" type="image/png" href="{{ asset('images/logo-technitrack-icon.png') }}">
+
         <!-- Fonts & Icons -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,11 +25,10 @@
     </head>
     <body class="h-full antialiased text-slate-900 bg-slate-50 flex flex-col items-center justify-center min-h-screen p-4 sm:p-6">
         <div class="w-full max-w-[430px] space-y-6 my-auto">
-            <div class="text-center space-y-2">
-                <a href="/" class="inline-flex items-center justify-center w-11 h-11 rounded-xl bg-indigo-600 text-white shadow-sm mb-1">
-                    <i class="fas fa-layer-group text-base"></i>
+            <div class="text-center">
+                <a href="/" class="inline-flex items-center justify-center">
+                    <img src="{{ asset('images/logo-technitrack-full.png') }}" alt="TechniTrack" class="h-9 w-auto object-contain">
                 </a>
-                <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Techni<span class="text-indigo-600">Track</span></h1>
             </div>
 
             <div class="ui-card p-6 sm:p-8 bg-white border border-slate-200 shadow-sm rounded-2xl">

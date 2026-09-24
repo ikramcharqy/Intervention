@@ -39,7 +39,7 @@ class MissionListCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: enRetard ? AppColors.danger.withOpacity(0.4) : const Color(0xFFE6E9F4)),
+            border: Border.all(color: enRetard ? AppColors.danger.withOpacity(0.4) : AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

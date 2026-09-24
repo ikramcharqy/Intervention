@@ -44,8 +44,8 @@
             <!-- Brand -->
             <div class="h-16 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800">
                 <a href="{{ route('superadmin.dashboard') }}" class="flex items-center gap-3 group">
-                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-600 to-indigo-600 flex items-center justify-center text-white shadow-sm">
-                        <x-icon name="shield-check" class="w-[18px] h-[18px]" />
+                    <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-rose-600 to-indigo-600 flex items-center justify-center shadow-sm p-1.5">
+                        <img src="{{ asset('images/logo-technitrack-icon.png') }}" alt="TechniTrack" class="w-full h-full object-contain">
                     </div>
                     <div class="flex flex-col">
                         <span class="font-bold text-sm text-slate-900 dark:text-white tracking-tight">Techni<span class="text-rose-500 dark:text-rose-400">Track</span></span>

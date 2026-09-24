@@ -105,7 +105,7 @@ class _Card extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE6E9F4)),
+        border: Border.all(color: AppColors.border),
       ),
       child: child,
     );

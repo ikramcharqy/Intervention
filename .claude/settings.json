@@ -223,7 +223,15 @@
       "Bash(curl -s -b cookies.txt http://127.0.0.1:8000/2fa/setup -i -o setup_response.txt)",
       "Bash(grep -o '<div class=\"flex justify-center[^\"]*\">.\\\\{0,300\\\\}' setup_response.txt)",
       "Bash(php -l app/Services/CommercialDashboardService.php)",
-      "Bash(php -l app/Http/Controllers/Auth/AuthenticatedSessionController.php)"
+      "Bash(php -l app/Http/Controllers/Auth/AuthenticatedSessionController.php)",
+      "Bash(php -l resources/views/landing.blade.php)",
+      "Bash(php -r \"var_dump\\(extension_loaded\\('gd'\\)\\);\")",
+      "Bash(rm -f public/images/_test_icon_crop.png public/images/_test_icon_crop2.png public/images/_test_icon_square.png public/images/_test_icon_square2.png public/images/_test_icon_square3.png)",
+      "Bash(php -l resources/views/auth/login.blade.php)",
+      "Bash(xargs grep -l \"latitude\\\\|longitude\")",
+      "Bash(grep -n 'latitude\\\\|longitude\\\\|protected $fillable' app/Models/Chantier.php)",
+      "Bash(php -l database/seeders/GpsTrackingDemoSeeder.php)",
+      "Bash(php -l database/seeders/ChantierSeeder.php)"
     ],
     "additionalDirectories": [
       "\\tmp"

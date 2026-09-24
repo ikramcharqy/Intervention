@@ -375,7 +375,7 @@ class _RadioAnswerField extends StatelessWidget {
       label: label,
       invalid: invalid,
       child: Container(
-        decoration: BoxDecoration(border: Border.all(color: const Color(0xFFE6E9F4)), borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(8)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: question.choix
@@ -407,7 +407,7 @@ class _CheckboxAnswerField extends StatelessWidget {
       label: label,
       invalid: invalid,
       child: Container(
-        decoration: BoxDecoration(border: Border.all(color: const Color(0xFFE6E9F4)), borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(8)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: question.choix.map((c) {
@@ -680,7 +680,7 @@ class _SignatureAnswerFieldState extends State<_SignatureAnswerField> {
               children: [
                 Container(
                   height: 160,
-                  decoration: BoxDecoration(border: Border.all(color: const Color(0xFFE6E9F4)), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(border: Border.all(color: AppColors.border), borderRadius: BorderRadius.circular(8)),
                   child: Signature(controller: _controller, backgroundColor: Colors.white),
                 ),
                 const SizedBox(height: 6),

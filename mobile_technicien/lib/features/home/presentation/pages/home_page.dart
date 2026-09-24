@@ -178,7 +178,7 @@ class _HomeViewState extends State<_HomeView> {
                           Container(
                             height: 180,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEDEFF5),
+                              color: AppColors.surfaceMuted,
                               borderRadius: BorderRadius.circular(16),
                             ),
                           ),

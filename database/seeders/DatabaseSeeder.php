@@ -27,6 +27,10 @@ class DatabaseSeeder extends Seeder
             DocumentSeeder::class,
             NotificationSeeder::class,
             TechnicienDemoDataSeeder::class,
+            // Trajets GPS de démo pour le Poste de Contrôle (/gps-tracking) —
+            // doit tourner après TechnicienDemoDataSeeder, qui crée les
+            // interventions "En cours" sur lesquelles il s'appuie.
+            GpsTrackingDemoSeeder::class,
             // Filet de sécurité : rattrape toute intervention "Terminée" restée
             // sans Rapport (impasse UX "Voir le rapport" → 404), quel que soit
             // le seeder ou la création manuelle qui l'a laissée dans cet état.

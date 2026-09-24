@@ -6,6 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', config('app.name', 'TechniTrack') . ' — Console Admin')</title>
 
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-technitrack-icon.png') }}">
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
@@ -32,8 +34,8 @@
             <!-- Brand -->
             <div class="h-16 flex items-center justify-between px-5 border-b border-slate-800 bg-[#0f172a]">
                 <a href="{{ route('dashboard') }}" class="flex items-center gap-3 group">
-                    <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-extrabold shadow-md shadow-indigo-500/20">
-                        <i class="fas fa-layer-group text-sm"></i>
+                    <div class="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-md shadow-indigo-500/20 p-1.5">
+                        <img src="{{ asset('images/logo-technitrack-icon.png') }}" alt="TechniTrack" class="w-full h-full object-contain">
                     </div>
                     <div class="flex flex-col">
                         <span class="font-bold text-sm text-white tracking-tight">Techni<span class="text-indigo-400">Track</span></span>

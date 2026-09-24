@@ -16,8 +16,17 @@ use App\Http\Controllers\MateriauController;
 use App\Http\Controllers\UserController;
 
 Route::get('/', function () {
+    return view('landing');
+})->name('landing');
+
+// Boutons "Espace Client" / "Espace Employé" de la page d'accueil publique.
+Route::get('/espace-client', function () {
+    return redirect()->route('login', ['type' => 'client']);
+})->name('espace.client');
+
+Route::get('/espace-employe', function () {
     return redirect()->route('login');
-});
+})->name('espace.employe');
 
 Route::get('/dashboard', function () {
     if (auth()->user()->hasRole('Super Admin')) {

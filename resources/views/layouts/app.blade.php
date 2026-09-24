@@ -7,6 +7,8 @@
 
         <title>{{ config('app.name', 'TechniTrack') }} — Console de Gestion</title>
 
+        <link rel="icon" type="image/png" href="{{ asset('images/logo-technitrack-icon.png') }}">
+
         <!-- Fonts & Icons -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,8 +40,8 @@
                     </button>
 
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-2.5 shrink-0 group">
-                        <div class="w-8 h-8 rounded-[4px] bg-[#1E5EFF] flex items-center justify-center text-white group-hover:bg-[#174ecc] transition">
-                            <i class="fas fa-layer-group text-sm"></i>
+                        <div class="w-8 h-8 rounded-[4px] bg-[#1E5EFF] flex items-center justify-center group-hover:bg-[#174ecc] transition p-1.5">
+                            <img src="{{ asset('images/logo-technitrack-icon.png') }}" alt="TechniTrack" class="w-full h-full object-contain">
                         </div>
                         <span class="hidden sm:inline font-bold text-base text-[#131523] tracking-tight">Techni<span class="text-[#1E5EFF]">Track</span></span>
                     </a>
