@@ -60,13 +60,13 @@ Chaque profil dispose d’un espace adapté à ses responsabilités :
 ### Poste de contrôle — Tracking GPS des techniciens
 
 <p align="center">
-  <img src="docs/screenshots/gps-tracking.png" width="90%" alt="Tracking GPS des techniciens en temps réel">
+  <img src="docs/screenshots/gps-tracking.png" height="50%" width="70%" alt="Tracking GPS des techniciens en temps réel">
 </p>
 
 ### Portail client — Tableau de bord
 
 <p align="center">
-  <img src="docs/screenshots/client-dashboard.png" width="90%" alt="Tableau de bord du portail client">
+  <img src="docs/screenshots/client-dashboard.png" width="70%" alt="Tableau de bord du portail client">
 </p>
 
 ### Application mobile — Technicien
