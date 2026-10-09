@@ -30,20 +30,20 @@ Dans beaucoup d’entreprises, le suivi des interventions techniques se fait enc
 3. le **technicien** la reçoit sur mobile, se rend sur site, remplit le formulaire et le rapport ;
 4. l’intervention est **validée**, et le client suit chaque étape en temps réel.
 
-## ✨ Fonctionnalités principales
+##  Fonctionnalités principales
 
 | Module | Description |
 | --- | --- |
-| 🏗️ **Clients & chantiers** | Centralisation des clients, de leurs chantiers et de leurs emplacements. |
-| 🛠️ **Interventions** | Planification, affectation et suivi des statuts (planifiée → acceptée → en cours → terminée). |
-| 📍 **Tracking GPS en temps réel** | Position des techniciens sur carte, trajet parcouru et temps d’arrivée estimé. |
-| 📝 **Formulaires & rapports** | Formulaires terrain, rapports d’intervention et validation par l’administration. |
-| 📦 **Stock & matériel** | Suivi du matériel utilisé lors des interventions. |
-| 💼 **Module commercial** | Demandes clients, devis et facturation. |
-| 🔔 **Notifications temps réel** | Alertes instantanées à chaque changement important. |
-| 📱 **Application technicien** | Interface mobile reliée au backend via une API REST sécurisée. |
+|  **Clients & chantiers** | Centralisation des clients, de leurs chantiers et de leurs emplacements. |
+|  **Interventions** | Planification, affectation et suivi des statuts (planifiée → acceptée → en cours → terminée). |
+|  **Tracking GPS en temps réel** | Position des techniciens sur carte, trajet parcouru et temps d’arrivée estimé. |
+|  **Formulaires & rapports** | Formulaires terrain, rapports d’intervention et validation par l’administration. |
+|  **Stock & matériel** | Suivi du matériel utilisé lors des interventions. |
+|  **Module commercial** | Demandes clients, devis et facturation. |
+|  **Notifications temps réel** | Alertes instantanées à chaque changement important. |
+|  **Application technicien** | Interface mobile reliée au backend via une API REST sécurisée. |
 
-## 👥 Profils utilisateurs
+##  Profils utilisateurs
 
 Chaque profil dispose d’un espace adapté à ses responsabilités :
 
@@ -55,7 +55,7 @@ Chaque profil dispose d’un espace adapté à ses responsabilités :
 | **Technicien** | Exécution des interventions sur le terrain (mobile) |
 | **Client** | Suivi de ses chantiers, demandes et documents |
 
-## 🖥️ Aperçu de l’application
+##  Aperçu de l’application
 
 ### Poste de contrôle — Tracking GPS des techniciens
 
@@ -77,7 +77,7 @@ Chaque profil dispose d’un espace adapté à ses responsabilités :
   <img src="docs/screenshots/mobile-intervention.jpg" width="30%" alt="Détail et historique d’une intervention">
 </p>
 
-## 🛠️ Technologies utilisées
+##  Technologies utilisées
 
 | Technologie | Utilisation |
 | --- | --- |
