@@ -1,59 +1,163 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<h1 align="center">TechniTrack</h1>
 
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <strong>Plateforme web et mobile de gestion des interventions techniques</strong><br>
+  De la demande client jusqu’à la validation du rapport, en temps réel.
 </p>
 
-## About Laravel
+<p align="center">
+  <img src="https://img.shields.io/badge/Laravel-12-FF2D20?logo=laravel&logoColor=white" alt="Laravel 12">
+  <img src="https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white" alt="PHP 8.2">
+  <img src="https://img.shields.io/badge/MySQL-4479A1?logo=mysql&logoColor=white" alt="MySQL">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind CSS">
+  <img src="https://img.shields.io/badge/Alpine.js-8BC0D0?logo=alpinedotjs&logoColor=black" alt="Alpine.js">
+</p>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+<p align="center">
+  <img src="docs/screenshots/login.png" width="90%" alt="Page de connexion TechniTrack">
+</p>
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 📌 Présentation
 
-## Learning Laravel
+Dans beaucoup d’entreprises, le suivi des interventions techniques se fait encore par téléphone, e-mail ou fichiers Excel : les informations sont dispersées et il est difficile de savoir où en est chaque chantier.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+**TechniTrack** centralise tout ce cycle dans une seule plateforme :
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+1. le **client** envoie une demande depuis son espace ;
+2. l’**administration** planifie l’intervention et l’affecte à un technicien ;
+3. le **technicien** la reçoit sur mobile, se rend sur site, remplit le formulaire et le rapport ;
+4. l’intervention est **validée**, et le client suit chaque étape en temps réel.
 
-## Laravel Sponsors
+## ✨ Fonctionnalités principales
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+| Module | Description |
+| --- | --- |
+| 🏗️ **Clients & chantiers** | Centralisation des clients, de leurs chantiers et de leurs emplacements. |
+| 🛠️ **Interventions** | Planification, affectation et suivi des statuts (planifiée → acceptée → en cours → terminée). |
+| 📍 **Tracking GPS en temps réel** | Position des techniciens sur carte, trajet parcouru et temps d’arrivée estimé. |
+| 📝 **Formulaires & rapports** | Formulaires terrain, rapports d’intervention et validation par l’administration. |
+| 📦 **Stock & matériel** | Suivi du matériel utilisé lors des interventions. |
+| 💼 **Module commercial** | Demandes clients, devis et facturation. |
+| 🔔 **Notifications temps réel** | Alertes instantanées à chaque changement important. |
+| 📱 **Application technicien** | Interface mobile reliée au backend via une API REST sécurisée. |
 
-### Premium Partners
+## 👥 Profils utilisateurs
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Chaque profil dispose d’un espace adapté à ses responsabilités :
 
-## Contributing
+| Profil | Rôle principal |
+| --- | --- |
+| **Super administrateur** | Administration générale de la plateforme |
+| **Administrateur** | Pilotage des opérations, planification et validation |
+| **Commercial** | Suivi des demandes clients, devis et interventions |
+| **Technicien** | Exécution des interventions sur le terrain (mobile) |
+| **Client** | Suivi de ses chantiers, demandes et documents |
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 🖥️ Aperçu de l’application
 
-## Code of Conduct
+### Poste de contrôle — Tracking GPS des techniciens
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+<p align="center">
+  <img src="docs/screenshots/gps-tracking.png" width="90%" alt="Tracking GPS des techniciens en temps réel">
+</p>
 
-## Security Vulnerabilities
+### Portail client — Tableau de bord
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+<p align="center">
+  <img src="docs/screenshots/client-dashboard.png" width="90%" alt="Tableau de bord du portail client">
+</p>
 
-## License
+### Application mobile — Technicien
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+<p align="center">
+  <img src="docs/screenshots/mobile-login.jpg" width="30%" alt="Connexion de l’application technicien">
+  &nbsp;&nbsp;&nbsp;
+  <img src="docs/screenshots/mobile-intervention.jpg" width="30%" alt="Détail et historique d’une intervention">
+</p>
+
+## 🛠️ Technologies utilisées
+
+| Technologie | Utilisation |
+| --- | --- |
+| **PHP 8.2 / Laravel 12** | Backend et logique métier |
+| **MySQL** | Base de données |
+| **Blade, Tailwind CSS, Alpine.js** | Interfaces web |
+| **Laravel Sanctum** | Authentification de l’API mobile |
+| **Spatie Laravel Permission** | Gestion des rôles et permissions |
+| **Laravel Reverb / Echo** | Temps réel (notifications, suivi GPS) |
+| **Leaflet** | Cartographie et géolocalisation |
+| **DomPDF** | Génération de documents PDF |
+
+**Architecture :** `Controller → Service → Model` — la logique métier est regroupée dans des services, les contrôleurs restent légers.
+
+## 🚀 Installation
+
+### Prérequis
+
+- PHP 8.2+
+- Composer
+- Node.js et npm
+- MySQL
+
+### Étapes
+
+```bash
+# 1. Cloner le projet
+git clone https://github.com/ikramcharqy/Intervention.git
+cd Intervention
+
+# 2. Installer les dépendances
+composer install
+npm install
+
+# 3. Configurer l’environnement
+cp .env.example .env          # Windows PowerShell : Copy-Item .env.example .env
+php artisan key:generate
+
+# 4. Configurer la base de données dans .env, puis :
+php artisan migrate
+```
+
+### Lancer l’application
+
+```bash
+php artisan serve      # terminal 1 : serveur Laravel
+npm run dev            # terminal 2 : assets front-end
+php artisan reverb:start   # terminal 3 (optionnel) : temps réel
+```
+
+L’application est accessible sur **http://127.0.0.1:8000**.
+
+## 📁 Structure du projet
+
+```text
+Intervention/
+├── app/
+│   ├── Http/Controllers/   # Contrôleurs (web et API)
+│   ├── Services/           # Logique métier
+│   └── Models/             # Modèles Eloquent
+├── routes/
+│   ├── web.php             # Routes web
+│   └── api.php             # Routes de l’API mobile
+├── resources/views/        # Interfaces Blade
+├── database/migrations/    # Structure de la base de données
+├── docs/screenshots/       # Captures d’écran
+└── tests/                  # Tests automatisés
+```
+
+## 🎯 Objectif
+
+Proposer une solution **centralisée, claire et évolutive** pour mieux organiser les interventions techniques et faciliter la collaboration entre clients, équipes administratives et techniciens sur le terrain.
+
+## 👩‍💻 Auteur
+
+**Ikram Ech-charqy**
+Étudiante ingénieure en Génie Informatique — ENSAM Meknès
+
+[![GitHub](https://img.shields.io/badge/GitHub-ikramcharqy-181717?logo=github)](https://github.com/ikramcharqy)
+
+---
+
+<p align="center"><em>Projet de développement logiciel réalisé avec Laravel.</em></p>
